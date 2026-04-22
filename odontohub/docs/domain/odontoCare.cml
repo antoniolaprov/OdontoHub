@@ -3,6 +3,11 @@
    ============================================================= */
 Domain OdontoCare {
 
+    Subdomain CirurgiaoDentistaDomain {
+        type = CORE_DOMAIN
+        domainVisionStatement = "Entidade central do sistema: proprietario do consultorio, responsavel pelas decisoes clinicas e financeiras e pela gestao de permissoes da equipe."
+    }
+
     Subdomain PacienteDomain {
         type = CORE_DOMAIN
         domainVisionStatement = "Gerencia o cadastro central de pacientes, ponto de partida de todos os processos do consultorio."
@@ -46,6 +51,50 @@ Domain OdontoCare {
     Subdomain EquipamentoDomain {
         type = GENERIC_SUBDOMAIN
         domainVisionStatement = "Controla disponibilidade e manutencao preventiva e corretiva dos equipamentos do consultorio."
+    }
+}
+
+/* =============================================================
+   BOUNDED CONTEXT: CirurgiaoDentista
+   ============================================================= */
+BoundedContext CirurgiaoDentistaContext implements CirurgiaoDentistaDomain {
+    type = SYSTEM
+    domainVisionStatement = "Representa o proprietario do consultorio, responsavel por decisoes clinicas, financeiras e pela gestao de permissoes da equipe."
+
+    Aggregate CirurgiaoDentista {
+        Entity CirurgiaoDentista {
+            aggregateRoot
+            - CirurgiaoDentistaId cirurgiaoDentistaId
+            String nome
+            String cro
+            String especialidade
+            String telefone
+            String emailContato
+            Boolean ativo
+            - List<PermissaoMembro> permissoesMembros
+        }
+
+        ValueObject CirurgiaoDentistaId {
+            Long id
+        }
+
+        ValueObject PermissaoMembro {
+            String nomeMembro
+            String funcao
+            String permissoes
+        }
+
+        DomainEvent DentistaAutorizouAgendamento {
+            - CirurgiaoDentistaId cirurgiaoDentistaId
+            Long agendamentoId
+            String justificativa
+        }
+
+        DomainEvent PermissaoMembroAtualizada {
+            - CirurgiaoDentistaId cirurgiaoDentistaId
+            String nomeMembro
+            String novaPermissao
+        }
     }
 }
 
@@ -104,6 +153,7 @@ BoundedContext AgendamentoContext implements AgendamentoDomain {
             String responsavelRegistro
             Date dataCriacao
             Boolean autorizadoPorDentista
+            - List<HistoricoStatusAgendamento> historicoStatus
         }
 
         ValueObject AgendamentoId {
@@ -173,6 +223,7 @@ BoundedContext ProntuarioContext implements ProntuarioDomain {
             - StatusProntuario status
             String justificativaEncerramento
             Date dataEncerramento
+            - List<FichaClinica> fichasClinicas
         }
 
         Entity FichaClinica {
@@ -184,6 +235,7 @@ BoundedContext ProntuarioContext implements ProntuarioDomain {
             String queixas
             String achadosClinicos
             Boolean confirmada
+            - List<Evolucao> evolucoes
         }
 
         ValueObject ProntuarioId {
@@ -230,6 +282,7 @@ BoundedContext ProntuarioContext implements ProntuarioDomain {
             String alergias
             String contraindicacoes
             String condicoesSistemicas
+            - List<VersaoAnamnese> historicoVersoes
         }
 
         ValueObject AnamneseId {
@@ -310,6 +363,8 @@ BoundedContext TratamentoContext implements TratamentoDomain {
             Integer versaoAtual
             Date dataCriacao
             Date dataConclusao
+            - List<VersaoPlano> historicoVersoes
+            - List<Procedimento> procedimentos
         }
 
         Entity Procedimento {
@@ -321,6 +376,7 @@ BoundedContext TratamentoContext implements TratamentoDomain {
             String justificativaCancelamento
             Long especialistaId
             Date dataRealizacao
+            - List<ItemMaterial> materiais
         }
 
         ValueObject PlanoTratamentoId {
@@ -401,6 +457,7 @@ BoundedContext FinanceiroContext implements FinanceiroDomain {
             Date dataGeracao
             Date dataAprovacao
             String formaAprovacao
+            - List<ItemOrcamento> itens
         }
 
         ValueObject OrcamentoId {
@@ -439,6 +496,7 @@ BoundedContext FinanceiroContext implements FinanceiroDomain {
             BigDecimal valorTotal
             - TipoPagamento tipo
             Date dataRegistro
+            - List<Parcela> parcelas
         }
 
         Entity Parcela {
@@ -492,6 +550,7 @@ BoundedContext FinanceiroContext implements FinanceiroDomain {
             Boolean bloqueioAtivo
             String autorizacaoDesbloqueio
             String responsavelAutorizacao
+            - List<RegistroCobranca> historicoCobranca
         }
 
         ValueObject InadimplenciaId {
@@ -575,6 +634,7 @@ BoundedContext EspecialistaContext implements EspecialistaDomain {
             String especialidade
             String registro
             Boolean ativo
+            - List<RegraComissao> regrasComissao
         }
 
         ValueObject EspecialistaId {
@@ -885,6 +945,7 @@ BoundedContext EquipamentoContext implements EquipamentoDomain {
    CONTEXT MAP
    ============================================================= */
 ContextMap OdontoCareMap {
+    contains CirurgiaoDentistaContext
     contains PacienteContext
     contains AgendamentoContext
     contains ProntuarioContext
@@ -894,6 +955,41 @@ ContextMap OdontoCareMap {
     contains EstoqueContext
     contains InstrumentalContext
     contains EquipamentoContext
+
+    CirurgiaoDentistaContext [U, OHS, PL] -> [D, ACL] AgendamentoContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates CirurgiaoDentista
+    }
+
+    CirurgiaoDentistaContext [U, OHS, PL] -> [D, ACL] TratamentoContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates CirurgiaoDentista
+    }
+
+    CirurgiaoDentistaContext [U, OHS, PL] -> [D, ACL] FinanceiroContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates CirurgiaoDentista
+    }
+
+    CirurgiaoDentistaContext [U, OHS, PL] -> [D, ACL] ProntuarioContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates CirurgiaoDentista
+    }
+
+    CirurgiaoDentistaContext [U, OHS, PL] -> [D, ACL] EspecialistaContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates CirurgiaoDentista
+    }
+
+    CirurgiaoDentistaContext [U, OHS, PL] -> [D, ACL] EstoqueContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates CirurgiaoDentista
+    }
+
+    CirurgiaoDentistaContext [U, OHS, PL] -> [D, ACL] EquipamentoContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates CirurgiaoDentista
+    }
 
     PacienteContext [U, OHS, PL] -> [D, ACL] AgendamentoContext {
         implementationTechnology "RESTful HTTP"
