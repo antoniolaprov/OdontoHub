@@ -1,0 +1,30 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Reposicao' Aggregate" <<Rectangle>> {
+	class Reposicao <<(A,#fffab8) Aggregate Root>> {
+		Long materialId
+		String fornecedor
+		Integer quantidade
+		BigDecimal custoUnitario
+		BigDecimal custoTotal
+		Date dataEntrada
+		ReposicaoId reposicaoId
+	}
+	class ReposicaoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class ReposicaoRegistrada <<(E,#ff9f4b) Domain Event>> {
+		Long materialId
+		String fornecedor
+		Integer quantidade
+		BigDecimal custoTotal
+		ReposicaoId reposicaoId
+	}
+}
+ReposicaoRegistrada --> ReposicaoId : reposicaoId
+Reposicao --> ReposicaoId : reposicaoId
+
+
+@enduml

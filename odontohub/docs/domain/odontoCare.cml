@@ -1,0 +1,972 @@
+/* =============================================================
+   DOMAIN
+   ============================================================= */
+Domain OdontoCare {
+
+    Subdomain PacienteDomain {
+        type = CORE_DOMAIN
+        domainVisionStatement = "Gerencia o cadastro central de pacientes, ponto de partida de todos os processos do consultorio."
+    }
+
+    Subdomain TratamentoDomain {
+        type = CORE_DOMAIN
+        domainVisionStatement = "Nucleo clinico do sistema: planos de tratamento, procedimentos e integracao com recursos clinicos."
+    }
+
+    Subdomain ProntuarioDomain {
+        type = SUPPORTING_DOMAIN
+        domainVisionStatement = "Mantem o registro clinico legal e longitudinal de cada paciente, incluindo anamnese e TCLE."
+    }
+
+    Subdomain AgendamentoDomain {
+        type = SUPPORTING_DOMAIN
+        domainVisionStatement = "Organiza a agenda do consultorio, classificando e controlando o ciclo de atendimento."
+    }
+
+    Subdomain FinanceiroDomain {
+        type = SUPPORTING_DOMAIN
+        domainVisionStatement = "Consolida as financas do consultorio: orcamentos, pagamentos, inadimplencia e fluxo de caixa."
+    }
+
+    Subdomain EspecialistaDomain {
+        type = SUPPORTING_DOMAIN
+        domainVisionStatement = "Gerencia especialistas externos, regras de comissao e repasses financeiros."
+    }
+
+    Subdomain EstoqueDomain {
+        type = GENERIC_SUBDOMAIN
+        domainVisionStatement = "Controla o estoque de materiais consumiveis e registra as reposicoes."
+    }
+
+    Subdomain InstrumentalDomain {
+        type = GENERIC_SUBDOMAIN
+        domainVisionStatement = "Controla o ciclo de esterilizacao dos instrumentos reutilizaveis."
+    }
+
+    Subdomain EquipamentoDomain {
+        type = GENERIC_SUBDOMAIN
+        domainVisionStatement = "Controla disponibilidade e manutencao preventiva e corretiva dos equipamentos do consultorio."
+    }
+}
+
+/* =============================================================
+   BOUNDED CONTEXT: Paciente
+   ============================================================= */
+BoundedContext PacienteContext implements PacienteDomain {
+    type = SYSTEM
+    domainVisionStatement = "Gerencia o cadastro central de pacientes do consultorio odontologico."
+
+    Aggregate Paciente {
+        Entity Paciente {
+            aggregateRoot
+            - PacienteId pacienteId
+            String nome
+            String cpf
+            Date dataNascimento
+            String telefone
+            String emailContato
+            String endereco
+            Boolean ativo
+        }
+
+        ValueObject PacienteId {
+            Long id
+        }
+
+        DomainEvent PacienteCadastrado {
+            - PacienteId pacienteId
+            String nome
+            String cpf
+        }
+
+        DomainEvent PacienteAtualizado {
+            - PacienteId pacienteId
+            String responsavel
+        }
+    }
+}
+
+/* =============================================================
+   BOUNDED CONTEXT: Agendamento
+   ============================================================= */
+BoundedContext AgendamentoContext implements AgendamentoDomain {
+    type = SYSTEM
+    domainVisionStatement = "Gerencia a reserva de horarios, classificando consultas e retornos, evitando conflitos e bloqueando inadimplentes."
+
+    Aggregate Agendamento {
+        Entity Agendamento {
+            aggregateRoot
+            - AgendamentoId agendamentoId
+            Long pacienteId
+            Date dataHora
+            - TipoAgendamento tipo
+            - StatusAgendamento status
+            String responsavelRegistro
+            Date dataCriacao
+            Boolean autorizadoPorDentista
+        }
+
+        ValueObject AgendamentoId {
+            Long id
+        }
+
+        ValueObject HistoricoStatusAgendamento {
+            - StatusAgendamento statusAnterior
+            - StatusAgendamento statusNovo
+            Date dataAlteracao
+            String responsavel
+            String motivo
+        }
+
+        enum TipoAgendamento {
+            CONSULTA, RETORNO
+        }
+
+        enum StatusAgendamento {
+            PENDENTE, CONFIRMADO, CANCELADO, REMARCADO
+        }
+
+        DomainEvent AgendamentoRegistrado {
+            - AgendamentoId agendamentoId
+            Long pacienteId
+            Date dataHora
+            - TipoAgendamento tipo
+        }
+
+        DomainEvent AgendamentoConfirmado {
+            - AgendamentoId agendamentoId
+            String responsavel
+        }
+
+        DomainEvent AgendamentoCancelado {
+            - AgendamentoId agendamentoId
+            String motivo
+            String responsavel
+        }
+
+        DomainEvent AgendamentoRemarcado {
+            - AgendamentoId agendamentoId
+            Date novaDataHora
+            String responsavel
+        }
+
+        DomainEvent AgendamentoBloqueadoPorInadimplencia {
+            - AgendamentoId agendamentoId
+            Long pacienteId
+        }
+    }
+}
+
+/* =============================================================
+   BOUNDED CONTEXT: Prontuario
+   ============================================================= */
+BoundedContext ProntuarioContext implements ProntuarioDomain {
+    type = SYSTEM
+    domainVisionStatement = "Registra e mantem o historico clinico legal e longitudinal de cada paciente."
+
+    Aggregate Prontuario {
+        Entity Prontuario {
+            aggregateRoot
+            - ProntuarioId prontuarioId
+            Long pacienteId
+            Date dataAbertura
+            - StatusProntuario status
+            String justificativaEncerramento
+            Date dataEncerramento
+        }
+
+        Entity FichaClinica {
+            - FichaClinicaId fichaClinicaId
+            - ProntuarioId prontuarioId
+            Long agendamentoId
+            Date dataAtendimento
+            String odontograma
+            String queixas
+            String achadosClinicos
+            Boolean confirmada
+        }
+
+        ValueObject ProntuarioId {
+            Long id
+        }
+
+        ValueObject FichaClinicaId {
+            Long id
+        }
+
+        ValueObject Evolucao {
+            String descricao
+            Date dataRegistro
+            String responsavel
+        }
+
+        enum StatusProntuario {
+            ATIVO, ENCERRADO
+        }
+
+        DomainEvent ProntuarioAberto {
+            - ProntuarioId prontuarioId
+            Long pacienteId
+        }
+
+        DomainEvent FichaClinicaConfirmada {
+            - FichaClinicaId fichaClinicaId
+            - ProntuarioId prontuarioId
+        }
+
+        DomainEvent ProntuarioEncerrado {
+            - ProntuarioId prontuarioId
+            String justificativa
+        }
+    }
+
+    Aggregate Anamnese {
+        Entity Anamnese {
+            aggregateRoot
+            - AnamneseId anamneseId
+            Long pacienteId
+            Date dataRegistro
+            String responsavel
+            String alergias
+            String contraindicacoes
+            String condicoesSistemicas
+        }
+
+        ValueObject AnamneseId {
+            Long id
+        }
+
+        ValueObject VersaoAnamnese {
+            Integer numero
+            Date dataAlteracao
+            String responsavel
+            String snapshot
+        }
+
+        DomainEvent AnamneseRegistrada {
+            - AnamneseId anamneseId
+            Long pacienteId
+        }
+
+        DomainEvent AnamneseAtualizada {
+            - AnamneseId anamneseId
+            Integer novaVersao
+            String responsavel
+        }
+
+        DomainEvent AlergiaDetectada {
+            Long pacienteId
+            String substancia
+        }
+    }
+
+    Aggregate TCLE {
+        Entity TermoConsentimento {
+            aggregateRoot
+            - TCLEId tcleId
+            Long pacienteId
+            Long planoTratamentoId
+            Date dataAssinatura
+            - StatusTCLE status
+            String versao
+            String justificativaSubstituicao
+        }
+
+        ValueObject TCLEId {
+            Long id
+        }
+
+        enum StatusTCLE {
+            PENDENTE, ASSINADO, SUBSTITUIDO
+        }
+
+        DomainEvent TCLEAssinado {
+            - TCLEId tcleId
+            Long planoTratamentoId
+            Long pacienteId
+        }
+
+        DomainEvent TCLESubstituido {
+            - TCLEId tcleAntigoId
+            - TCLEId tcleNovoId
+            String justificativa
+        }
+    }
+}
+
+/* =============================================================
+   BOUNDED CONTEXT: Tratamento
+   ============================================================= */
+BoundedContext TratamentoContext implements TratamentoDomain {
+    type = SYSTEM
+    domainVisionStatement = "Organiza e sequencia os procedimentos clinicos necessarios para restabelecer ou manter a saude bucal do paciente."
+
+    Aggregate PlanoTratamento {
+        Entity PlanoTratamento {
+            aggregateRoot
+            - PlanoTratamentoId planoTratamentoId
+            Long pacienteId
+            - StatusPlano status
+            Integer versaoAtual
+            Date dataCriacao
+            Date dataConclusao
+        }
+
+        Entity Procedimento {
+            - ProcedimentoId procedimentoId
+            - PlanoTratamentoId planoTratamentoId
+            String descricao
+            BigDecimal valorUnitario
+            - StatusProcedimento status
+            String justificativaCancelamento
+            Long especialistaId
+            Date dataRealizacao
+        }
+
+        ValueObject PlanoTratamentoId {
+            Long id
+        }
+
+        ValueObject ProcedimentoId {
+            Long id
+        }
+
+        ValueObject VersaoPlano {
+            Integer numero
+            Date dataVersao
+            String descricaoAlteracao
+            String responsavel
+        }
+
+        ValueObject ItemMaterial {
+            Long materialId
+            Integer quantidade
+        }
+
+        enum StatusPlano {
+            ATIVO, CONCLUIDO, CANCELADO
+        }
+
+        enum StatusProcedimento {
+            PENDENTE, REALIZADO, CANCELADO
+        }
+
+        DomainEvent PlanoTratamentoCriado {
+            - PlanoTratamentoId planoId
+            Long pacienteId
+        }
+
+        DomainEvent ProcedimentoRealizado {
+            - ProcedimentoId procedimentoId
+            - PlanoTratamentoId planoId
+            Long especialistaId
+            Date dataRealizacao
+        }
+
+        DomainEvent ProcedimentoCancelado {
+            - ProcedimentoId procedimentoId
+            - PlanoTratamentoId planoId
+            String justificativa
+        }
+
+        DomainEvent PlanoTratamentoConcluido {
+            - PlanoTratamentoId planoId
+            Long pacienteId
+        }
+
+        DomainEvent PlanoTratamentoRevisado {
+            - PlanoTratamentoId planoId
+            Integer novaVersao
+            String responsavel
+        }
+    }
+}
+
+/* =============================================================
+   BOUNDED CONTEXT: Financeiro
+   ============================================================= */
+BoundedContext FinanceiroContext implements FinanceiroDomain {
+    type = SYSTEM
+    domainVisionStatement = "Consolida as operacoes financeiras do consultorio: orcamentos, pagamentos, inadimplencia e fluxo de caixa."
+
+    Aggregate Orcamento {
+        Entity Orcamento {
+            aggregateRoot
+            - OrcamentoId orcamentoId
+            Long planoTratamentoId
+            Long pacienteId
+            BigDecimal valorTotal
+            - StatusOrcamento status
+            Boolean complementar
+            Date dataGeracao
+            Date dataAprovacao
+            String formaAprovacao
+        }
+
+        ValueObject OrcamentoId {
+            Long id
+        }
+
+        ValueObject ItemOrcamento {
+            Long procedimentoId
+            String descricao
+            BigDecimal valorUnitario
+        }
+
+        enum StatusOrcamento {
+            PENDENTE, APROVADO, RECUSADO
+        }
+
+        DomainEvent OrcamentoGerado {
+            - OrcamentoId orcamentoId
+            Long planoTratamentoId
+            BigDecimal valorTotal
+        }
+
+        DomainEvent OrcamentoAprovado {
+            - OrcamentoId orcamentoId
+            Date dataAprovacao
+            String formaAprovacao
+        }
+    }
+
+    Aggregate Pagamento {
+        Entity Pagamento {
+            aggregateRoot
+            - PagamentoId pagamentoId
+            Long orcamentoId
+            Long pacienteId
+            BigDecimal valorTotal
+            - TipoPagamento tipo
+            Date dataRegistro
+        }
+
+        Entity Parcela {
+            - ParcelaId parcelaId
+            Integer numero
+            BigDecimal valor
+            Date dataVencimento
+            Date dataPagamento
+            - StatusParcela status
+        }
+
+        ValueObject PagamentoId {
+            Long id
+        }
+
+        ValueObject ParcelaId {
+            Long id
+        }
+
+        enum TipoPagamento {
+            A_VISTA, PARCELADO
+        }
+
+        enum StatusParcela {
+            PENDENTE, LIQUIDADA, INADIMPLENTE
+        }
+
+        DomainEvent ParcelaLiquidada {
+            - ParcelaId parcelaId
+            - PagamentoId pagamentoId
+            Long pacienteId
+            BigDecimal valor
+            Date dataPagamento
+        }
+
+        DomainEvent ParcelaVencidaSemPagamento {
+            - ParcelaId parcelaId
+            - PagamentoId pagamentoId
+            Long pacienteId
+            Date dataVencimento
+        }
+    }
+
+    Aggregate Inadimplencia {
+        Entity RegistroInadimplencia {
+            aggregateRoot
+            - InadimplenciaId inadimplenciaId
+            Long pacienteId
+            Long parcelaId
+            Date dataVencimento
+            Boolean bloqueioAtivo
+            String autorizacaoDesbloqueio
+            String responsavelAutorizacao
+        }
+
+        ValueObject InadimplenciaId {
+            Long id
+        }
+
+        ValueObject RegistroCobranca {
+            Date data
+            String responsavel
+            String resultado
+            String observacao
+        }
+
+        DomainEvent BloqueioAgendamentoAtivado {
+            - InadimplenciaId inadimplenciaId
+            Long pacienteId
+        }
+
+        DomainEvent BloqueioAgendamentoRemovido {
+            - InadimplenciaId inadimplenciaId
+            Long pacienteId
+            String autorizacao
+        }
+
+        DomainEvent InadimplenciaRegularizada {
+            - InadimplenciaId inadimplenciaId
+            Long pacienteId
+            Date dataQuitacao
+        }
+    }
+
+    Aggregate LancamentoFinanceiro {
+        Entity LancamentoFinanceiro {
+            aggregateRoot
+            - LancamentoId lancamentoId
+            - TipoLancamento tipo
+            BigDecimal valor
+            Date data
+            String categoria
+            String descricao
+            String justificativa
+            Boolean geradoAutomaticamente
+            String origemReferencia
+        }
+
+        ValueObject LancamentoId {
+            Long id
+        }
+
+        enum TipoLancamento {
+            ENTRADA, SAIDA
+        }
+
+        DomainEvent EntradaRegistrada {
+            - LancamentoId lancamentoId
+            BigDecimal valor
+            Date data
+            String origem
+        }
+
+        DomainEvent SaidaRegistrada {
+            - LancamentoId lancamentoId
+            BigDecimal valor
+            String categoria
+        }
+    }
+}
+
+/* =============================================================
+   BOUNDED CONTEXT: Especialista
+   ============================================================= */
+BoundedContext EspecialistaContext implements EspecialistaDomain {
+    type = SYSTEM
+    domainVisionStatement = "Gerencia os especialistas convidados, suas regras de comissao e os repasses financeiros."
+
+    Aggregate Especialista {
+        Entity Especialista {
+            aggregateRoot
+            - EspecialistaId especialistaId
+            String nome
+            String especialidade
+            String registro
+            Boolean ativo
+        }
+
+        ValueObject EspecialistaId {
+            Long id
+        }
+
+        ValueObject RegraComissao {
+            Long procedimentoId
+            String descricaoProcedimento
+            - TipoComissao tipo
+            BigDecimal valor
+        }
+
+        enum TipoComissao {
+            PERCENTUAL, VALOR_FIXO
+        }
+
+        DomainEvent EspecialistaCadastrado {
+            - EspecialistaId especialistaId
+            String nome
+            String especialidade
+        }
+    }
+
+    Aggregate Comissao {
+        Entity Comissao {
+            aggregateRoot
+            - ComissaoId comissaoId
+            Long especialistaId
+            Long procedimentoId
+            Long pagamentoId
+            BigDecimal valorCalculado
+            - StatusComissao status
+            Date dataCalculo
+            Date dataLiberacao
+        }
+
+        ValueObject ComissaoId {
+            Long id
+        }
+
+        enum StatusComissao {
+            PENDENTE, LIBERADA, REPASSADA
+        }
+
+        DomainEvent ComissaoCalculada {
+            - ComissaoId comissaoId
+            Long especialistaId
+            Long procedimentoId
+            BigDecimal valor
+        }
+
+        DomainEvent ComissaoLiberada {
+            - ComissaoId comissaoId
+            Long especialistaId
+        }
+    }
+
+    Aggregate Repasse {
+        Entity Repasse {
+            aggregateRoot
+            - RepasseId repasseId
+            Long especialistaId
+            Long comissaoId
+            Long procedimentoId
+            Date dataPagamento
+            BigDecimal valorRepassado
+            Boolean estornado
+            String justificativaEstorno
+        }
+
+        ValueObject RepasseId {
+            Long id
+        }
+
+        DomainEvent RepasseRegistrado {
+            - RepasseId repasseId
+            Long especialistaId
+            BigDecimal valor
+            Date dataPagamento
+        }
+
+        DomainEvent RepasseEstornado {
+            - RepasseId repasseId
+            Long especialistaId
+            String justificativa
+        }
+    }
+}
+
+/* =============================================================
+   BOUNDED CONTEXT: Estoque
+   ============================================================= */
+BoundedContext EstoqueContext implements EstoqueDomain {
+    type = SYSTEM
+    domainVisionStatement = "Controla o estoque de materiais consumiveis, automatizando baixas e alertas de reposicao."
+
+    Aggregate MaterialConsumivel {
+        Entity MaterialConsumivel {
+            aggregateRoot
+            - MaterialId materialId
+            String nome
+            String descricao
+            String unidade
+            Integer saldoAtual
+            Integer pontoMinimo
+            Boolean ativo
+        }
+
+        ValueObject MaterialId {
+            Long id
+        }
+
+        DomainEvent EstoqueBaixoDetectado {
+            - MaterialId materialId
+            String nomeMaterial
+            Integer saldoAtual
+            Integer pontoMinimo
+        }
+
+        DomainEvent BaixaEstoqueRealizada {
+            - MaterialId materialId
+            Integer quantidade
+            Long procedimentoId
+        }
+
+        DomainEvent EstoqueInsuficiente {
+            - MaterialId materialId
+            Integer saldoAtual
+            Integer quantidadeNecessaria
+            Long procedimentoId
+        }
+    }
+
+    Aggregate Reposicao {
+        Entity Reposicao {
+            aggregateRoot
+            - ReposicaoId reposicaoId
+            Long materialId
+            String fornecedor
+            Integer quantidade
+            BigDecimal custoUnitario
+            BigDecimal custoTotal
+            Date dataEntrada
+        }
+
+        ValueObject ReposicaoId {
+            Long id
+        }
+
+        DomainEvent ReposicaoRegistrada {
+            - ReposicaoId reposicaoId
+            Long materialId
+            String fornecedor
+            Integer quantidade
+            BigDecimal custoTotal
+        }
+    }
+}
+
+/* =============================================================
+   BOUNDED CONTEXT: Instrumental
+   ============================================================= */
+BoundedContext InstrumentalContext implements InstrumentalDomain {
+    type = SYSTEM
+    domainVisionStatement = "Controla o ciclo de uso e esterilizacao dos instrumentos reutilizaveis do consultorio."
+
+    Aggregate Instrumento {
+        Entity Instrumento {
+            aggregateRoot
+            - InstrumentoId instrumentoId
+            String nome
+            String tipo
+            - StatusEsterilizacao status
+            Date ultimaEsterilizacao
+            Date validadeEsterilizacao
+            Boolean ativo
+        }
+
+        ValueObject InstrumentoId {
+            Long id
+        }
+
+        enum StatusEsterilizacao {
+            ESTERILIZADO, PENDENTE_ESTERILIZACAO, VENCIDO
+        }
+
+        DomainEvent InstrumentoPendenteEsterilizacao {
+            - InstrumentoId instrumentoId
+            Long procedimentoId
+        }
+
+        DomainEvent EsterilizacaoVencida {
+            - InstrumentoId instrumentoId
+        }
+    }
+
+    Aggregate Esterilizacao {
+        Entity CicloEsterilizacao {
+            aggregateRoot
+            - EsterilizacaoId esterilizacaoId
+            Long instrumentoId
+            Date data
+            String responsavel
+            - MetodoEsterilizacao metodo
+            Date validade
+        }
+
+        ValueObject EsterilizacaoId {
+            Long id
+        }
+
+        enum MetodoEsterilizacao {
+            AUTOCLAVE, ESTUFA, GLUTARALDEIDO
+        }
+
+        DomainEvent EsterilizacaoRegistrada {
+            - EsterilizacaoId esterilizacaoId
+            Long instrumentoId
+            Date validade
+        }
+    }
+}
+
+/* =============================================================
+   BOUNDED CONTEXT: Equipamento
+   ============================================================= */
+BoundedContext EquipamentoContext implements EquipamentoDomain {
+    type = SYSTEM
+    domainVisionStatement = "Controla a disponibilidade e as manutencoes preventivas e corretivas dos equipamentos do consultorio."
+
+    Aggregate Equipamento {
+        Entity Equipamento {
+            aggregateRoot
+            - EquipamentoId equipamentoId
+            String nome
+            String modelo
+            String fabricante
+            - StatusEquipamento status
+            Integer periodicidadeManutencaoDias
+            Date ultimaManutencao
+            Date proximaManutencao
+            Boolean ativo
+        }
+
+        ValueObject EquipamentoId {
+            Long id
+        }
+
+        enum StatusEquipamento {
+            DISPONIVEL, EM_MANUTENCAO, INDISPONIVEL
+        }
+
+        DomainEvent AlertaManutencaoEmitido {
+            - EquipamentoId equipamentoId
+            String nomeEquipamento
+            Date proximaManutencao
+            Integer diasRestantes
+        }
+
+        DomainEvent EquipamentoIndisponivel {
+            - EquipamentoId equipamentoId
+            String motivo
+        }
+
+        DomainEvent EquipamentoDisponivel {
+            - EquipamentoId equipamentoId
+        }
+    }
+
+    Aggregate Manutencao {
+        Entity RegistroManutencao {
+            aggregateRoot
+            - ManutencaoId manutencaoId
+            Long equipamentoId
+            - TipoManutencao tipo
+            Date dataInicio
+            Date dataFim
+            String responsavelTecnico
+            String descricaoIntervencao
+            BigDecimal custo
+        }
+
+        ValueObject ManutencaoId {
+            Long id
+        }
+
+        enum TipoManutencao {
+            PREVENTIVA, CORRETIVA
+        }
+
+        DomainEvent ManutencaoIniciada {
+            - ManutencaoId manutencaoId
+            Long equipamentoId
+            - TipoManutencao tipo
+        }
+
+        DomainEvent ManutencaoConcluida {
+            - ManutencaoId manutencaoId
+            Long equipamentoId
+            Date dataFim
+            BigDecimal custo
+        }
+    }
+}
+
+/* =============================================================
+   CONTEXT MAP
+   ============================================================= */
+ContextMap OdontoCareMap {
+    contains PacienteContext
+    contains AgendamentoContext
+    contains ProntuarioContext
+    contains TratamentoContext
+    contains FinanceiroContext
+    contains EspecialistaContext
+    contains EstoqueContext
+    contains InstrumentalContext
+    contains EquipamentoContext
+
+    PacienteContext [U, OHS, PL] -> [D, ACL] AgendamentoContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates Paciente
+    }
+
+    PacienteContext [U, OHS, PL] -> [D, ACL] ProntuarioContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates Paciente
+    }
+
+    PacienteContext [U, OHS, PL] -> [D, ACL] FinanceiroContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates Paciente
+    }
+
+    PacienteContext [U, OHS, PL] -> [D, ACL] TratamentoContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates Paciente
+    }
+
+    TratamentoContext [U, OHS, PL] -> [D, ACL] AgendamentoContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates PlanoTratamento
+    }
+
+    FinanceiroContext [U, OHS, PL] -> [D, ACL] AgendamentoContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates Inadimplencia
+    }
+
+    ProntuarioContext [U, OHS, PL] -> [D, ACL] TratamentoContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates Prontuario, Anamnese, TCLE
+    }
+
+    TratamentoContext [U, OHS, PL] -> [D, ACL] FinanceiroContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates PlanoTratamento
+    }
+
+    EspecialistaContext [U, OHS, PL] -> [D, ACL] TratamentoContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates Especialista
+    }
+
+    FinanceiroContext [U, OHS, PL] -> [D, ACL] EspecialistaContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates Pagamento
+    }
+
+    EstoqueContext [U, OHS, PL] -> [D, ACL] TratamentoContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates MaterialConsumivel
+    }
+
+    EstoqueContext [U, OHS, PL] -> [D, ACL] FinanceiroContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates Reposicao
+    }
+
+    InstrumentalContext [U, OHS, PL] -> [D, ACL] TratamentoContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates Instrumento
+    }
+
+    EquipamentoContext [U, OHS, PL] -> [D, ACL] TratamentoContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates Equipamento
+    }
+
+    EquipamentoContext [U, OHS, PL] -> [D, ACL] FinanceiroContext {
+        implementationTechnology "RESTful HTTP"
+        exposedAggregates Manutencao
+    }
+}

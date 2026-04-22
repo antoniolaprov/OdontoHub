@@ -1,0 +1,36 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Repasse' Aggregate" <<Rectangle>> {
+	class Repasse <<(A,#fffab8) Aggregate Root>> {
+		Long especialistaId
+		Long comissaoId
+		Long procedimentoId
+		Date dataPagamento
+		BigDecimal valorRepassado
+		Boolean estornado
+		String justificativaEstorno
+		RepasseId repasseId
+	}
+	class RepasseId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class RepasseRegistrado <<(E,#ff9f4b) Domain Event>> {
+		Long especialistaId
+		BigDecimal valor
+		Date dataPagamento
+		RepasseId repasseId
+	}
+	class RepasseEstornado <<(E,#ff9f4b) Domain Event>> {
+		Long especialistaId
+		String justificativa
+		RepasseId repasseId
+	}
+}
+Repasse --> RepasseId : repasseId
+RepasseRegistrado --> RepasseId : repasseId
+RepasseEstornado --> RepasseId : repasseId
+
+
+@enduml

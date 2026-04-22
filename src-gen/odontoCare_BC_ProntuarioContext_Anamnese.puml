@@ -1,0 +1,43 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Anamnese' Aggregate" <<Rectangle>> {
+	class Anamnese <<(A,#fffab8) Aggregate Root>> {
+		Long pacienteId
+		Date dataRegistro
+		String responsavel
+		String alergias
+		String contraindicacoes
+		String condicoesSistemicas
+		AnamneseId anamneseId
+	}
+	class AnamneseId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class VersaoAnamnese <<(V,DarkSeaGreen) Value Object>> {
+		Integer numero
+		Date dataAlteracao
+		String responsavel
+		String snapshot
+	}
+	class AnamneseRegistrada <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		AnamneseId anamneseId
+	}
+	class AnamneseAtualizada <<(E,#ff9f4b) Domain Event>> {
+		Integer novaVersao
+		String responsavel
+		AnamneseId anamneseId
+	}
+	class AlergiaDetectada <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		String substancia
+	}
+}
+Anamnese --> AnamneseId : anamneseId
+AnamneseRegistrada --> AnamneseId : anamneseId
+AnamneseAtualizada --> AnamneseId : anamneseId
+
+
+@enduml

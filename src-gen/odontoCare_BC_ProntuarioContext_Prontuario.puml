@@ -1,0 +1,62 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Prontuario' Aggregate" <<Rectangle>> {
+	class Prontuario <<(A,#fffab8) Aggregate Root>> {
+		Long pacienteId
+		Date dataAbertura
+		String justificativaEncerramento
+		Date dataEncerramento
+		ProntuarioId prontuarioId
+		StatusProntuario status
+	}
+	class FichaClinica <<(E,DarkSeaGreen) Entity>> {
+		Long agendamentoId
+		Date dataAtendimento
+		String odontograma
+		String queixas
+		String achadosClinicos
+		Boolean confirmada
+		FichaClinicaId fichaClinicaId
+		ProntuarioId prontuarioId
+	}
+	class ProntuarioId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class FichaClinicaId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class Evolucao <<(V,DarkSeaGreen) Value Object>> {
+		String descricao
+		Date dataRegistro
+		String responsavel
+	}
+	enum StatusProntuario {
+		ATIVO
+		ENCERRADO
+	}
+	class ProntuarioAberto <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		ProntuarioId prontuarioId
+	}
+	class FichaClinicaConfirmada <<(E,#ff9f4b) Domain Event>> {
+		FichaClinicaId fichaClinicaId
+		ProntuarioId prontuarioId
+	}
+	class ProntuarioEncerrado <<(E,#ff9f4b) Domain Event>> {
+		String justificativa
+		ProntuarioId prontuarioId
+	}
+}
+Prontuario --> ProntuarioId : prontuarioId
+Prontuario --> StatusProntuario : status
+FichaClinicaConfirmada --> FichaClinicaId : fichaClinicaId
+FichaClinica --> FichaClinicaId : fichaClinicaId
+FichaClinicaConfirmada --> ProntuarioId : prontuarioId
+FichaClinica --> ProntuarioId : prontuarioId
+ProntuarioAberto --> ProntuarioId : prontuarioId
+ProntuarioEncerrado --> ProntuarioId : prontuarioId
+
+
+@enduml

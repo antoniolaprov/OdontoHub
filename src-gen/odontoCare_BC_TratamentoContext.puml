@@ -1,0 +1,92 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'PlanoTratamento' Aggregate" <<Rectangle>> {
+	class PlanoTratamento <<(A,#fffab8) Aggregate Root>> {
+		Long pacienteId
+		Integer versaoAtual
+		Date dataCriacao
+		Date dataConclusao
+		PlanoTratamentoId planoTratamentoId
+		StatusPlano status
+	}
+	class Procedimento <<(E,DarkSeaGreen) Entity>> {
+		String descricao
+		BigDecimal valorUnitario
+		String justificativaCancelamento
+		Long especialistaId
+		Date dataRealizacao
+		ProcedimentoId procedimentoId
+		PlanoTratamentoId planoTratamentoId
+		StatusProcedimento status
+	}
+	class PlanoTratamentoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class ProcedimentoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class VersaoPlano <<(V,DarkSeaGreen) Value Object>> {
+		Integer numero
+		Date dataVersao
+		String descricaoAlteracao
+		String responsavel
+	}
+	class ItemMaterial <<(V,DarkSeaGreen) Value Object>> {
+		Long materialId
+		Integer quantidade
+	}
+	enum StatusPlano {
+		ATIVO
+		CONCLUIDO
+		CANCELADO
+	}
+	enum StatusProcedimento {
+		PENDENTE
+		REALIZADO
+		CANCELADO
+	}
+	class PlanoTratamentoCriado <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		PlanoTratamentoId planoId
+	}
+	class ProcedimentoRealizado <<(E,#ff9f4b) Domain Event>> {
+		Long especialistaId
+		Date dataRealizacao
+		ProcedimentoId procedimentoId
+		PlanoTratamentoId planoId
+	}
+	class ProcedimentoCancelado <<(E,#ff9f4b) Domain Event>> {
+		String justificativa
+		ProcedimentoId procedimentoId
+		PlanoTratamentoId planoId
+	}
+	class PlanoTratamentoConcluido <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		PlanoTratamentoId planoId
+	}
+	class PlanoTratamentoRevisado <<(E,#ff9f4b) Domain Event>> {
+		Integer novaVersao
+		String responsavel
+		PlanoTratamentoId planoId
+	}
+}
+ProcedimentoCancelado --> ProcedimentoId : procedimentoId
+PlanoTratamentoRevisado --> PlanoTratamentoId : planoId
+PlanoTratamento --> PlanoTratamentoId : planoTratamentoId
+ProcedimentoRealizado --> ProcedimentoId : procedimentoId
+ProcedimentoRealizado --> PlanoTratamentoId : planoId
+PlanoTratamento --> StatusPlano : status
+PlanoTratamentoConcluido --> PlanoTratamentoId : planoId
+Procedimento --> PlanoTratamentoId : planoTratamentoId
+Procedimento --> ProcedimentoId : procedimentoId
+PlanoTratamentoCriado --> PlanoTratamentoId : planoId
+ProcedimentoCancelado --> PlanoTratamentoId : planoId
+Procedimento --> StatusProcedimento : status
+legend left
+  This bounded context implements the subdomain 'TratamentoDomain'.
+end legend
+
+
+@enduml

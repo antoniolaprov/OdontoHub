@@ -1,0 +1,33 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Esterilizacao' Aggregate" <<Rectangle>> {
+	class CicloEsterilizacao <<(A,#fffab8) Aggregate Root>> {
+		Long instrumentoId
+		Date data
+		String responsavel
+		Date validade
+		EsterilizacaoId esterilizacaoId
+		MetodoEsterilizacao metodo
+	}
+	class EsterilizacaoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	enum MetodoEsterilizacao {
+		AUTOCLAVE
+		ESTUFA
+		GLUTARALDEIDO
+	}
+	class EsterilizacaoRegistrada <<(E,#ff9f4b) Domain Event>> {
+		Long instrumentoId
+		Date validade
+		EsterilizacaoId esterilizacaoId
+	}
+}
+CicloEsterilizacao --> MetodoEsterilizacao : metodo
+EsterilizacaoRegistrada --> EsterilizacaoId : esterilizacaoId
+CicloEsterilizacao --> EsterilizacaoId : esterilizacaoId
+
+
+@enduml

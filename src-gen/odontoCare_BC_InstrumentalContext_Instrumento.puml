@@ -1,0 +1,37 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Instrumento' Aggregate" <<Rectangle>> {
+	class Instrumento <<(A,#fffab8) Aggregate Root>> {
+		String nome
+		String tipo
+		Date ultimaEsterilizacao
+		Date validadeEsterilizacao
+		Boolean ativo
+		InstrumentoId instrumentoId
+		StatusEsterilizacao status
+	}
+	class InstrumentoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	enum StatusEsterilizacao {
+		ESTERILIZADO
+		PENDENTE_ESTERILIZACAO
+		VENCIDO
+	}
+	class InstrumentoPendenteEsterilizacao <<(E,#ff9f4b) Domain Event>> {
+		Long procedimentoId
+		InstrumentoId instrumentoId
+	}
+	class EsterilizacaoVencida <<(E,#ff9f4b) Domain Event>> {
+		InstrumentoId instrumentoId
+	}
+}
+Instrumento --> StatusEsterilizacao : status
+InstrumentoPendenteEsterilizacao --> InstrumentoId : instrumentoId
+EsterilizacaoVencida --> InstrumentoId : instrumentoId
+Instrumento --> InstrumentoId : instrumentoId
+
+
+@enduml

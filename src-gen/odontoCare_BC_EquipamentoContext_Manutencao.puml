@@ -1,0 +1,42 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Manutencao' Aggregate" <<Rectangle>> {
+	class RegistroManutencao <<(A,#fffab8) Aggregate Root>> {
+		Long equipamentoId
+		Date dataInicio
+		Date dataFim
+		String responsavelTecnico
+		String descricaoIntervencao
+		BigDecimal custo
+		ManutencaoId manutencaoId
+		TipoManutencao tipo
+	}
+	class ManutencaoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	enum TipoManutencao {
+		PREVENTIVA
+		CORRETIVA
+	}
+	class ManutencaoIniciada <<(E,#ff9f4b) Domain Event>> {
+		Long equipamentoId
+		ManutencaoId manutencaoId
+		TipoManutencao tipo
+	}
+	class ManutencaoConcluida <<(E,#ff9f4b) Domain Event>> {
+		Long equipamentoId
+		Date dataFim
+		BigDecimal custo
+		ManutencaoId manutencaoId
+	}
+}
+RegistroManutencao --> ManutencaoId : manutencaoId
+RegistroManutencao --> TipoManutencao : tipo
+ManutencaoConcluida --> ManutencaoId : manutencaoId
+ManutencaoIniciada --> ManutencaoId : manutencaoId
+ManutencaoIniciada --> TipoManutencao : tipo
+
+
+@enduml

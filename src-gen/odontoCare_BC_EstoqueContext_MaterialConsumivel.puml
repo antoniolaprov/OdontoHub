@@ -1,0 +1,42 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'MaterialConsumivel' Aggregate" <<Rectangle>> {
+	class MaterialConsumivel <<(A,#fffab8) Aggregate Root>> {
+		String nome
+		String descricao
+		String unidade
+		Integer saldoAtual
+		Integer pontoMinimo
+		Boolean ativo
+		MaterialId materialId
+	}
+	class MaterialId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class EstoqueBaixoDetectado <<(E,#ff9f4b) Domain Event>> {
+		String nomeMaterial
+		Integer saldoAtual
+		Integer pontoMinimo
+		MaterialId materialId
+	}
+	class BaixaEstoqueRealizada <<(E,#ff9f4b) Domain Event>> {
+		Integer quantidade
+		Long procedimentoId
+		MaterialId materialId
+	}
+	class EstoqueInsuficiente <<(E,#ff9f4b) Domain Event>> {
+		Integer saldoAtual
+		Integer quantidadeNecessaria
+		Long procedimentoId
+		MaterialId materialId
+	}
+}
+EstoqueBaixoDetectado --> MaterialId : materialId
+BaixaEstoqueRealizada --> MaterialId : materialId
+MaterialConsumivel --> MaterialId : materialId
+EstoqueInsuficiente --> MaterialId : materialId
+
+
+@enduml

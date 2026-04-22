@@ -1,0 +1,41 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'TCLE' Aggregate" <<Rectangle>> {
+	class TermoConsentimento <<(A,#fffab8) Aggregate Root>> {
+		Long pacienteId
+		Long planoTratamentoId
+		Date dataAssinatura
+		String versao
+		String justificativaSubstituicao
+		TCLEId tcleId
+		StatusTCLE status
+	}
+	class TCLEId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	enum StatusTCLE {
+		PENDENTE
+		ASSINADO
+		SUBSTITUIDO
+	}
+	class TCLEAssinado <<(E,#ff9f4b) Domain Event>> {
+		Long planoTratamentoId
+		Long pacienteId
+		TCLEId tcleId
+	}
+	class TCLESubstituido <<(E,#ff9f4b) Domain Event>> {
+		String justificativa
+		TCLEId tcleAntigoId
+		TCLEId tcleNovoId
+	}
+}
+TermoConsentimento --> StatusTCLE : status
+TermoConsentimento --> TCLEId : tcleId
+TCLESubstituido --> TCLEId : tcleAntigoId
+TCLEAssinado --> TCLEId : tcleId
+TCLESubstituido --> TCLEId : tcleNovoId
+
+
+@enduml

@@ -1,0 +1,77 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Agendamento' Aggregate" <<Rectangle>> {
+	class Agendamento <<(A,#fffab8) Aggregate Root>> {
+		Long pacienteId
+		Date dataHora
+		String responsavelRegistro
+		Date dataCriacao
+		Boolean autorizadoPorDentista
+		AgendamentoId agendamentoId
+		TipoAgendamento tipo
+		StatusAgendamento status
+	}
+	class AgendamentoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class HistoricoStatusAgendamento <<(V,DarkSeaGreen) Value Object>> {
+		Date dataAlteracao
+		String responsavel
+		String motivo
+		StatusAgendamento statusAnterior
+		StatusAgendamento statusNovo
+	}
+	enum TipoAgendamento {
+		CONSULTA
+		RETORNO
+	}
+	enum StatusAgendamento {
+		PENDENTE
+		CONFIRMADO
+		CANCELADO
+		REMARCADO
+	}
+	class AgendamentoRegistrado <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		Date dataHora
+		AgendamentoId agendamentoId
+		TipoAgendamento tipo
+	}
+	class AgendamentoConfirmado <<(E,#ff9f4b) Domain Event>> {
+		String responsavel
+		AgendamentoId agendamentoId
+	}
+	class AgendamentoCancelado <<(E,#ff9f4b) Domain Event>> {
+		String motivo
+		String responsavel
+		AgendamentoId agendamentoId
+	}
+	class AgendamentoRemarcado <<(E,#ff9f4b) Domain Event>> {
+		Date novaDataHora
+		String responsavel
+		AgendamentoId agendamentoId
+	}
+	class AgendamentoBloqueadoPorInadimplencia <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		AgendamentoId agendamentoId
+	}
+}
+AgendamentoRegistrado --> AgendamentoId : agendamentoId
+AgendamentoRegistrado --> TipoAgendamento : tipo
+AgendamentoCancelado --> AgendamentoId : agendamentoId
+Agendamento --> StatusAgendamento : status
+AgendamentoRemarcado --> AgendamentoId : agendamentoId
+HistoricoStatusAgendamento --> StatusAgendamento : statusAnterior
+HistoricoStatusAgendamento --> StatusAgendamento : statusNovo
+Agendamento --> TipoAgendamento : tipo
+AgendamentoConfirmado --> AgendamentoId : agendamentoId
+AgendamentoBloqueadoPorInadimplencia --> AgendamentoId : agendamentoId
+Agendamento --> AgendamentoId : agendamentoId
+legend left
+  This bounded context implements the subdomain 'AgendamentoDomain'.
+end legend
+
+
+@enduml
