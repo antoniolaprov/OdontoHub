@@ -1,48 +1,206 @@
-OdontoHub
-Um aplicativo de gestão para clínicas odontológicas focado em organização de prontuários, agendamentos e eficiência administrativa.
+# 🦷 OdontoHub
 
-Status: Projeto Acadêmico em Desenvolvimento
+Sistema de gestão para clínicas odontológicas focado em **organização de prontuários**, **agendamentos**, **controle administrativo** e **eficiência no atendimento ao paciente**.
 
-Projeto desenvolvido para a disciplina de Requisitos, Projeto de Software e Validação - Cesar School.
+> 📚 Projeto acadêmico desenvolvido para a disciplina de **Requisitos, Projeto de Software e Validação** – Cesar School.
 
-💡 Sobre o Projeto
-O OdontoHub foi concebido para resolver a complexidade na gestão de consultórios odontológicos. Nosso objetivo é criar uma ferramenta robusta e funcional que ajude dentistas e secretários a gerenciar pacientes, histórico de procedimentos e fluxos financeiros, garantindo que o atendimento seja otimizado através de requisitos bem validados e uma arquitetura de software sólida.
+---
 
-🔗 Documentação e Planejamento
-Toda a concepção, planejamento e prototipação do projeto podem ser acessados nos links abaixo:
+## 🚀 Como Executar os Testes (Importante para Avaliação)
 
-📄 [Funcionalidades e Histórias de Usuário](https://docs.google.com/document/d/1in_TcAc0lF9e5tBAOWedj4N48vXn65GTV9aAGn454JA/edit?usp=sharing):
-O documento detalhado com todas as regras de negócio e histórias de usuário.
+Para validar o projeto, o avaliador deverá seguir os passos abaixo:
 
-🌍 [Descrição do Domínio A análise do problema](https://docs.google.com/document/d/1in_TcAc0lF9e5tBAOWedj4N48vXn65GTV9aAGn454JA/edit?usp=sharing)
-contexto e solução proposta.
+### ✅ Pré-requisitos
 
-🎨 [Protótipo (Figma)](https://www.figma.com/make/qvOk0BQkaCuL9nJy93onZA/Low-Fidelity-Wireframes-for-OdontoCare?t=5TOoNjostOZmjDQl-1&preview-route=%2Fagendamento)
-Nossos protótipo de baixa fidelidade que dá vida às funcionalidades.
+* **Java 21+** instalado
+* Git instalado (opcional para clonagem)
 
-🗺️ [Mapa de Histórias](https://miro.com/app/board/uXjVGhatDtU=/?share_link_id=290223200342)
-O mapeamento visual da jornada do usuário e das entregas (releases).
+### ✅ Passo 1: Clonar o repositório
 
-📊 Divisão de Funcionalidades A planilha de organização e divisão das tarefas entre a equipe.
+```bash id="r1q0hf"
+git clone <URL_DO_REPOSITORIO>
+```
 
-🛠️ Tecnologias (Proposta)
-Backend: [Spring Boot]
+### ✅ Passo 2: Acessar a pasta do projeto
 
-Banco de Dados: [MySQL]
+```bash id="q4n6lp"
+cd odontohub
+```
 
-👥 Equipe
-Este projeto está sendo construído por 7 pessoas dedicadas:
+### ✅ Passo 3: Executar os testes automatizados
 
-João Patriota
+### Windows
 
-Mateus Dornellas
+```bash id="e5f2ud"
+.\mvnw.cmd test --no-transfer-progress
+```
 
-Jarbas Esteves
+### Linux / Mac
 
-Daniel Andrade
+```bash id="a2w8kc"
+./mvnw test --no-transfer-progress
+```
 
-Felipe Andrade
+> Todos os testes unitários e cenários BDD automatizados serão executados automaticamente.
 
-Antônio Augusto
+---
 
-Gabriel Belo
+## 📌 Status do Projeto
+
+🚧 Em desenvolvimento
+
+---
+
+## 💡 Sobre o Projeto
+
+O **OdontoHub** surgiu da necessidade de modernizar a administração de clínicas odontológicas, reduzindo processos manuais e melhorando a experiência de dentistas, secretários e pacientes.
+
+A plataforma centraliza informações clínicas e administrativas em um único ambiente digital, permitindo maior organização, rastreabilidade e produtividade.
+
+---
+
+## 🌍 Descrição do Domínio (Linguagem Onipresente)
+
+O domínio do sistema está relacionado à **gestão de clínicas odontológicas**.
+
+### Principais entidades do negócio:
+
+* **Paciente**: pessoa que recebe atendimento odontológico.
+* **Dentista**: profissional responsável pelos procedimentos clínicos.
+* **Secretário(a)**: responsável por agenda e suporte administrativo.
+* **Consulta**: atendimento agendado entre paciente e dentista.
+* **Prontuário**: histórico clínico do paciente.
+* **Procedimento**: tratamento realizado durante consultas.
+* **Pagamento**: registro financeiro referente aos atendimentos.
+* **Agenda**: calendário de horários disponíveis e ocupados.
+
+### Problemas identificados:
+
+* Agendamentos desorganizados
+* Dificuldade em localizar históricos clínicos
+* Controle financeiro manual
+* Falta de integração entre setores da clínica
+
+### Solução proposta:
+
+Criar uma plataforma web que permita gerenciar todos esses processos de forma simples, segura e eficiente.
+
+🔗 Documento completo da descrição do domínio:
+https://docs.google.com/document/d/1in_TcAc0lF9e5tBAOWedj4N48vXn65GTV9aAGn454JA/edit?usp=sharing
+
+---
+
+## 🗺️ Mapa de Histórias do Usuário
+
+O projeto foi estruturado utilizando **User Story Mapping**, organizando funcionalidades por jornadas e prioridades.
+
+🔗 Acesse o mapa completo:
+https://miro.com/app/board/uXjVGhatDtU=/?share_link_id=290223200342
+
+### Exemplos de histórias:
+
+* Como secretário, quero agendar consultas para organizar a agenda da clínica.
+* Como dentista, quero acessar o prontuário do paciente para consultar histórico clínico.
+* Como administrador, quero visualizar pagamentos para controlar o financeiro.
+* Como paciente, quero receber confirmação de consulta para evitar esquecimentos.
+
+---
+
+## 🎨 Protótipos
+
+Protótipos de baixa fidelidade foram desenvolvidos para validar fluxos e interfaces.
+
+🔗 Figma:
+https://www.figma.com/make/qvOk0BQkaCuL9nJy93onZA/Low-Fidelity-Wireframes-for-OdontoCare?t=5TOoNjostOZmjDQl-1&preview-route=%2Fagendamento
+
+---
+
+## 🧩 Modelagem de Domínio (Context Mapper)
+
+O sistema está sendo modelado com foco em **Domain-Driven Design (DDD)**.
+
+### Subdomínios identificados:
+
+* **Core Domain:** Gestão Clínica
+* **Supporting Domain:** Agendamento
+* **Supporting Domain:** Financeiro
+* **Generic Domain:** Autenticação e Usuários
+
+### Bounded Contexts:
+
+* Atendimento
+* Agenda
+* Financeiro
+* Usuários
+
+📄 O arquivo **CML** encontra-se em:
+
+```text id="w6f4yx"
+OdontoHub\odontohub\docs\domain
+```
+
+---
+
+## 🧪 Cenários de Teste BDD
+
+Os cenários BDD foram escritos em **Gherkin** e estão disponíveis em:
+
+```text id="g7j2da"
+OdontoHub\odontohub\docs\bdd
+```
+
+---
+
+## 🤖 Automação com Cucumber
+
+Os cenários BDD foram automatizados utilizando:
+
+* Java
+* Spring Boot
+* Cucumber
+* JUnit
+
+Executados via Maven Wrapper.
+
+---
+
+## 🛠️ Tecnologias Utilizadas
+
+### Backend
+
+* Spring Boot
+
+### Banco de Dados
+
+* MySQL
+
+### Testes
+
+* JUnit
+* Cucumber
+
+### Protótipos
+
+* Figma
+
+### Planejamento
+
+* Miro
+
+---
+
+## 👥 Equipe
+
+* João Patriota
+* Mateus Dornellas
+* Jarbas Esteves
+* Daniel Andrade
+* Felipe Andrade
+* Antônio Augusto
+* Gabriel Belo
+
+---
+
+## 📌 Instituição
+
+Projeto desenvolvido na **Cesar School**.
