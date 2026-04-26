@@ -17,7 +17,8 @@ O documento detalhado com todas as regras de negócio e histórias de usuário.
 🌍 [Descrição do Domínio A análise do problema](https://docs.google.com/document/d/1in_TcAc0lF9e5tBAOWedj4N48vXn65GTV9aAGn454JA/edit?usp=sharing)
 contexto e solução proposta.
 
-🎨 Protótipos (Figma) Nossos protótipos de baixa e média fidelidade que dão vida às funcionalidades.
+🎨 [Protótipo (Figma)](https://www.figma.com/make/qvOk0BQkaCuL9nJy93onZA/Low-Fidelity-Wireframes-for-OdontoCare?t=5TOoNjostOZmjDQl-1&preview-route=%2Fagendamento)
+Nossos protótipo de baixa fidelidade que dá vida às funcionalidades.
 
 🗺️ [Mapa de Histórias](https://miro.com/app/board/uXjVGhatDtU=/?share_link_id=290223200342)
 O mapeamento visual da jornada do usuário e das entregas (releases).
