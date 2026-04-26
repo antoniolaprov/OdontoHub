@@ -1,4 +1,4 @@
-package com.g4.odontohub.material.domain.application;
+package com.g4.odontohub.material.application;
 
 import com.g4.odontohub.material.domain.Material;
 import com.g4.odontohub.material.domain.MaterialRepository;
