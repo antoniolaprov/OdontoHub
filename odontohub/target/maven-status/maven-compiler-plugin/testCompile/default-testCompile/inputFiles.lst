@@ -1,19 +1,27 @@
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\CucumberRunnerTest.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryAgendamentoRepository.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryAnamneseRepository.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryCicloEsterilizacaoRepository.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryInstrumentoRepository.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryMaterialRepository.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryPagamentoRepository.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryPlanoTratamentoRepository.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryProntuarioRepository.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\OdontohubApplicationTests.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\AgendamentoSteps.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\AnamneseSteps.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\F05PlanoTratamentoSteps.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\F13EsterilizacaoSteps.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\MaterialSteps.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\PagamentoSteps.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\ProntuarioSteps.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\ScenarioContext.java
-C:\Users\danie\OneDrive\Área de Trabalho\web site\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\SharedSteps.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\CucumberRunnerTest.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryAgendamentoRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryAnamneseRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryCicloEsterilizacaoRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryComissaoRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryEquipamentoRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryInstrumentoRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryLancamentoCaixaRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryMaterialRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryPagamentoRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryPlanoTratamentoRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryProntuarioRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryRegistroManutencaoRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryRegraComissaoRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\infra\InMemoryRepasseRepository.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\OdontohubApplicationTests.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\AgendamentoSteps.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\AnamneseSteps.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\F05PlanoTratamentoSteps.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\F10ComissaoSteps.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\F13EsterilizacaoSteps.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\F14ManutencaoSteps.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\MaterialSteps.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\PagamentoSteps.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\ProntuarioSteps.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\ScenarioContext.java
+C:\Users\joaop\OneDrive\Desktop\PROJETOACABOU REQUSISTOS\OdontoHub\odontohub\src\test\java\com\g4\odontohub\steps\SharedSteps.java
