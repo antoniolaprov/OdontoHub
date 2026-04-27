@@ -6,7 +6,7 @@ import com.g4.odontohub.material.domain.Material;
 
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
-import io.cucumber.java.pt.Entao;
+import io.cucumber.java.pt.Então;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -36,7 +36,7 @@ public class MaterialSteps {
         }
     }
 
-    @Entao("o estoque do material deve ser {int} unidades")
+    @Então("o estoque do material deve ser {int} unidades")
     public void o_estoque_do_material_deve_ser(int qtdEsperada) {
         // Verificação via Service
         Material material = service.buscar(materialId);
