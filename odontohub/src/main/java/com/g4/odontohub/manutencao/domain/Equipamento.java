@@ -70,11 +70,4 @@ public class Equipamento {
         return ChronoUnit.DAYS.between(dataVerificacao, this.proximaManutencao);
     }
 
-    public void setStatusParaTeste(StatusEquipamento status) {
-        this.status = status;
-    }
-
-    public void setProximaManutencaoParaTeste(LocalDate data) {
-        this.proximaManutencao = data;
-    }
 }

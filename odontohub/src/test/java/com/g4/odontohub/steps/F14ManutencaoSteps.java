@@ -49,10 +49,13 @@ public class F14ManutencaoSteps {
     @Dado("que a {string} tem status {string}")
     public void equipamentoTemStatus(String nome, String status) {
         Equipamento e = equipamentoRepository.buscarPorNome(nome);
+        StatusEquipamento targetStatus = StatusEquipamento.valueOf(status);
         if (e == null) {
-            e = Equipamento.criar(nome, StatusEquipamento.valueOf(status), null);
-        } else {
-            e.setStatusParaTeste(StatusEquipamento.valueOf(status));
+            e = Equipamento.criar(nome, targetStatus, null);
+        } else if (targetStatus == StatusEquipamento.EM_MANUTENCAO) {
+            e.iniciarManutencao();
+        } else if (targetStatus == StatusEquipamento.DISPONIVEL) {
+            e.concluirManutencao(LocalDate.now());
         }
         equipamentoRepository.salvar(e);
     }
@@ -60,7 +63,10 @@ public class F14ManutencaoSteps {
     @Dado("que a próxima manutenção da {string} está agendada para {string}")
     public void proximaManutencaoAgendada(String nome, String data) {
         Equipamento e = equipamentoRepository.buscarPorNome(nome);
-        e.setProximaManutencaoParaTeste(LocalDate.parse(data));
+        LocalDate proxima = LocalDate.parse(data);
+        if (e.getPeriodicidadeDias() != null) {
+            e.concluirManutencao(proxima.minusDays(e.getPeriodicidadeDias()));
+        }
         equipamentoRepository.salvar(e);
     }
 
