@@ -72,8 +72,9 @@ public class F05EstoqueSteps {
 
     @E("a mensagem de erro deve informar {string}")
     public void aMensagemDeErroDeveInformar(String mensagemEsperada) {
-        assertNotNull(excecaoCapturada);
-        assertEquals(mensagemEsperada, excecaoCapturada.getMessage());
+        Exception ex = excecaoCapturada != null ? excecaoCapturada : SharedTestServices.getLastException();
+        assertNotNull(ex, "Esperava-se uma exceção, mas nenhuma foi lançada");
+        assertEquals(mensagemEsperada, ex.getMessage());
     }
 
     @Dado("que o procedimento {string} consome {int} unidades de {string}")

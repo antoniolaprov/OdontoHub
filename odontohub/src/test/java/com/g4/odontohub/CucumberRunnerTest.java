@@ -10,8 +10,10 @@ import static io.cucumber.junit.platform.engine.Constants.PLUGIN_PROPERTY_NAME;
 
 @Suite
 @IncludeEngines("cucumber")
+@SelectClasspathResource("features/F01_agendamento.feature")
 @SelectClasspathResource("features/F04_fluxo_caixa.feature")
 @SelectClasspathResource("features/F05_estoque.feature")
+@SelectClasspathResource("features/F06_esterilizacao.feature")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "com.g4.odontohub.steps")
 @ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "pretty, summary")
 public class CucumberRunnerTest {}

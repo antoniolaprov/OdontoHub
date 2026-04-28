@@ -8,11 +8,13 @@ public class SharedTestServices {
 
     private static FluxoCaixaApplicationService fluxoCaixaService;
     private static MaterialApplicationService materialService;
+    private static Exception lastException;
 
     public static void initialize() {
         DomainEventPublisher.reset();
         fluxoCaixaService = new FluxoCaixaApplicationService();
         materialService = new MaterialApplicationService(fluxoCaixaService);
+        lastException = null;
     }
 
     public static FluxoCaixaApplicationService getFluxoCaixaService() {
@@ -23,5 +25,13 @@ public class SharedTestServices {
     public static MaterialApplicationService getMaterialService() {
         if (materialService == null) initialize();
         return materialService;
+    }
+
+    public static void setLastException(Exception e) {
+        lastException = e;
+    }
+
+    public static Exception getLastException() {
+        return lastException;
     }
 }
