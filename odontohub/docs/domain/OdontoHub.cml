@@ -139,7 +139,7 @@ BoundedContext ProntuarioClinicoContext implements ProntuarioClinicoSubdomain {
         Entity Anamnese {
             aggregateRoot
             - AnamneseId id
-            Long pacienteId
+            -Anamnesepaciente pacienteId
             String alergias
             String contraindicacoes
             String condicoesSistemicas
@@ -147,6 +147,9 @@ BoundedContext ProntuarioClinicoContext implements ProntuarioClinicoSubdomain {
             Date dataRegistro
             Date dataUltimaAtualizacao
             String responsavelCadastro
+        }
+        ValueObject Anamnesepaciente{
+            long pacienteId
         }
 
         ValueObject AnamneseId {
@@ -194,12 +197,18 @@ BoundedContext ProntuarioClinicoContext implements ProntuarioClinicoSubdomain {
         Entity PlanoTratamento {
             aggregateRoot
             - PlanoId id
-            Long pacienteId
-            Long dentistaId
+            -Planotratamentopaciente pacienteId
+            -Planotratamentodentista dentistaId
             - StatusPlano status
             int versao
             Date dataCriacao
             String justificativaEncerramento
+        }
+        ValueObject Planotratamentopaciente{
+            Long pacienteId
+        }
+        ValueObject Planotratamentodentista{
+            Long dentistaId
         }
 
         Entity Procedimento {
@@ -207,13 +216,17 @@ BoundedContext ProntuarioClinicoContext implements ProntuarioClinicoSubdomain {
             String nome
             String tipoProcedimento
             - StatusProcedimento status
-            Long agendamentoVinculadoId
+            - ProcedimentoAgendamentoVinculado agendamentoVinculado
             - EvolucaoClinica evolucao
             Date dataRealizacao
             String executor
             String justificativaCancelamento
             Date dataConfirmacaoRegistro
         }
+        ValueObject ProcedimentoAgendamentoVinculado{
+            Long agendamentoVinculadoId
+        }
+            
 
         ValueObject PlanoId {
             Long id
@@ -298,11 +311,15 @@ BoundedContext ProntuarioClinicoContext implements ProntuarioClinicoSubdomain {
         Entity Prescricao {
             aggregateRoot
             - PrescricaoId id
-            Long pacienteId
-            Long dentistaId
+            - PrescricaoPacienteId pacienteId
+            - Prescricaodentista dentistaId
             Date dataPrescricao
             String observacoesTerapeuticas
         }
+        ValueObject Prescricaodentista{
+            Long dentistaId
+        }
+         
 
         Entity ItemPrescricao {
             - ItemPrescricaoId id
@@ -316,6 +333,10 @@ BoundedContext ProntuarioClinicoContext implements ProntuarioClinicoSubdomain {
         }
 
         ValueObject ItemPrescricaoId {
+            Long id
+        }
+
+        ValueObject PrescricaoPacienteId {
             Long id
         }
 
@@ -356,7 +377,7 @@ BoundedContext FinanceiroContext implements FinanceiroSubdomain {
         Entity Parcela {
             aggregateRoot
             - ParcelaId id
-            Long planoId
+            - ParcelaplanoId planoId
             double valor
             Date dataVencimento
             Date dataPagamento
@@ -364,6 +385,9 @@ BoundedContext FinanceiroContext implements FinanceiroSubdomain {
             int diasAtraso
             double multa
             double juros
+        }
+        ValueObject ParcelaplanoId{
+            Long planoId
         }
 
         ValueObject ParcelaId {
@@ -454,10 +478,13 @@ BoundedContext FinanceiroContext implements FinanceiroSubdomain {
         Entity Acordo {
             aggregateRoot
             - AcordoId id
-            Long pacienteId
+            - AcordoPacienteId pacienteId
             String parcelasSubstituidas
             Date dataCriacao
             boolean inadimplido
+        }
+        ValueObject AcordoPacienteId {
+            Long pacienteId
         }
 
         ValueObject AcordoId {
@@ -505,11 +532,14 @@ BoundedContext EstoqueContext implements EstoqueSubdomain {
 
         Entity Reposicao {
             - ReposicaoId id
-            Long materialId
+            - ReposicaomaterialId materialId
             String fornecedor
             int quantidade
             double custoUnitario
             Date dataEntrada
+        }
+        ValueObject ReposicaomaterialId{
+            Long materialId
         }
 
         ValueObject MaterialId {
@@ -612,13 +642,16 @@ BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSu
         Entity Recall {
             aggregateRoot
             - RecallId id
-            Long pacienteId
+            - RecallPacienteId pacienteId
             String procedimentoGatilho
             int diasParaRetorno
             Date dataGatilho
             Date dataRecallPrevisto
             - StatusRecall status
             boolean flagConversaoRecall
+        }
+        ValueObject RecallPacienteId {
+            Long pacienteId
         }
 
         ValueObject RecallId {
@@ -658,10 +691,16 @@ BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSu
         Entity FollowupPosOperatorio {
             aggregateRoot
             - FollowupId id
-            Long pacienteId
-            Long procedimentoId
+            - FollowupposoperatorioPacienteId pacienteId
+            - FollowupposoperatorioProcedimentoId procedimentoId
             boolean ligacao24hConcluida
             boolean ligacao72hConcluida
+        }
+        ValueObject FollowupposoperatorioPacienteId {
+            Long pacienteId
+        }
+        ValueObject FollowupposoperatorioProcedimentoId {
+            Long procedimentoId
         }
 
         ValueObject FollowupId {
@@ -709,12 +748,15 @@ BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSu
         Entity AnaliseChurn {
             aggregateRoot
             - ChurnId id
-            Long pacienteId
+            - AnaliseChurnPacienteId pacienteId
             Date ultimoAgendamento
             - StatusChurn statusChurn
             String motivoCancelamento
             boolean reativado
             Date dataReativacao
+        }
+        ValueObject AnaliseChurnPacienteId {
+            Long pacienteId
         }
 
         ValueObject ChurnId {
