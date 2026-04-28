@@ -1,0 +1,84 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Agendamento' Aggregate" <<Rectangle>> {
+	class Agendamento <<(A,#fffab8) Aggregate Root>> {
+		Date dataHora
+		String motivoCancelamento
+		String responsavelAlteracao
+		Date dataUltimaAlteracao
+		AgendamentoId id
+		PacienteId pacienteId
+		DentistaId dentistaId
+		TipoAtendimento tipo
+		StatusAgendamento status
+	}
+	class AgendamentoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class PacienteId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class DentistaId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	enum TipoAtendimento {
+		CONSULTA
+		RETORNO
+	}
+	enum StatusAgendamento {
+		AGENDADO
+		CONFIRMADO
+		CANCELADO
+		REMARCADO
+	}
+	class AgendamentoRegistrado <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		Long dentistaId
+		Date dataHora
+		AgendamentoId agendamentoId
+		TipoAtendimento tipo
+	}
+	class AgendamentoRecusadoPorDataPassada <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		Date dataInformada
+	}
+	class AgendamentoConfirmado <<(E,#ff9f4b) Domain Event>> {
+		String responsavel
+		AgendamentoId agendamentoId
+	}
+	class AgendamentoCancelado <<(E,#ff9f4b) Domain Event>> {
+		String motivo
+		String responsavel
+		AgendamentoId agendamentoId
+	}
+	class AgendamentoRemarcado <<(E,#ff9f4b) Domain Event>> {
+		Date novaDataHora
+		String responsavel
+		AgendamentoId agendamentoId
+	}
+	class AgendamentoService <<(S,DarkSeaGreen) Service>> {
+		void registrarAgendamento(PacienteId pacienteId, DentistaId dentistaId, Date dataHora, boolean pacienteTemPlanoAtivo, boolean pacienteInadimplente)
+		void confirmarAgendamento(AgendamentoId id, String responsavel)
+		void cancelarAgendamento(AgendamentoId id, String motivo, String responsavel)
+		void remarcarAgendamento(AgendamentoId id, Date novaDataHora, String responsavel)
+		boolean existeConflitoDeHorario(DentistaId dentistaId, Date dataHora)
+	}
+}
+Agendamento --> PacienteId : pacienteId
+AgendamentoRegistrado --> AgendamentoId : agendamentoId
+Agendamento --> TipoAtendimento : tipo
+Agendamento --> AgendamentoId : id
+AgendamentoCancelado --> AgendamentoId : agendamentoId
+Agendamento --> StatusAgendamento : status
+AgendamentoRemarcado --> AgendamentoId : agendamentoId
+AgendamentoRegistrado --> TipoAtendimento : tipo
+AgendamentoConfirmado --> AgendamentoId : agendamentoId
+Agendamento --> DentistaId : dentistaId
+legend left
+  This bounded context implements the subdomain 'AgendamentoSubdomain'.
+end legend
+
+
+@enduml

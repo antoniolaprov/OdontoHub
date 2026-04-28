@@ -1,0 +1,54 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Colaborador' Aggregate" <<Rectangle>> {
+	class Colaborador <<(A,#fffab8) Aggregate Root>> {
+		String nomeCompleto
+		String cpf
+		String telefone
+		String registroProfissional
+		ColaboradorId id
+		FuncaoColaborador funcao
+		StatusColaborador status
+	}
+	class ColaboradorId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	enum FuncaoColaborador {
+		AUXILIAR
+		RECEPCIONISTA
+	}
+	enum StatusColaborador {
+		ATIVO
+		INATIVO
+	}
+	class ColaboradorCadastrado <<(E,#ff9f4b) Domain Event>> {
+		ColaboradorId colaboradorId
+		FuncaoColaborador funcao
+	}
+	class ColaboradorDesativado <<(E,#ff9f4b) Domain Event>> {
+		ColaboradorId colaboradorId
+	}
+	class ColaboradorReativado <<(E,#ff9f4b) Domain Event>> {
+		ColaboradorId colaboradorId
+	}
+	class ColaboradorService <<(S,DarkSeaGreen) Service>> {
+		void cadastrarColaborador(String nomeCompleto, String cpf, String telefone, String funcao)
+		void desativarColaborador(ColaboradorId colaboradorId)
+		void reativarColaborador(ColaboradorId colaboradorId)
+	}
+}
+ColaboradorReativado --> ColaboradorId : colaboradorId
+ColaboradorCadastrado --> ColaboradorId : colaboradorId
+ColaboradorCadastrado --> FuncaoColaborador : funcao
+Colaborador --> StatusColaborador : status
+Colaborador --> ColaboradorId : id
+Colaborador --> FuncaoColaborador : funcao
+ColaboradorDesativado --> ColaboradorId : colaboradorId
+legend left
+  This bounded context implements the subdomain 'EquipeSubdomain'.
+end legend
+
+
+@enduml

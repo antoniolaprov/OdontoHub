@@ -1,0 +1,54 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'AnaliseChurn' Aggregate" <<Rectangle>> {
+	class AnaliseChurn <<(A,#fffab8) Aggregate Root>> {
+		Date ultimoAgendamento
+		String motivoCancelamento
+		boolean reativado
+		Date dataReativacao
+		ChurnId id
+		AnaliseChurnPacienteId pacienteId
+		StatusChurn statusChurn
+	}
+	class AnaliseChurnPacienteId <<(V,DarkSeaGreen) Value Object>> {
+		Long pacienteId
+	}
+	class ChurnId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	enum StatusChurn {
+		ATIVO
+		ZONA_DE_RISCO
+		EVADIDO
+		REATIVADO
+	}
+	class PacienteClassificadoComoChurn <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		ChurnId churnId
+	}
+	class PacienteEntrandoZonaDeRisco <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		int mesesSemRetorno
+		ChurnId churnId
+	}
+	class PacienteReativado <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		ChurnId churnId
+	}
+	class ChurnService <<(S,DarkSeaGreen) Service>> {
+		void recalcularStatusChurn()
+		double calcularReceitaPerdida(Long dentistaId, int horasDeAgendaOciosa, double valorMedioHora)
+		void registrarCancelamentoComMotivo(Long agendamentoId, String motivoCancelamento)
+	}
+}
+AnaliseChurn --> ChurnId : id
+AnaliseChurn --> AnaliseChurnPacienteId : pacienteId
+PacienteReativado --> ChurnId : churnId
+PacienteEntrandoZonaDeRisco --> ChurnId : churnId
+AnaliseChurn --> StatusChurn : statusChurn
+PacienteClassificadoComoChurn --> ChurnId : churnId
+
+
+@enduml

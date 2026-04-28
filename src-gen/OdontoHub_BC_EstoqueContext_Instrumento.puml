@@ -1,0 +1,52 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Instrumento' Aggregate" <<Rectangle>> {
+	class Instrumento <<(A,#fffab8) Aggregate Root>> {
+		String nome
+		String categoria
+		Date dataUltimaEsterilizacao
+		Date dataVencimento
+		int prazoValidadeDias
+		String responsavelEsterilizacao
+		InstrumentoId id
+		StatusEsterilizacao status
+	}
+	class InstrumentoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	enum StatusEsterilizacao {
+		ESTERIL
+		CONTAMINADO
+		VENCIDO
+	}
+	class InstrumentoEsterilizado <<(E,#ff9f4b) Domain Event>> {
+		Date dataEsterilizacao
+		String responsavel
+		Date novaDataVencimento
+		InstrumentoId instrumentoId
+	}
+	class InstrumentoContaminado <<(E,#ff9f4b) Domain Event>> {
+		InstrumentoId instrumentoId
+	}
+	class InstrumentoVencido <<(E,#ff9f4b) Domain Event>> {
+		String nome
+		InstrumentoId instrumentoId
+	}
+	class InstrumentoService <<(S,DarkSeaGreen) Service>> {
+		void marcarComoEsteril(InstrumentoId instrumentoId, Date dataEsterilizacao, String responsavel)
+		void marcarComoContaminado(InstrumentoId instrumentoId)
+		void recalcularValidadeGlobal(int novoPrazoDias)
+		void verificarEAtualizarVencidos()
+		void listarEstereisDentroDoPrazo()
+	}
+}
+Instrumento --> StatusEsterilizacao : status
+InstrumentoContaminado --> InstrumentoId : instrumentoId
+InstrumentoVencido --> InstrumentoId : instrumentoId
+InstrumentoEsterilizado --> InstrumentoId : instrumentoId
+Instrumento --> InstrumentoId : id
+
+
+@enduml

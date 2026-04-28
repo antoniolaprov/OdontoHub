@@ -1,0 +1,228 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Anamnese' Aggregate" <<Rectangle>> {
+	class Anamnese <<(A,#fffab8) Aggregate Root>> {
+		String alergias
+		String contraindicacoes
+		String condicoesSistemicas
+		int versaoAtual
+		Date dataRegistro
+		Date dataUltimaAtualizacao
+		String responsavelCadastro
+		AnamneseId id
+		Anamnesepaciente pacienteId
+	}
+	class Anamnesepaciente <<(V,DarkSeaGreen) Value Object>> {
+		long pacienteId
+	}
+	class AnamneseId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class VersaoAnamnese <<(V,DarkSeaGreen) Value Object>> {
+		int versao
+		String alergias
+		String contraindicacoes
+		String condicoesSistemicas
+		Date dataAlteracao
+		String responsavel
+	}
+	class AnamneseRegistrada <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		String responsavel
+		AnamneseId anamneseId
+	}
+	class AnamneseAtualizada <<(E,#ff9f4b) Domain Event>> {
+		int novaVersao
+		String responsavel
+		AnamneseId anamneseId
+	}
+	class AlertaAlergiaDisparado <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		String substanciaComRisco
+		String alergiaRegistrada
+	}
+	class AnamneseService <<(S,DarkSeaGreen) Service>> {
+		void registrarAnamnese(Long pacienteId, String alergias, String contraindicacoes, String responsavel)
+		void adicionarAlergia(Long pacienteId, String novaAlergia, String responsavel)
+		void atualizarCondicoesSistemicas(Long pacienteId, String condicoes, String responsavel)
+		boolean anamneseExiste(Long pacienteId)
+		String verificarAlergiaParaSubstancia(Long pacienteId, String substancia)
+	}
+}
+package "'PlanoTratamento' Aggregate" <<Rectangle>> {
+	class PlanoTratamento <<(A,#fffab8) Aggregate Root>> {
+		int versao
+		Date dataCriacao
+		String justificativaEncerramento
+		PlanoId id
+		Planotratamentopaciente pacienteId
+		Planotratamentodentista dentistaId
+		StatusPlano status
+	}
+	class Planotratamentopaciente <<(V,DarkSeaGreen) Value Object>> {
+		Long pacienteId
+	}
+	class Planotratamentodentista <<(V,DarkSeaGreen) Value Object>> {
+		Long dentistaId
+	}
+	class Procedimento <<(E,DarkSeaGreen) Entity>> {
+		String nome
+		String tipoProcedimento
+		Date dataRealizacao
+		String executor
+		String justificativaCancelamento
+		Date dataConfirmacaoRegistro
+		ProcedimentoId id
+		StatusProcedimento status
+		ProcedimentoAgendamentoVinculado agendamentoVinculado
+		EvolucaoClinica evolucao
+	}
+	class ProcedimentoAgendamentoVinculado <<(V,DarkSeaGreen) Value Object>> {
+		Long agendamentoVinculadoId
+	}
+	class PlanoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class ProcedimentoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class EvolucaoClinica <<(V,DarkSeaGreen) Value Object>> {
+		String descricaoTecnica
+		String executor
+		Date dataRegistro
+	}
+	class LogAuditoria <<(V,DarkSeaGreen) Value Object>> {
+		String acao
+		String justificativa
+		String responsavel
+		Date dataAcao
+	}
+	enum StatusPlano {
+		EM_ANDAMENTO
+		CONCLUIDO
+		ENCERRADO
+	}
+	enum StatusProcedimento {
+		PENDENTE
+		REALIZADO
+		CANCELADO
+	}
+	class PlanoTratamentoCriado <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		int versaoInicial
+		PlanoId planoId
+	}
+	class ProcedimentoAdicionado <<(E,#ff9f4b) Domain Event>> {
+		int novaVersaoPlano
+		ProcedimentoId procedimentoId
+		PlanoId planoId
+	}
+	class ProcedimentoRealizado <<(E,#ff9f4b) Domain Event>> {
+		String tipoProcedimento
+		Date dataRealizacao
+		String executor
+		ProcedimentoId procedimentoId
+		PlanoId planoId
+	}
+	class ProcedimentoCancelado <<(E,#ff9f4b) Domain Event>> {
+		String justificativa
+		ProcedimentoId procedimentoId
+	}
+	class ProcedimentoExcluidoDentroJanela <<(E,#ff9f4b) Domain Event>> {
+		String justificativa
+		String responsavel
+		Date dataExclusao
+		ProcedimentoId procedimentoId
+	}
+	class PlanoEncerrado <<(E,#ff9f4b) Domain Event>> {
+		String justificativa
+		PlanoId planoId
+	}
+	class PlanoTratamentoService <<(S,DarkSeaGreen) Service>> {
+		void criarPlano(Long pacienteId, Long dentistaId)
+		void adicionarProcedimento(PlanoId planoId, String nomeProcedimento, String tipoProcedimento)
+		void realizarProcedimento(ProcedimentoId procedimentoId, String descricaoEvolucao, Long agendamentoId, String executor)
+		void cancelarProcedimento(ProcedimentoId procedimentoId, String justificativa)
+		void excluirProcedimento(ProcedimentoId procedimentoId, String justificativa, String responsavel)
+		void encerrarPlano(PlanoId planoId, String justificativa)
+		boolean dentroJanelaDeCorrecao(ProcedimentoId procedimentoId)
+	}
+}
+package "'Prescricao' Aggregate" <<Rectangle>> {
+	class Prescricao <<(A,#fffab8) Aggregate Root>> {
+		Date dataPrescricao
+		String observacoesTerapeuticas
+		PrescricaoId id
+		PrescricaoPacienteId pacienteId
+		Prescricaodentista dentistaId
+	}
+	class Prescricaodentista <<(V,DarkSeaGreen) Value Object>> {
+		Long dentistaId
+	}
+	class ItemPrescricao <<(E,DarkSeaGreen) Entity>> {
+		String nomeMedicamento
+		String dosagem
+		String periodoUso
+		ItemPrescricaoId id
+	}
+	class PrescricaoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class ItemPrescricaoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class PrescricaoPacienteId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class PrescricaoRegistrada <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		Long dentistaId
+		Date dataPrescricao
+		PrescricaoId prescricaoId
+	}
+	class PrescricaoRepetida <<(E,#ff9f4b) Domain Event>> {
+		Long prescricaoOrigemId
+		Date dataNovaPrescricao
+		PrescricaoId novaPrescricaoId
+	}
+	class PrescricaoService <<(S,DarkSeaGreen) Service>> {
+		void registrarPrescricao(Long pacienteId, Long dentistaId, String medicamentos, String observacoes)
+		void repetirPrescricao(Long prescricaoOrigemId, Long dentistaId)
+		void listarPorPaciente(Long pacienteId)
+		void filtrarPorPeriodoEDentista(Long dentistaId, Date dataInicio, Date dataFim)
+	}
+}
+ItemPrescricao --> ItemPrescricaoId : id
+Procedimento --> ProcedimentoAgendamentoVinculado : agendamentoVinculado
+PlanoTratamento --> Planotratamentodentista : dentistaId
+AnamneseAtualizada --> AnamneseId : anamneseId
+ProcedimentoAdicionado --> ProcedimentoId : procedimentoId
+ProcedimentoAdicionado --> PlanoId : planoId
+PlanoTratamento --> PlanoId : id
+AnamneseRegistrada --> AnamneseId : anamneseId
+PlanoEncerrado --> PlanoId : planoId
+Procedimento --> ProcedimentoId : id
+ProcedimentoExcluidoDentroJanela --> ProcedimentoId : procedimentoId
+Prescricao --> PrescricaoId : id
+Prescricao --> PrescricaoPacienteId : pacienteId
+PrescricaoRegistrada --> PrescricaoId : prescricaoId
+Prescricao --> Prescricaodentista : dentistaId
+Procedimento --> StatusProcedimento : status
+Anamnese --> AnamneseId : id
+ProcedimentoCancelado --> ProcedimentoId : procedimentoId
+PlanoTratamento --> Planotratamentopaciente : pacienteId
+ProcedimentoRealizado --> PlanoId : planoId
+Anamnese --> Anamnesepaciente : pacienteId
+ProcedimentoRealizado --> ProcedimentoId : procedimentoId
+PrescricaoRepetida --> PrescricaoId : novaPrescricaoId
+PlanoTratamento --> StatusPlano : status
+Procedimento --> EvolucaoClinica : evolucao
+PlanoTratamentoCriado --> PlanoId : planoId
+legend left
+  This bounded context implements the subdomain 'ProntuarioClinicoSubdomain'.
+end legend
+
+
+@enduml

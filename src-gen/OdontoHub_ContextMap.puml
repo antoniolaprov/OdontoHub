@@ -1,0 +1,94 @@
+@startuml
+
+skinparam componentStyle uml2
+
+component [AgendamentoContext]
+note right of [AgendamentoContext]
+Reserva horários, impede conflitos 
+de dentista, classifica o tipo 
+de atendimento automaticamente 
+e aplica restrições de inadimplência. 
+
+end note
+component [ProntuarioClinicoContext]
+note right of [ProntuarioClinicoContext]
+Prontuário vitalício com anamnese 
+obrigatória pré-tratamento, plano 
+de tratamento versionado e ficha 
+clínica com janela de imutabilidade 
+de 24 horas. 
+end note
+component [FinanceiroContext]
+note right of [FinanceiroContext]
+Controla parcelas, inadimplência, 
+acordos e o fluxo de caixa com 
+cálculo automático de juros, multas 
+e projeção de saldo. 
+end note
+component [EstoqueContext]
+note right of [EstoqueContext]
+Controla saldo de materiais consumíveis 
+e validade de instrumentos esterilizados, 
+gerando alertas e integrando reposições 
+ao fluxo de caixa. 
+end note
+component [RelacionamentoPacienteContext]
+note right of [RelacionamentoPacienteContext]
+Automatiza recall preventivo, 
+follow-up pós-cirúrgico com checklists 
+obrigatórios e análise de churn 
+para retenção e cuidado contínuo. 
+
+end note
+component [EquipeContext]
+note right of [EquipeContext]
+Cadastra e gerencia colaboradores 
+(Auxiliares e Recepcionistas) 
+com controle de status Ativo/Inativo 
+e rastreabilidade de ações operacionais. 
+
+end note
+
+interface "Java" as AgendamentoContext_to_ProntuarioClinicoContext
+[ProntuarioClinicoContext] --> AgendamentoContext_to_ProntuarioClinicoContext : OPEN_HOST_SERVICE, PUBLISHED_LANGUAGE
+AgendamentoContext_to_ProntuarioClinicoContext <.. [AgendamentoContext] : use Aggregate PlanoTratamento via ANTICORRUPTION_LAYER
+
+interface "Java" as AgendamentoContext_to_FinanceiroContext
+[FinanceiroContext] --> AgendamentoContext_to_FinanceiroContext : OPEN_HOST_SERVICE, PUBLISHED_LANGUAGE
+AgendamentoContext_to_FinanceiroContext <.. [AgendamentoContext] : use Aggregate Parcela via ANTICORRUPTION_LAYER
+
+interface "Java" as ProntuarioClinicoContext_to_AgendamentoContext
+[AgendamentoContext] --> ProntuarioClinicoContext_to_AgendamentoContext : OPEN_HOST_SERVICE, PUBLISHED_LANGUAGE
+ProntuarioClinicoContext_to_AgendamentoContext <.. [ProntuarioClinicoContext] : use Aggregate Agendamento as CONFORMIST
+
+interface "Java" as FinanceiroContext_to_ProntuarioClinicoContext
+[ProntuarioClinicoContext] --> FinanceiroContext_to_ProntuarioClinicoContext : OPEN_HOST_SERVICE, PUBLISHED_LANGUAGE
+FinanceiroContext_to_ProntuarioClinicoContext <.. [FinanceiroContext] : use Aggregate PlanoTratamento as CONFORMIST
+
+interface "Java" as FinanceiroContext_to_EstoqueContext
+[EstoqueContext] --> FinanceiroContext_to_EstoqueContext : OPEN_HOST_SERVICE, PUBLISHED_LANGUAGE
+FinanceiroContext_to_EstoqueContext <.. [FinanceiroContext] : use Aggregate MaterialConsumivel as CONFORMIST
+
+interface "Java" as EstoqueContext_to_ProntuarioClinicoContext
+[ProntuarioClinicoContext] --> EstoqueContext_to_ProntuarioClinicoContext : OPEN_HOST_SERVICE, PUBLISHED_LANGUAGE
+EstoqueContext_to_ProntuarioClinicoContext <.. [EstoqueContext] : use Aggregate PlanoTratamento via ANTICORRUPTION_LAYER
+
+interface "Java" as RelacionamentoPacienteContext_to_AgendamentoContext
+[AgendamentoContext] --> RelacionamentoPacienteContext_to_AgendamentoContext : OPEN_HOST_SERVICE, PUBLISHED_LANGUAGE
+RelacionamentoPacienteContext_to_AgendamentoContext <.. [RelacionamentoPacienteContext] : use Aggregate Agendamento via ANTICORRUPTION_LAYER
+
+interface "Java" as RelacionamentoPacienteContext_to_ProntuarioClinicoContext
+[ProntuarioClinicoContext] --> RelacionamentoPacienteContext_to_ProntuarioClinicoContext : OPEN_HOST_SERVICE, PUBLISHED_LANGUAGE
+RelacionamentoPacienteContext_to_ProntuarioClinicoContext <.. [RelacionamentoPacienteContext] : use Aggregate PlanoTratamento via ANTICORRUPTION_LAYER
+
+interface "Java" as EstoqueContext_to_EquipeContext
+[EquipeContext] --> EstoqueContext_to_EquipeContext : OPEN_HOST_SERVICE, PUBLISHED_LANGUAGE
+EstoqueContext_to_EquipeContext <.. [EstoqueContext] : use Aggregate Colaborador via ANTICORRUPTION_LAYER
+
+interface "Java" as AgendamentoContext_to_EquipeContext
+[EquipeContext] --> AgendamentoContext_to_EquipeContext : OPEN_HOST_SERVICE, PUBLISHED_LANGUAGE
+AgendamentoContext_to_EquipeContext <.. [AgendamentoContext] : use Aggregate Colaborador via ANTICORRUPTION_LAYER
+
+
+
+@enduml

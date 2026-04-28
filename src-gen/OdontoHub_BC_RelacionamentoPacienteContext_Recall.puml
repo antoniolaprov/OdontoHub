@@ -1,0 +1,56 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Recall' Aggregate" <<Rectangle>> {
+	class Recall <<(A,#fffab8) Aggregate Root>> {
+		String procedimentoGatilho
+		int diasParaRetorno
+		Date dataGatilho
+		Date dataRecallPrevisto
+		boolean flagConversaoRecall
+		RecallId id
+		RecallPacienteId pacienteId
+		StatusRecall status
+	}
+	class RecallPacienteId <<(V,DarkSeaGreen) Value Object>> {
+		Long pacienteId
+	}
+	class RecallId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	enum StatusRecall {
+		NA_FILA
+		AGENDADO
+		CONVERTIDO
+		CANCELADO
+	}
+	class RecallDisparado <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		String procedimentoGatilho
+		Date dataRetornoPrevisto
+		RecallId recallId
+	}
+	class RecallConvertido <<(E,#ff9f4b) Domain Event>> {
+		Long agendamentoGeradoId
+		RecallId recallId
+	}
+	class RecallCanceladoPorAgendamentoExistente <<(E,#ff9f4b) Domain Event>> {
+		Long agendamentoExistenteId
+		RecallId recallId
+	}
+	class RecallService <<(S,DarkSeaGreen) Service>> {
+		void dispararRecall(Long pacienteId, String procedimentoGatilho, int diasParaRetorno)
+		void verificarECancelarSeJaAgendado(Long pacienteId)
+		void registrarConversao(RecallId recallId, Long agendamentoId)
+	}
+}
+RecallDisparado --> RecallId : recallId
+RecallCanceladoPorAgendamentoExistente --> RecallId : recallId
+Recall --> RecallId : id
+Recall --> StatusRecall : status
+Recall --> RecallPacienteId : pacienteId
+RecallConvertido --> RecallId : recallId
+
+
+@enduml

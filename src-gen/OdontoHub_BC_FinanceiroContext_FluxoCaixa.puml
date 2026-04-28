@@ -1,0 +1,50 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'FluxoCaixa' Aggregate" <<Rectangle>> {
+	class LancamentoFinanceiro <<(A,#fffab8) Aggregate Root>> {
+		double valor
+		Date data
+		String categoria
+		String descricao
+		boolean geradoAutomaticamente
+		LancamentoId id
+		TipoLancamento tipo
+	}
+	class LancamentoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	enum TipoLancamento {
+		ENTRADA
+		SAIDA
+	}
+	class EntradaGeradaAutomaticamente <<(E,#ff9f4b) Domain Event>> {
+		double valor
+		Date data
+		String origem
+		LancamentoId lancamentoId
+	}
+	class SaidaRegistradaManualmente <<(E,#ff9f4b) Domain Event>> {
+		double valor
+		String categoria
+		LancamentoId lancamentoId
+	}
+	class AlertaFluxoNegativo <<(E,#ff9f4b) Domain Event>> {
+		double saldoProjetado
+		Date mesReferencia
+	}
+	class FluxoCaixaService <<(S,DarkSeaGreen) Service>> {
+		void registrarEntradaAutomatica(double valor, String descricao, Date data)
+		void registrarSaidaManual(double valor, String categoria, String descricao)
+		double calcularSaldoProjetado()
+		double calcularPontoDeEquilibrio(double custoFixoMensal, double valorMedioProcedimento)
+	}
+}
+EntradaGeradaAutomaticamente --> LancamentoId : lancamentoId
+LancamentoFinanceiro --> LancamentoId : id
+SaidaRegistradaManualmente --> LancamentoId : lancamentoId
+LancamentoFinanceiro --> TipoLancamento : tipo
+
+
+@enduml

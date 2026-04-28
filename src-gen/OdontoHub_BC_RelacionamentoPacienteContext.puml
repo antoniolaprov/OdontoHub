@@ -1,0 +1,160 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Recall' Aggregate" <<Rectangle>> {
+	class Recall <<(A,#fffab8) Aggregate Root>> {
+		String procedimentoGatilho
+		int diasParaRetorno
+		Date dataGatilho
+		Date dataRecallPrevisto
+		boolean flagConversaoRecall
+		RecallId id
+		RecallPacienteId pacienteId
+		StatusRecall status
+	}
+	class RecallPacienteId <<(V,DarkSeaGreen) Value Object>> {
+		Long pacienteId
+	}
+	class RecallId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	enum StatusRecall {
+		NA_FILA
+		AGENDADO
+		CONVERTIDO
+		CANCELADO
+	}
+	class RecallDisparado <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		String procedimentoGatilho
+		Date dataRetornoPrevisto
+		RecallId recallId
+	}
+	class RecallConvertido <<(E,#ff9f4b) Domain Event>> {
+		Long agendamentoGeradoId
+		RecallId recallId
+	}
+	class RecallCanceladoPorAgendamentoExistente <<(E,#ff9f4b) Domain Event>> {
+		Long agendamentoExistenteId
+		RecallId recallId
+	}
+	class RecallService <<(S,DarkSeaGreen) Service>> {
+		void dispararRecall(Long pacienteId, String procedimentoGatilho, int diasParaRetorno)
+		void verificarECancelarSeJaAgendado(Long pacienteId)
+		void registrarConversao(RecallId recallId, Long agendamentoId)
+	}
+}
+package "'FollowupPosOperatorio' Aggregate" <<Rectangle>> {
+	class FollowupPosOperatorio <<(A,#fffab8) Aggregate Root>> {
+		boolean ligacao24hConcluida
+		boolean ligacao72hConcluida
+		FollowupId id
+		FollowupposoperatorioPacienteId pacienteId
+		FollowupposoperatorioProcedimentoId procedimentoId
+	}
+	class FollowupposoperatorioPacienteId <<(V,DarkSeaGreen) Value Object>> {
+		Long pacienteId
+	}
+	class FollowupposoperatorioProcedimentoId <<(V,DarkSeaGreen) Value Object>> {
+		Long procedimentoId
+	}
+	class FollowupId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class ChecklistFollowup <<(V,DarkSeaGreen) Value Object>> {
+		boolean sangramentoAtivo
+		int nivelDor
+		String observacoes
+		Date dataLigacao
+		String responsavel
+	}
+	class FollowupCriado <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		Long procedimentoId
+		FollowupId followupId
+	}
+	class ChecklistRegistrado <<(E,#ff9f4b) Domain Event>> {
+		String tipoLigacao
+		boolean sangramentoAtivo
+		int nivelDor
+		FollowupId followupId
+	}
+	class EmergenciaIdentificada <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		Long dentistaResponsavelId
+		boolean sangramentoAtivo
+		int nivelDor
+		FollowupId followupId
+	}
+	class FollowupService <<(S,DarkSeaGreen) Service>> {
+		void criarFollowup(Long pacienteId, Long procedimentoId)
+		void registrarChecklist24h(FollowupId followupId, boolean sangramento, int nivelDor, String observacoes, String responsavel)
+		void registrarChecklist72h(FollowupId followupId, boolean sangramento, int nivelDor, String observacoes, String responsavel)
+	}
+}
+package "'AnaliseChurn' Aggregate" <<Rectangle>> {
+	class AnaliseChurn <<(A,#fffab8) Aggregate Root>> {
+		Date ultimoAgendamento
+		String motivoCancelamento
+		boolean reativado
+		Date dataReativacao
+		ChurnId id
+		AnaliseChurnPacienteId pacienteId
+		StatusChurn statusChurn
+	}
+	class AnaliseChurnPacienteId <<(V,DarkSeaGreen) Value Object>> {
+		Long pacienteId
+	}
+	class ChurnId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	enum StatusChurn {
+		ATIVO
+		ZONA_DE_RISCO
+		EVADIDO
+		REATIVADO
+	}
+	class PacienteClassificadoComoChurn <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		ChurnId churnId
+	}
+	class PacienteEntrandoZonaDeRisco <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		int mesesSemRetorno
+		ChurnId churnId
+	}
+	class PacienteReativado <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		ChurnId churnId
+	}
+	class ChurnService <<(S,DarkSeaGreen) Service>> {
+		void recalcularStatusChurn()
+		double calcularReceitaPerdida(Long dentistaId, int horasDeAgendaOciosa, double valorMedioHora)
+		void registrarCancelamentoComMotivo(Long agendamentoId, String motivoCancelamento)
+	}
+}
+AnaliseChurn --> ChurnId : id
+RecallDisparado --> RecallId : recallId
+FollowupPosOperatorio --> FollowupposoperatorioPacienteId : pacienteId
+FollowupPosOperatorio --> FollowupposoperatorioProcedimentoId : procedimentoId
+Recall --> StatusRecall : status
+AnaliseChurn --> AnaliseChurnPacienteId : pacienteId
+PacienteReativado --> ChurnId : churnId
+FollowupPosOperatorio --> FollowupId : id
+RecallCanceladoPorAgendamentoExistente --> RecallId : recallId
+Recall --> RecallId : id
+FollowupCriado --> FollowupId : followupId
+PacienteEntrandoZonaDeRisco --> ChurnId : churnId
+AnaliseChurn --> StatusChurn : statusChurn
+Recall --> RecallPacienteId : pacienteId
+RecallConvertido --> RecallId : recallId
+ChecklistRegistrado --> FollowupId : followupId
+EmergenciaIdentificada --> FollowupId : followupId
+PacienteClassificadoComoChurn --> ChurnId : churnId
+legend left
+  This bounded context implements the subdomain 'RelacionamentoPacienteSubdomain'.
+end legend
+
+
+@enduml
