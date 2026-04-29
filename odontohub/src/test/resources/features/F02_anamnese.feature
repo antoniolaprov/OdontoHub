@@ -6,7 +6,7 @@ Funcionalidade: Registro de Anamnese
   Para que contraindicações e alergias sejam identificadas antes de qualquer procedimento
 
   Contexto:
-    Dado que o paciente "Maria Oliveira" está cadastrado no sistema
+    Dado que o paciente "Maria Oliveira" está cadastrado no sistema de prontuário
 
   Cenário: Registro de anamnese na primeira consulta salva versão inicial
     Quando o dentista registra a anamnese de "Maria Oliveira" com alergia a "Amoxicilina" e condição sistêmica "Hipertensão"
@@ -18,7 +18,7 @@ Funcionalidade: Registro de Anamnese
     Dado que o paciente "Maria Oliveira" não possui anamnese registrada
     Quando o dentista tenta criar um Plano de Tratamento para "Maria Oliveira"
     Então o sistema deve bloquear a criação do plano
-    E a mensagem de erro deve informar "Paciente não possui anamnese registrada"
+    E a mensagem de erro do prontuário deve informar "Paciente não possui anamnese registrada"
 
   Cenário: Alerta automático de alergia por família farmacológica
     Dado que o paciente "Maria Oliveira" possui anamnese com alergia a "Penicilina"
