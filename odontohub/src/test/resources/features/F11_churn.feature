@@ -25,7 +25,7 @@ Funcionalidade: Dashboard de Churn e Inteligência de Retenção
   Cenário: Paciente evadido é reativado ao realizar novo agendamento
     Dado que o paciente "Marcos Vieira" está classificado como "Evadido"
     Quando "Marcos Vieira" realiza um novo agendamento na clínica
-    Então o status de "Marcos Vieira" deve ser atualizado para "Reativado"
+    Então o status de churn de "Marcos Vieira" deve ser atualizado para "Reativado"
 
   Cenário: Cálculo de receita perdida por agenda ociosa
     Dado que o dentista teve 3 horas de agenda cancelada no mês

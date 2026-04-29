@@ -100,6 +100,12 @@ public class F11ChurnSteps {
         }
     }
 
+    @Entao("o status de churn de {string} deve ser atualizado para {string}")
+    public void statusDeChurnDeveSerAtualizado(String nomePaciente, String statusEsperado) {
+        AnaliseChurn analiseChurn = churnService.buscarAnalisePorPaciente(nomePaciente);
+        assertEquals(mapearStatusChurn(statusEsperado), analiseChurn.getStatusChurn());
+    }
+
     @Entao("{string} deve ser classificado como {string}")
     public void pacienteDeveSerClassificadoComo(String nomePaciente, String statusEsperado) {
         AnaliseChurn analiseChurn = churnService.buscarAnalisePorPaciente(nomePaciente);

@@ -3,11 +3,7 @@ package com.g4.odontohub.steps;
 import com.g4.odontohub.estoque.application.InstrumentoApplicationService;
 import com.g4.odontohub.estoque.domain.model.Instrumento;
 import com.g4.odontohub.estoque.domain.model.StatusEsterilizacao;
-import com.g4.odontohub.relacionamentopaciente.domain.model.StatusChurn;
-import io.cucumber.java.pt.Dado;
-import io.cucumber.java.pt.E;
-import io.cucumber.java.pt.Entao;
-import io.cucumber.java.pt.Quando;
+import io.cucumber.java.pt.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -71,14 +67,9 @@ public class F06EsterilizacaoSteps {
         service.verificarEAtualizarVencidos();
     }
 
-    @Entao("o status de {string} deve ser atualizado para {string}")
+    @Então("o status de {string} deve ser atualizado para {string}")
     public void statusDeveSerAtualizado(String nome, String statusStr) {
-        try {
-            assertEquals(mapearStatus(statusStr), service.buscarPorNome(nome).getStatus());
-        } catch (IllegalArgumentException ex) {
-            assertEquals(mapearStatusChurn(statusStr),
-                    SharedTestServices.getChurnApplicationService().buscarAnalisePorPaciente(nome).getStatusChurn());
-        }
+        assertEquals(mapearStatus(statusStr), service.buscarPorNome(nome).getStatus());
     }
 
     @Dado("que {string} foi esterilizado hoje com prazo global de {int} dias")
@@ -157,16 +148,6 @@ public class F06EsterilizacaoSteps {
             case "Vencido" -> StatusEsterilizacao.VENCIDO;
             case "Contaminado" -> StatusEsterilizacao.CONTAMINADO;
             default -> throw new IllegalArgumentException("Status desconhecido: " + statusStr);
-        };
-    }
-
-    private StatusChurn mapearStatusChurn(String statusStr) {
-        return switch (statusStr) {
-            case "Ativo" -> StatusChurn.ATIVO;
-            case "Zona de Risco" -> StatusChurn.ZONA_DE_RISCO;
-            case "Evadido" -> StatusChurn.EVADIDO;
-            case "Reativado" -> StatusChurn.REATIVADO;
-            default -> throw new IllegalArgumentException("Status de churn desconhecido: " + statusStr);
         };
     }
 }
