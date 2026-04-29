@@ -1,0 +1,57 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Prescricao' Aggregate" <<Rectangle>> {
+	class Prescricao <<(A,#fffab8) Aggregate Root>> {
+		Date dataPrescricao
+		String observacoesTerapeuticas
+		PrescricaoId id
+		PrescricaoPacienteId pacienteId
+		Prescricaodentista dentistaId
+	}
+	class Prescricaodentista <<(V,DarkSeaGreen) Value Object>> {
+		Long dentistaId
+	}
+	class ItemPrescricao <<(E,DarkSeaGreen) Entity>> {
+		String nomeMedicamento
+		String dosagem
+		String periodoUso
+		ItemPrescricaoId id
+	}
+	class PrescricaoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class ItemPrescricaoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class PrescricaoPacienteId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class PrescricaoRegistrada <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		Long dentistaId
+		Date dataPrescricao
+		PrescricaoId prescricaoId
+	}
+	class PrescricaoRepetida <<(E,#ff9f4b) Domain Event>> {
+		Long prescricaoOrigemId
+		Date dataNovaPrescricao
+		PrescricaoId novaPrescricaoId
+	}
+	class PrescricaoService <<(S,DarkSeaGreen) Service>> {
+		void registrarPrescricao(Long pacienteId, Long dentistaId, String medicamentos, String observacoes)
+		void repetirPrescricao(Long prescricaoOrigemId, Long dentistaId)
+		void listarPorPaciente(Long pacienteId)
+		void filtrarPorPeriodoEDentista(Long dentistaId, Date dataInicio, Date dataFim)
+	}
+}
+ItemPrescricao --> ItemPrescricaoId : id
+PrescricaoRepetida --> PrescricaoId : novaPrescricaoId
+Prescricao --> PrescricaoId : id
+Prescricao --> PrescricaoPacienteId : pacienteId
+PrescricaoRegistrada --> PrescricaoId : prescricaoId
+Prescricao --> Prescricaodentista : dentistaId
+
+
+@enduml

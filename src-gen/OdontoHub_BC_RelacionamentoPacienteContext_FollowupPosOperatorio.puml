@@ -1,0 +1,61 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'FollowupPosOperatorio' Aggregate" <<Rectangle>> {
+	class FollowupPosOperatorio <<(A,#fffab8) Aggregate Root>> {
+		boolean ligacao24hConcluida
+		boolean ligacao72hConcluida
+		FollowupId id
+		FollowupposoperatorioPacienteId pacienteId
+		FollowupposoperatorioProcedimentoId procedimentoId
+	}
+	class FollowupposoperatorioPacienteId <<(V,DarkSeaGreen) Value Object>> {
+		Long pacienteId
+	}
+	class FollowupposoperatorioProcedimentoId <<(V,DarkSeaGreen) Value Object>> {
+		Long procedimentoId
+	}
+	class FollowupId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class ChecklistFollowup <<(V,DarkSeaGreen) Value Object>> {
+		boolean sangramentoAtivo
+		int nivelDor
+		String observacoes
+		Date dataLigacao
+		String responsavel
+	}
+	class FollowupCriado <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		Long procedimentoId
+		FollowupId followupId
+	}
+	class ChecklistRegistrado <<(E,#ff9f4b) Domain Event>> {
+		String tipoLigacao
+		boolean sangramentoAtivo
+		int nivelDor
+		FollowupId followupId
+	}
+	class EmergenciaIdentificada <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		Long dentistaResponsavelId
+		boolean sangramentoAtivo
+		int nivelDor
+		FollowupId followupId
+	}
+	class FollowupService <<(S,DarkSeaGreen) Service>> {
+		void criarFollowup(Long pacienteId, Long procedimentoId)
+		void registrarChecklist24h(FollowupId followupId, boolean sangramento, int nivelDor, String observacoes, String responsavel)
+		void registrarChecklist72h(FollowupId followupId, boolean sangramento, int nivelDor, String observacoes, String responsavel)
+	}
+}
+FollowupPosOperatorio --> FollowupId : id
+FollowupPosOperatorio --> FollowupposoperatorioPacienteId : pacienteId
+FollowupPosOperatorio --> FollowupposoperatorioProcedimentoId : procedimentoId
+FollowupCriado --> FollowupId : followupId
+ChecklistRegistrado --> FollowupId : followupId
+EmergenciaIdentificada --> FollowupId : followupId
+
+
+@enduml

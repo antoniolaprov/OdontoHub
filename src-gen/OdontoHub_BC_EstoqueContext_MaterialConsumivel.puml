@@ -1,0 +1,61 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'MaterialConsumivel' Aggregate" <<Rectangle>> {
+	class MaterialConsumivel <<(A,#fffab8) Aggregate Root>> {
+		String nome
+		String unidadeMedida
+		int quantidadeEmEstoque
+		int pontoMinimo
+		Date ultimaAtualizacao
+		MaterialId id
+	}
+	class Reposicao <<(E,DarkSeaGreen) Entity>> {
+		String fornecedor
+		int quantidade
+		double custoUnitario
+		Date dataEntrada
+		ReposicaoId id
+		ReposicaomaterialId materialId
+	}
+	class ReposicaomaterialId <<(V,DarkSeaGreen) Value Object>> {
+		Long materialId
+	}
+	class MaterialId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class ReposicaoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class ReposicaoRegistrada <<(E,#ff9f4b) Domain Event>> {
+		Long materialId
+		int quantidade
+		double custoUnitario
+		double valorTotalLancamento
+		ReposicaoId reposicaoId
+	}
+	class EstoqueBaixoAlertado <<(E,#ff9f4b) Domain Event>> {
+		Long materialId
+		String nomeMaterial
+		int saldoAtual
+		int pontoMinimo
+	}
+	class ConsumoRegistrado <<(E,#ff9f4b) Domain Event>> {
+		Long materialId
+		int quantidadeConsumida
+		Long procedimentoOrigemId
+	}
+	class MaterialService <<(S,DarkSeaGreen) Service>> {
+		void registrarReposicao(MaterialId materialId, String fornecedor, int quantidade, double custoUnitario)
+		void descontarConsumo(MaterialId materialId, int quantidade, Long procedimentoId)
+		boolean estoqueBaixo(MaterialId materialId)
+	}
+}
+Reposicao --> ReposicaomaterialId : materialId
+ReposicaoRegistrada --> ReposicaoId : reposicaoId
+Reposicao --> ReposicaoId : id
+MaterialConsumivel --> MaterialId : id
+
+
+@enduml

@@ -1,0 +1,60 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Anamnese' Aggregate" <<Rectangle>> {
+	class Anamnese <<(A,#fffab8) Aggregate Root>> {
+		String alergias
+		String contraindicacoes
+		String condicoesSistemicas
+		int versaoAtual
+		Date dataRegistro
+		Date dataUltimaAtualizacao
+		String responsavelCadastro
+		AnamneseId id
+		Anamnesepaciente pacienteId
+	}
+	class Anamnesepaciente <<(V,DarkSeaGreen) Value Object>> {
+		long pacienteId
+	}
+	class AnamneseId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class VersaoAnamnese <<(V,DarkSeaGreen) Value Object>> {
+		int versao
+		String alergias
+		String contraindicacoes
+		String condicoesSistemicas
+		Date dataAlteracao
+		String responsavel
+	}
+	class AnamneseRegistrada <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		String responsavel
+		AnamneseId anamneseId
+	}
+	class AnamneseAtualizada <<(E,#ff9f4b) Domain Event>> {
+		int novaVersao
+		String responsavel
+		AnamneseId anamneseId
+	}
+	class AlertaAlergiaDisparado <<(E,#ff9f4b) Domain Event>> {
+		Long pacienteId
+		String substanciaComRisco
+		String alergiaRegistrada
+	}
+	class AnamneseService <<(S,DarkSeaGreen) Service>> {
+		void registrarAnamnese(Long pacienteId, String alergias, String contraindicacoes, String responsavel)
+		void adicionarAlergia(Long pacienteId, String novaAlergia, String responsavel)
+		void atualizarCondicoesSistemicas(Long pacienteId, String condicoes, String responsavel)
+		boolean anamneseExiste(Long pacienteId)
+		String verificarAlergiaParaSubstancia(Long pacienteId, String substancia)
+	}
+}
+Anamnese --> AnamneseId : id
+AnamneseRegistrada --> AnamneseId : anamneseId
+Anamnese --> Anamnesepaciente : pacienteId
+AnamneseAtualizada --> AnamneseId : anamneseId
+
+
+@enduml

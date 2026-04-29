@@ -1,0 +1,953 @@
+/* ============================================================
+   OdontoHub — Context Map
+   Versão 1.0
+   Gestão integral e proativa de consultório odontológico
+   ============================================================ */
+
+Domain OdontoHub {
+
+    Subdomain AgendamentoSubdomain {
+        type = CORE_DOMAIN
+        domainVisionStatement = "Gerencia o ciclo de reserva de horários, classifica atendimentos automaticamente como Consulta ou Retorno e bloqueia ações com base em regras de inadimplência."
+    }
+
+    Subdomain ProntuarioClinicoSubdomain {
+        type = CORE_DOMAIN
+        domainVisionStatement = "Centraliza o prontuário vitalício do paciente: anamnese obrigatória, plano de tratamento versionado e ficha clínica com imutabilidade temporal de 24 horas para validade jurídica."
+    }
+
+    Subdomain FinanceiroSubdomain {
+        type = SUPPORTING_DOMAIN
+        domainVisionStatement = "Controla parcelas, fluxo de caixa, inadimplência e acordos, gerando lançamentos automáticos e calculando projeções financeiras do consultório."
+    }
+
+    Subdomain EstoqueSubdomain {
+        type = SUPPORTING_DOMAIN
+        domainVisionStatement = "Gerencia materiais consumíveis e o ciclo de esterilização de instrumentos, integrando reposições e consumos de procedimentos ao fluxo de caixa."
+    }
+
+    Subdomain RelacionamentoPacienteSubdomain {
+        type = SUPPORTING_DOMAIN
+        domainVisionStatement = "Automatiza recall preventivo, follow-up pós-operatório e análise de churn para maximizar a retenção ativa e o cuidado contínuo com o paciente."
+    }
+
+    Subdomain EquipeSubdomain {
+        type = GENERIC_SUBDOMAIN
+        domainVisionStatement = "Cadastra e controla colaboradores (Auxiliares e Recepcionistas) com vínculo às ações operacionais do consultório."
+    }
+}
+
+/* ============================================================
+   BOUNDED CONTEXT: Agendamento
+   Funcionalidade 1 — Agendamento de Consultas e Retornos
+   ============================================================ */
+
+BoundedContext AgendamentoContext implements AgendamentoSubdomain {
+    type = FEATURE
+    domainVisionStatement = "Reserva horários, impede conflitos de dentista, classifica o tipo de atendimento automaticamente e aplica restrições de inadimplência."
+
+    Aggregate Agendamento {
+
+        Entity Agendamento {
+            aggregateRoot
+            - AgendamentoId id
+            - PacienteId pacienteId
+            - DentistaId dentistaId
+            Date dataHora
+            - TipoAtendimento tipo
+            - StatusAgendamento status
+            String motivoCancelamento
+            String responsavelAlteracao
+            Date dataUltimaAlteracao
+        }
+
+        /* Identificadores deste bounded context.
+           Outros contextos referenciam paciente/dentista por Long (referência cross-context). */
+        ValueObject AgendamentoId {
+            Long id
+        }
+
+        ValueObject PacienteId {
+            Long id
+        }
+
+        ValueObject DentistaId {
+            Long id
+        }
+
+        enum TipoAtendimento {
+            CONSULTA, RETORNO;
+        }
+
+        enum StatusAgendamento {
+            AGENDADO, CONFIRMADO, CANCELADO, REMARCADO;
+        }
+
+        DomainEvent AgendamentoRegistrado {
+            - AgendamentoId agendamentoId
+            Long pacienteId
+            Long dentistaId
+            Date dataHora
+            - TipoAtendimento tipo
+        }
+
+        /* Regra de negócio explícita: datas passadas não são aceitas */
+        DomainEvent AgendamentoRecusadoPorDataPassada {
+            Long pacienteId
+            Date dataInformada
+        }
+
+        DomainEvent AgendamentoConfirmado {
+            - AgendamentoId agendamentoId
+            String responsavel
+        }
+
+        DomainEvent AgendamentoCancelado {
+            - AgendamentoId agendamentoId
+            String motivo
+            String responsavel
+        }
+
+        DomainEvent AgendamentoRemarcado {
+            - AgendamentoId agendamentoId
+            Date novaDataHora
+            String responsavel
+        }
+
+        Service AgendamentoService {
+            void registrarAgendamento(@PacienteId pacienteId, @DentistaId dentistaId, Date dataHora, boolean pacienteTemPlanoAtivo, boolean pacienteInadimplente);
+            void confirmarAgendamento(@AgendamentoId id, String responsavel);
+            void cancelarAgendamento(@AgendamentoId id, String motivo, String responsavel);
+            void remarcarAgendamento(@AgendamentoId id, Date novaDataHora, String responsavel);
+            boolean existeConflitoDeHorario(@DentistaId dentistaId, Date dataHora);
+        }
+    }
+}
+
+/* ============================================================
+   BOUNDED CONTEXT: Prontuário Clínico
+   Funcionalidade 2 — Registro de Anamnese
+   Funcionalidade 3 — Gestão e Execução do Plano de Tratamento
+   ============================================================ */
+
+BoundedContext ProntuarioClinicoContext implements ProntuarioClinicoSubdomain {
+    type = FEATURE
+    domainVisionStatement = "Prontuário vitalício com anamnese obrigatória pré-tratamento, plano de tratamento versionado e ficha clínica com janela de imutabilidade de 24 horas."
+
+    Aggregate Anamnese {
+
+        Entity Anamnese {
+            aggregateRoot
+            - AnamneseId id
+            -Anamnesepaciente pacienteId
+            String alergias
+            String contraindicacoes
+            String condicoesSistemicas
+            int versaoAtual
+            Date dataRegistro
+            Date dataUltimaAtualizacao
+            String responsavelCadastro
+        }
+        ValueObject Anamnesepaciente{
+            long pacienteId
+        }
+
+        ValueObject AnamneseId {
+            Long id
+        }
+
+        ValueObject VersaoAnamnese {
+            int versao
+            String alergias
+            String contraindicacoes
+            String condicoesSistemicas
+            Date dataAlteracao
+            String responsavel
+        }
+
+        DomainEvent AnamneseRegistrada {
+            - AnamneseId anamneseId
+            Long pacienteId
+            String responsavel
+        }
+
+        DomainEvent AnamneseAtualizada {
+            - AnamneseId anamneseId
+            int novaVersao
+            String responsavel
+        }
+
+        DomainEvent AlertaAlergiaDisparado {
+            Long pacienteId
+            String substanciaComRisco
+            String alergiaRegistrada
+        }
+
+        Service AnamneseService {
+            void registrarAnamnese(Long pacienteId, String alergias, String contraindicacoes, String responsavel);
+            void adicionarAlergia(Long pacienteId, String novaAlergia, String responsavel);
+            void atualizarCondicoesSistemicas(Long pacienteId, String condicoes, String responsavel);
+            boolean anamneseExiste(Long pacienteId);
+            String verificarAlergiaParaSubstancia(Long pacienteId, String substancia);
+        }
+    }
+
+    Aggregate PlanoTratamento {
+
+        Entity PlanoTratamento {
+            aggregateRoot
+            - PlanoId id
+            -Planotratamentopaciente pacienteId
+            -Planotratamentodentista dentistaId
+            - StatusPlano status
+            int versao
+            Date dataCriacao
+            String justificativaEncerramento
+        }
+        ValueObject Planotratamentopaciente{
+            Long pacienteId
+        }
+        ValueObject Planotratamentodentista{
+            Long dentistaId
+        }
+
+        Entity Procedimento {
+            - ProcedimentoId id
+            String nome
+            String tipoProcedimento
+            - StatusProcedimento status
+            - ProcedimentoAgendamentoVinculado agendamentoVinculado
+            - EvolucaoClinica evolucao
+            Date dataRealizacao
+            String executor
+            String justificativaCancelamento
+            Date dataConfirmacaoRegistro
+        }
+        ValueObject ProcedimentoAgendamentoVinculado{
+            Long agendamentoVinculadoId
+        }
+            
+
+        ValueObject PlanoId {
+            Long id
+        }
+
+        ValueObject ProcedimentoId {
+            Long id
+        }
+
+        ValueObject EvolucaoClinica {
+            String descricaoTecnica
+            String executor
+            Date dataRegistro
+        }
+
+        ValueObject LogAuditoria {
+            String acao
+            String justificativa
+            String responsavel
+            Date dataAcao
+        }
+
+        enum StatusPlano {
+            EM_ANDAMENTO, CONCLUIDO, ENCERRADO;
+        }
+
+        enum StatusProcedimento {
+            PENDENTE, REALIZADO, CANCELADO;
+        }
+
+        DomainEvent PlanoTratamentoCriado {
+            - PlanoId planoId
+            Long pacienteId
+            int versaoInicial
+        }
+
+        DomainEvent ProcedimentoAdicionado {
+            - ProcedimentoId procedimentoId
+            - PlanoId planoId
+            int novaVersaoPlano
+        }
+
+        DomainEvent ProcedimentoRealizado {
+            - ProcedimentoId procedimentoId
+            - PlanoId planoId
+            String tipoProcedimento
+            Date dataRealizacao
+            String executor
+        }
+
+        DomainEvent ProcedimentoCancelado {
+            - ProcedimentoId procedimentoId
+            String justificativa
+        }
+
+        DomainEvent ProcedimentoExcluidoDentroJanela {
+            - ProcedimentoId procedimentoId
+            String justificativa
+            String responsavel
+            Date dataExclusao
+        }
+
+        DomainEvent PlanoEncerrado {
+            - PlanoId planoId
+            String justificativa
+        }
+
+        Service PlanoTratamentoService {
+            void criarPlano(Long pacienteId, Long dentistaId);
+            void adicionarProcedimento(@PlanoId planoId, String nomeProcedimento, String tipoProcedimento);
+            void realizarProcedimento(@ProcedimentoId procedimentoId, String descricaoEvolucao, Long agendamentoId, String executor);
+            void cancelarProcedimento(@ProcedimentoId procedimentoId, String justificativa);
+            void excluirProcedimento(@ProcedimentoId procedimentoId, String justificativa, String responsavel);
+            void encerrarPlano(@PlanoId planoId, String justificativa);
+            boolean dentroJanelaDeCorrecao(@ProcedimentoId procedimentoId);
+        }
+    }
+
+    /* F8 — Registro de Medicamentos Prescritos */
+    Aggregate Prescricao {
+
+        Entity Prescricao {
+            aggregateRoot
+            - PrescricaoId id
+            - PrescricaoPacienteId pacienteId
+            - Prescricaodentista dentistaId
+            Date dataPrescricao
+            String observacoesTerapeuticas
+        }
+        ValueObject Prescricaodentista{
+            Long dentistaId
+        }
+         
+
+        Entity ItemPrescricao {
+            - ItemPrescricaoId id
+            String nomeMedicamento
+            String dosagem
+            String periodoUso
+        }
+
+        ValueObject PrescricaoId {
+            Long id
+        }
+
+        ValueObject ItemPrescricaoId {
+            Long id
+        }
+
+        ValueObject PrescricaoPacienteId {
+            Long id
+        }
+
+        DomainEvent PrescricaoRegistrada {
+            - PrescricaoId prescricaoId
+            Long pacienteId
+            Long dentistaId
+            Date dataPrescricao
+        }
+
+        DomainEvent PrescricaoRepetida {
+            - PrescricaoId novaPrescricaoId
+            Long prescricaoOrigemId
+            Date dataNovaPrescricao
+        }
+
+        Service PrescricaoService {
+            void registrarPrescricao(Long pacienteId, Long dentistaId, String medicamentos, String observacoes);
+            void repetirPrescricao(Long prescricaoOrigemId, Long dentistaId);
+            void listarPorPaciente(Long pacienteId);
+            void filtrarPorPeriodoEDentista(Long dentistaId, Date dataInicio, Date dataFim);
+        }
+    }
+}
+
+/* ============================================================
+   BOUNDED CONTEXT: Financeiro
+   Funcionalidade 4 — Fluxo de Caixa do Consultório
+   Funcionalidade 9 — Gestão Ativa de Inadimplência e Acordos
+   ============================================================ */
+
+BoundedContext FinanceiroContext implements FinanceiroSubdomain {
+    type = FEATURE
+    domainVisionStatement = "Controla parcelas, inadimplência, acordos e o fluxo de caixa com cálculo automático de juros, multas e projeção de saldo."
+
+    Aggregate Parcela {
+
+        Entity Parcela {
+            aggregateRoot
+            - ParcelaId id
+            - ParcelaplanoId planoId
+            double valor
+            Date dataVencimento
+            Date dataPagamento
+            - StatusParcela status
+            int diasAtraso
+            double multa
+            double juros
+        }
+        ValueObject ParcelaplanoId{
+            Long planoId
+        }
+
+        ValueObject ParcelaId {
+            Long id
+        }
+
+        /* Torna explícita a regra: > 30 dias de atraso → paciente restrito */
+        ValueObject PoliticaInadimplencia {
+            int diasParaRestricao
+            double percentualMultaMensal
+            double percentualJurosDia
+        }
+
+        enum StatusParcela {
+            PENDENTE, LIQUIDADA, VENCIDA, SUBSTITUIDA;
+        }
+
+        DomainEvent ParcelaLiquidada {
+            - ParcelaId parcelaId
+            double valorPago
+            Date dataPagamento
+        }
+
+        DomainEvent ParcelaVencida {
+            - ParcelaId parcelaId
+            int diasAtraso
+            double multa
+            double juros
+        }
+
+        Service ParcelaService {
+            void liquidarParcela(@ParcelaId parcelaId, Date dataPagamento);
+            boolean pacienteInadimplente(Long pacienteId);
+            boolean pacienteRestrito(Long pacienteId);
+            double calcularJurosEMulta(@ParcelaId parcelaId, int diasAtraso);
+        }
+    }
+
+    Aggregate FluxoCaixa {
+
+        Entity LancamentoFinanceiro {
+            aggregateRoot
+            - LancamentoId id
+            - TipoLancamento tipo
+            double valor
+            Date data
+            String categoria
+            String descricao
+            boolean geradoAutomaticamente
+        }
+
+        ValueObject LancamentoId {
+            Long id
+        }
+
+        enum TipoLancamento {
+            ENTRADA, SAIDA;
+        }
+
+        DomainEvent EntradaGeradaAutomaticamente {
+            - LancamentoId lancamentoId
+            double valor
+            Date data
+            String origem
+        }
+
+        DomainEvent SaidaRegistradaManualmente {
+            - LancamentoId lancamentoId
+            double valor
+            String categoria
+        }
+
+        DomainEvent AlertaFluxoNegativo {
+            double saldoProjetado
+            Date mesReferencia
+        }
+
+        Service FluxoCaixaService {
+            void registrarEntradaAutomatica(double valor, String descricao, Date data);
+            void registrarSaidaManual(double valor, String categoria, String descricao);
+            double calcularSaldoProjetado();
+            double calcularPontoDeEquilibrio(double custoFixoMensal, double valorMedioProcedimento);
+        }
+    }
+
+    Aggregate Acordo {
+
+        Entity Acordo {
+            aggregateRoot
+            - AcordoId id
+            - AcordoPacienteId pacienteId
+            String parcelasSubstituidas
+            Date dataCriacao
+            boolean inadimplido
+        }
+        ValueObject AcordoPacienteId {
+            Long pacienteId
+        }
+
+        ValueObject AcordoId {
+            Long id
+        }
+
+        DomainEvent AcordoFirmado {
+            - AcordoId acordoId
+            String parcelasOriginaisSubstituidas
+            int quantidadeNovasParcelas
+        }
+
+        DomainEvent AcordoInadimplido {
+            - AcordoId acordoId
+        }
+
+        Service AcordoService {
+            void firmarAcordo(Long pacienteId, String parcelasIds, String novosPagamentos);
+            void registrarInadimplenciaAcordo(@AcordoId acordoId);
+        }
+    }
+}
+
+/* ============================================================
+   BOUNDED CONTEXT: Estoque
+   Funcionalidade 5 — Controle de Estoque de Materiais Consumíveis
+   Funcionalidade 6 — Status de Esterilização
+   ============================================================ */
+
+BoundedContext EstoqueContext implements EstoqueSubdomain {
+    type = FEATURE
+    domainVisionStatement = "Controla saldo de materiais consumíveis e validade de instrumentos esterilizados, gerando alertas e integrando reposições ao fluxo de caixa."
+
+    Aggregate MaterialConsumivel {
+
+        Entity MaterialConsumivel {
+            aggregateRoot
+            - MaterialId id
+            String nome
+            String unidadeMedida
+            int quantidadeEmEstoque
+            int pontoMinimo
+            Date ultimaAtualizacao
+        }
+
+        Entity Reposicao {
+            - ReposicaoId id
+            - ReposicaomaterialId materialId
+            String fornecedor
+            int quantidade
+            double custoUnitario
+            Date dataEntrada
+        }
+        ValueObject ReposicaomaterialId{
+            Long materialId
+        }
+
+        ValueObject MaterialId {
+            Long id
+        }
+
+        ValueObject ReposicaoId {
+            Long id
+        }
+
+        DomainEvent ReposicaoRegistrada {
+            - ReposicaoId reposicaoId
+            Long materialId
+            int quantidade
+            double custoUnitario
+            double valorTotalLancamento
+        }
+
+        DomainEvent EstoqueBaixoAlertado {
+            Long materialId
+            String nomeMaterial
+            int saldoAtual
+            int pontoMinimo
+        }
+
+        DomainEvent ConsumoRegistrado {
+            Long materialId
+            int quantidadeConsumida
+            Long procedimentoOrigemId
+        }
+
+        Service MaterialService {
+            void registrarReposicao(@MaterialId materialId, String fornecedor, int quantidade, double custoUnitario);
+            void descontarConsumo(@MaterialId materialId, int quantidade, Long procedimentoId);
+            boolean estoqueBaixo(@MaterialId materialId);
+        }
+    }
+
+    Aggregate Instrumento {
+
+        Entity Instrumento {
+            aggregateRoot
+            - InstrumentoId id
+            String nome
+            String categoria
+            - StatusEsterilizacao status
+            Date dataUltimaEsterilizacao
+            Date dataVencimento
+            int prazoValidadeDias
+            String responsavelEsterilizacao
+        }
+
+        ValueObject InstrumentoId {
+            Long id
+        }
+
+        enum StatusEsterilizacao {
+            ESTERIL, CONTAMINADO, VENCIDO;
+        }
+
+        DomainEvent InstrumentoEsterilizado {
+            - InstrumentoId instrumentoId
+            Date dataEsterilizacao
+            String responsavel
+            Date novaDataVencimento
+        }
+
+        DomainEvent InstrumentoContaminado {
+            - InstrumentoId instrumentoId
+        }
+
+        DomainEvent InstrumentoVencido {
+            - InstrumentoId instrumentoId
+            String nome
+        }
+
+        Service InstrumentoService {
+            void marcarComoEsteril(@InstrumentoId instrumentoId, Date dataEsterilizacao, String responsavel);
+            void marcarComoContaminado(@InstrumentoId instrumentoId);
+            void recalcularValidadeGlobal(int novoPrazoDias);
+            void verificarEAtualizarVencidos();
+            void listarEstereisDentroDoPrazo();
+        }
+    }
+}
+
+/* ============================================================
+   BOUNDED CONTEXT: Relacionamento com Paciente
+   Funcionalidade 7  — Automação e Fila de Recall
+   Funcionalidade 10 — Execução de Protocolos de Pós-Operatório Ativo
+   Funcionalidade 11 — Dashboard de Churn e Inteligência de Retenção
+   ============================================================ */
+
+BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSubdomain {
+    type = FEATURE
+    domainVisionStatement = "Automatiza recall preventivo, follow-up pós-cirúrgico com checklists obrigatórios e análise de churn para retenção e cuidado contínuo."
+
+    Aggregate Recall {
+
+        Entity Recall {
+            aggregateRoot
+            - RecallId id
+            - RecallPacienteId pacienteId
+            String procedimentoGatilho
+            int diasParaRetorno
+            Date dataGatilho
+            Date dataRecallPrevisto
+            - StatusRecall status
+            boolean flagConversaoRecall
+        }
+        ValueObject RecallPacienteId {
+            Long pacienteId
+        }
+
+        ValueObject RecallId {
+            Long id
+        }
+
+        enum StatusRecall {
+            NA_FILA, AGENDADO, CONVERTIDO, CANCELADO;
+        }
+
+        DomainEvent RecallDisparado {
+            - RecallId recallId
+            Long pacienteId
+            String procedimentoGatilho
+            Date dataRetornoPrevisto
+        }
+
+        DomainEvent RecallConvertido {
+            - RecallId recallId
+            Long agendamentoGeradoId
+        }
+
+        DomainEvent RecallCanceladoPorAgendamentoExistente {
+            - RecallId recallId
+            Long agendamentoExistenteId
+        }
+
+        Service RecallService {
+            void dispararRecall(Long pacienteId, String procedimentoGatilho, int diasParaRetorno);
+            void verificarECancelarSeJaAgendado(Long pacienteId);
+            void registrarConversao(@RecallId recallId, Long agendamentoId);
+        }
+    }
+
+    Aggregate FollowupPosOperatorio {
+
+        Entity FollowupPosOperatorio {
+            aggregateRoot
+            - FollowupId id
+            - FollowupposoperatorioPacienteId pacienteId
+            - FollowupposoperatorioProcedimentoId procedimentoId
+            boolean ligacao24hConcluida
+            boolean ligacao72hConcluida
+        }
+        ValueObject FollowupposoperatorioPacienteId {
+            Long pacienteId
+        }
+        ValueObject FollowupposoperatorioProcedimentoId {
+            Long procedimentoId
+        }
+
+        ValueObject FollowupId {
+            Long id
+        }
+
+        ValueObject ChecklistFollowup {
+            boolean sangramentoAtivo
+            int nivelDor
+            String observacoes
+            Date dataLigacao
+            String responsavel
+        }
+
+        DomainEvent FollowupCriado {
+            - FollowupId followupId
+            Long pacienteId
+            Long procedimentoId
+        }
+
+        DomainEvent ChecklistRegistrado {
+            - FollowupId followupId
+            String tipoLigacao
+            boolean sangramentoAtivo
+            int nivelDor
+        }
+
+        DomainEvent EmergenciaIdentificada {
+            - FollowupId followupId
+            Long pacienteId
+            Long dentistaResponsavelId
+            boolean sangramentoAtivo
+            int nivelDor
+        }
+
+        Service FollowupService {
+            void criarFollowup(Long pacienteId, Long procedimentoId);
+            void registrarChecklist24h(@FollowupId followupId, boolean sangramento, int nivelDor, String observacoes, String responsavel);
+            void registrarChecklist72h(@FollowupId followupId, boolean sangramento, int nivelDor, String observacoes, String responsavel);
+        }
+    }
+
+    Aggregate AnaliseChurn {
+
+        Entity AnaliseChurn {
+            aggregateRoot
+            - ChurnId id
+            - AnaliseChurnPacienteId pacienteId
+            Date ultimoAgendamento
+            - StatusChurn statusChurn
+            String motivoCancelamento
+            boolean reativado
+            Date dataReativacao
+        }
+        ValueObject AnaliseChurnPacienteId {
+            Long pacienteId
+        }
+
+        ValueObject ChurnId {
+            Long id
+        }
+
+        enum StatusChurn {
+            ATIVO, ZONA_DE_RISCO, EVADIDO, REATIVADO;
+        }
+
+        DomainEvent PacienteClassificadoComoChurn {
+            - ChurnId churnId
+            Long pacienteId
+        }
+
+        DomainEvent PacienteEntrandoZonaDeRisco {
+            - ChurnId churnId
+            Long pacienteId
+            int mesesSemRetorno
+        }
+
+        DomainEvent PacienteReativado {
+            - ChurnId churnId
+            Long pacienteId
+        }
+
+        Service ChurnService {
+            void recalcularStatusChurn();
+            double calcularReceitaPerdida(Long dentistaId, int horasDeAgendaOciosa, double valorMedioHora);
+            void registrarCancelamentoComMotivo(Long agendamentoId, String motivoCancelamento);
+        }
+    }
+}
+
+/* ============================================================
+   BOUNDED CONTEXT: Equipe
+   Funcionalidade 12 — Gestão de Equipe e Colaboradores
+   ============================================================ */
+
+BoundedContext EquipeContext implements EquipeSubdomain {
+    type = FEATURE
+    domainVisionStatement = "Cadastra e gerencia colaboradores (Auxiliares e Recepcionistas) com controle de status Ativo/Inativo e rastreabilidade de ações operacionais."
+
+    Aggregate Colaborador {
+
+        Entity Colaborador {
+            aggregateRoot
+            - ColaboradorId id
+            String nomeCompleto
+            String cpf
+            String telefone
+            - FuncaoColaborador funcao
+            - StatusColaborador status
+            String registroProfissional
+        }
+
+        ValueObject ColaboradorId {
+            Long id
+        }
+
+        enum FuncaoColaborador {
+            AUXILIAR, RECEPCIONISTA;
+        }
+
+        enum StatusColaborador {
+            ATIVO, INATIVO;
+        }
+
+        DomainEvent ColaboradorCadastrado {
+            - ColaboradorId colaboradorId
+            - FuncaoColaborador funcao
+        }
+
+        DomainEvent ColaboradorDesativado {
+            - ColaboradorId colaboradorId
+        }
+
+        DomainEvent ColaboradorReativado {
+            - ColaboradorId colaboradorId
+        }
+
+        Service ColaboradorService {
+            void cadastrarColaborador(String nomeCompleto, String cpf, String telefone, String funcao);
+            void desativarColaborador(@ColaboradorId colaboradorId);
+            void reativarColaborador(@ColaboradorId colaboradorId);
+        }
+    }
+}
+
+/* ============================================================
+   Context Map — Relacionamentos entre Bounded Contexts
+   (definido por último pois referencia os BCs acima)
+   ============================================================ */
+
+ContextMap OdontoHubContextMap {
+    contains AgendamentoContext
+    contains ProntuarioClinicoContext
+    contains FinanceiroContext
+    contains EstoqueContext
+    contains RelacionamentoPacienteContext
+    contains EquipeContext
+
+    /*
+     * Agendamento [D] consulta Prontuário [U] para verificar se o paciente
+     * possui Plano de Tratamento ativo e classificar o atendimento como
+     * Consulta (novo ciclo) ou Retorno (continuidade de plano existente).
+     */
+    AgendamentoContext [D, ACL] <- [U, OHS, PL] ProntuarioClinicoContext {
+        implementationTechnology = "Java"
+        exposedAggregates = PlanoTratamento
+    }
+
+    /*
+     * Agendamento [D] consulta Financeiro [U] para bloquear pacientes com
+     * parcelas vencidas antes de registrar um novo agendamento.
+     */
+    AgendamentoContext [D, ACL] <- [U, OHS, PL] FinanceiroContext {
+        implementationTechnology = "Java"
+        exposedAggregates = Parcela
+    }
+
+    /*
+     * Prontuário [D] exige que todo procedimento registrado na Ficha Clínica
+     * esteja vinculado a um Agendamento confirmado no contexto de Agendamento [U].
+     */
+    ProntuarioClinicoContext [D, CF] <- [U, OHS, PL] AgendamentoContext {
+        implementationTechnology = "Java"
+        exposedAggregates = Agendamento
+    }
+
+    /*
+     * Financeiro [D] gera Parcelas a partir de Planos de Tratamento aprovados
+     * publicados pelo Prontuário Clínico [U].
+     */
+    FinanceiroContext [D, CF] <- [U, OHS, PL] ProntuarioClinicoContext {
+        implementationTechnology = "Java"
+        exposedAggregates = PlanoTratamento
+    }
+
+    /*
+     * Estoque [U] publica eventos de Reposição que geram lançamentos de saída
+     * automáticos no Fluxo de Caixa do contexto Financeiro [D].
+     */
+    EstoqueContext [U, OHS, PL] -> [D, CF] FinanceiroContext {
+        implementationTechnology = "Java"
+        exposedAggregates = MaterialConsumivel
+    }
+
+    /*
+     * Estoque [D] consome materiais automaticamente a partir de Procedimentos
+     * marcados como Realizados pelo Prontuário Clínico [U].
+     */
+    EstoqueContext [D, ACL] <- [U, OHS, PL] ProntuarioClinicoContext {
+        implementationTechnology = "Java"
+        exposedAggregates = PlanoTratamento
+    }
+
+    /*
+     * RelacionamentoPaciente [D] verifica a existência de agendamentos futuros
+     * no contexto de Agendamento [U] antes de exibir pacientes na fila de Recall,
+     * evitando contatos duplicados.
+     */
+    RelacionamentoPacienteContext [D, ACL] <- [U, OHS, PL] AgendamentoContext {
+        implementationTechnology = "Java"
+        exposedAggregates = Agendamento
+    }
+
+    /*
+     * Recall e Follow-up são disparados pelo contexto de RelacionamentoPaciente [D]
+     * a partir de Procedimentos concluídos publicados pelo Prontuário Clínico [U].
+     */
+    RelacionamentoPacienteContext [D, ACL] <- [U, OHS, PL] ProntuarioClinicoContext {
+        implementationTechnology = "Java"
+        exposedAggregates = PlanoTratamento
+    }
+
+    /*
+     * Estoque [D] valida que o responsável pela esterilização é um Colaborador
+     * com função Auxiliar e status Ativo, publicado pelo contexto de Equipe [U].
+     */
+    EstoqueContext [D, ACL] <- [U, OHS, PL] EquipeContext {
+        implementationTechnology = "Java"
+        exposedAggregates = Colaborador
+    }
+
+    /*
+     * Agendamento [D] valida que o responsável por alterações de status é um
+     * Colaborador ativo (Recepcionista ou Dentista) publicado pelo contexto de Equipe [U].
+     */
+    AgendamentoContext [D, ACL] <- [U, OHS, PL] EquipeContext {
+        implementationTechnology = "Java"
+        exposedAggregates = Colaborador
+    }
+}

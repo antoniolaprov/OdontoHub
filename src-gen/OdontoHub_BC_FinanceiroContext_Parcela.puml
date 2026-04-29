@@ -1,0 +1,59 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Parcela' Aggregate" <<Rectangle>> {
+	class Parcela <<(A,#fffab8) Aggregate Root>> {
+		double valor
+		Date dataVencimento
+		Date dataPagamento
+		int diasAtraso
+		double multa
+		double juros
+		ParcelaId id
+		ParcelaplanoId planoId
+		StatusParcela status
+	}
+	class ParcelaplanoId <<(V,DarkSeaGreen) Value Object>> {
+		Long planoId
+	}
+	class ParcelaId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class PoliticaInadimplencia <<(V,DarkSeaGreen) Value Object>> {
+		int diasParaRestricao
+		double percentualMultaMensal
+		double percentualJurosDia
+	}
+	enum StatusParcela {
+		PENDENTE
+		LIQUIDADA
+		VENCIDA
+		SUBSTITUIDA
+	}
+	class ParcelaLiquidada <<(E,#ff9f4b) Domain Event>> {
+		double valorPago
+		Date dataPagamento
+		ParcelaId parcelaId
+	}
+	class ParcelaVencida <<(E,#ff9f4b) Domain Event>> {
+		int diasAtraso
+		double multa
+		double juros
+		ParcelaId parcelaId
+	}
+	class ParcelaService <<(S,DarkSeaGreen) Service>> {
+		void liquidarParcela(ParcelaId parcelaId, Date dataPagamento)
+		boolean pacienteInadimplente(Long pacienteId)
+		boolean pacienteRestrito(Long pacienteId)
+		double calcularJurosEMulta(ParcelaId parcelaId, int diasAtraso)
+	}
+}
+ParcelaLiquidada --> ParcelaId : parcelaId
+Parcela --> StatusParcela : status
+Parcela --> ParcelaplanoId : planoId
+ParcelaVencida --> ParcelaId : parcelaId
+Parcela --> ParcelaId : id
+
+
+@enduml

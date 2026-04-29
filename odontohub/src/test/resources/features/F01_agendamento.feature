@@ -1,5 +1,6 @@
 # language: pt
-Funcionalidade: F01 - Agendamento de Consultas e Retornos
+
+Funcionalidade: Agendamento de Consultas e Retornos
   Como recepcionista
   Eu quero registrar agendamentos de pacientes com data, horário e tipo de atendimento
   Para que a agenda do consultório seja organizada e sem conflitos
@@ -8,50 +9,50 @@ Funcionalidade: F01 - Agendamento de Consultas e Retornos
     Dado que o dentista "Dr. Carlos" está cadastrado no sistema
     E que o paciente "João Silva" está cadastrado no sistema
 
-  Cenário: Registrar consulta para paciente sem plano de tratamento ativo
-    Dado que o paciente "João Silva" não possui plano de tratamento ativo
-    Quando a recepcionista registra um agendamento para "João Silva" no dia "2026-05-10" às "09:00"
-    Então o agendamento deve ser criado com status "PENDENTE"
-    E o tipo do agendamento deve ser classificado automaticamente como "CONSULTA"
+  Cenário: Agendamento classificado como Consulta para paciente sem plano ativo
+    Dado que o paciente "João Silva" não possui Plano de Tratamento ativo
+    Quando a recepcionista registra um agendamento para "João Silva" com "Dr. Carlos" em "10/05/2026 09:00"
+    Então o agendamento deve ser criado com o tipo "Consulta"
+    E o status do agendamento deve ser "Agendado"
 
-  Cenário: Registrar retorno para paciente com plano de tratamento ativo
-    Dado que o paciente "João Silva" possui um plano de tratamento ativo
-    Quando a recepcionista registra um agendamento para "João Silva" no dia "2026-05-10" às "09:00"
-    Então o agendamento deve ser criado com status "PENDENTE"
-    E o tipo do agendamento deve ser classificado automaticamente como "RETORNO"
+  Cenário: Agendamento classificado como Retorno para paciente com plano ativo
+    Dado que o paciente "João Silva" possui um Plano de Tratamento com status "Em Andamento"
+    Quando a recepcionista registra um agendamento para "João Silva" com "Dr. Carlos" em "10/05/2026 09:00"
+    Então o agendamento deve ser criado com o tipo "Retorno"
 
-  Cenário: Bloquear agendamento com conflito de horário
-    Dado que já existe um agendamento para o dentista "Dr. Carlos" no dia "2026-05-10" às "09:00"
-    Quando a recepcionista tenta registrar outro agendamento para "Dr. Carlos" no dia "2026-05-10" às "09:00"
+  Cenário: Bloqueio de agendamento por conflito de horário do dentista
+    Dado que já existe um agendamento confirmado para "Dr. Carlos" em "10/05/2026 09:00"
+    Quando a recepcionista tenta registrar outro agendamento para "Dr. Carlos" em "10/05/2026 09:00"
     Então o sistema deve rejeitar o agendamento
-    E exibir a mensagem "Já existe um agendamento para este horário"
+    E a mensagem de erro deve informar "Conflito de horário: o dentista já possui um agendamento neste horário"
 
-  Cenário: Bloquear agendamento de paciente inadimplente
-    Dado que o paciente "João Silva" possui uma parcela com status "INADIMPLENTE"
+  Cenário: Bloqueio de agendamento para paciente inadimplente há mais de 30 dias
+    Dado que o paciente "João Silva" possui parcelas vencidas há mais de 30 dias
     Quando a recepcionista tenta registrar um agendamento para "João Silva"
-    Então o sistema deve bloquear o registro do agendamento
-    E exibir a mensagem "Paciente com inadimplência ativa"
-
-  Cenário: Permitir agendamento de inadimplente com autorização do dentista
-    Dado que o paciente "João Silva" possui uma parcela com status "INADIMPLENTE"
-    E que o dentista "Dr. Carlos" autorizou o agendamento
-    Quando a recepcionista registra um agendamento para "João Silva" com autorização do dentista
-    Então o agendamento deve ser criado com status "PENDENTE"
-    E o campo "autorizadoPorDentista" deve ser verdadeiro
-
-  Cenário: Bloquear agendamento em data passada
-    Quando a recepcionista tenta registrar um agendamento para o dia "2020-01-01"
     Então o sistema deve rejeitar o agendamento
-    E exibir a mensagem "Não é permitido registrar agendamentos em datas passadas"
+    E a mensagem de erro deve informar "Paciente restrito: possui parcelas em atraso há mais de 30 dias"
 
-  Cenário: Confirmar agendamento pendente
-    Dado que existe um agendamento com status "PENDENTE" para "João Silva"
-    Quando a recepcionista confirma o agendamento
-    Então o status do agendamento deve ser alterado para "CONFIRMADO"
-    E o histórico de status deve registrar a alteração com data e responsável
+  Cenário: Rejeição de agendamento em data passada
+    Quando a recepcionista tenta registrar um agendamento para "João Silva" com "Dr. Carlos" em "01/01/2020 09:00"
+    Então o sistema deve rejeitar o agendamento
+    E a mensagem de erro deve informar "Não é permitido registrar agendamentos em datas passadas"
 
-  Cenário: Cancelar agendamento confirmado
-    Dado que existe um agendamento com status "CONFIRMADO" para "João Silva"
-    Quando a recepcionista cancela o agendamento com o motivo "Paciente não compareceu"
-    Então o status do agendamento deve ser alterado para "CANCELADO"
-    E o histórico de status deve registrar o motivo "Paciente não compareceu"
+  Cenário: Confirmação de agendamento registra responsável e data da alteração
+    Dado que existe um agendamento com status "Agendado" para "João Silva"
+    Quando a recepcionista "Ana" confirma o agendamento
+    Então o status do agendamento deve ser "Confirmado"
+    E o responsável pela alteração deve ser registrado como "Ana"
+    E a data da última alteração deve ser registrada
+
+  Cenário: Cancelamento de agendamento registra motivo obrigatório
+    Dado que existe um agendamento com status "Confirmado" para "João Silva"
+    Quando a recepcionista cancela o agendamento informando o motivo "Preço"
+    Então o status do agendamento deve ser "Cancelado"
+    E o motivo de cancelamento deve ser registrado como "Preço"
+
+  Cenário: Remarcação de agendamento registra nova data e responsável
+    Dado que existe um agendamento com status "Confirmado" para "João Silva" em "10/05/2026 09:00"
+    Quando a recepcionista "Ana" remarca o agendamento para "12/05/2026 14:00"
+    Então o status do agendamento deve ser "Remarcado"
+    E a nova data deve ser "12/05/2026 14:00"
+    E o responsável pela alteração deve ser registrado como "Ana"

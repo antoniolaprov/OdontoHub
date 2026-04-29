@@ -1,0 +1,38 @@
+@startuml
+
+skinparam componentStyle uml2
+
+package "'Acordo' Aggregate" <<Rectangle>> {
+	class Acordo <<(A,#fffab8) Aggregate Root>> {
+		String parcelasSubstituidas
+		Date dataCriacao
+		boolean inadimplido
+		AcordoId id
+		AcordoPacienteId pacienteId
+	}
+	class AcordoPacienteId <<(V,DarkSeaGreen) Value Object>> {
+		Long pacienteId
+	}
+	class AcordoId <<(V,DarkSeaGreen) Value Object>> {
+		Long id
+	}
+	class AcordoFirmado <<(E,#ff9f4b) Domain Event>> {
+		String parcelasOriginaisSubstituidas
+		int quantidadeNovasParcelas
+		AcordoId acordoId
+	}
+	class AcordoInadimplido <<(E,#ff9f4b) Domain Event>> {
+		AcordoId acordoId
+	}
+	class AcordoService <<(S,DarkSeaGreen) Service>> {
+		void firmarAcordo(Long pacienteId, String parcelasIds, String novosPagamentos)
+		void registrarInadimplenciaAcordo(AcordoId acordoId)
+	}
+}
+Acordo --> AcordoPacienteId : pacienteId
+Acordo --> AcordoId : id
+AcordoFirmado --> AcordoId : acordoId
+AcordoInadimplido --> AcordoId : acordoId
+
+
+@enduml
