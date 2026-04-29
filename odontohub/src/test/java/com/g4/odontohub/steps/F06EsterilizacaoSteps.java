@@ -3,12 +3,18 @@ package com.g4.odontohub.steps;
 import com.g4.odontohub.estoque.application.InstrumentoApplicationService;
 import com.g4.odontohub.estoque.domain.model.Instrumento;
 import com.g4.odontohub.estoque.domain.model.StatusEsterilizacao;
-import io.cucumber.java.pt.*;
+import com.g4.odontohub.relacionamentopaciente.domain.model.StatusChurn;
+import io.cucumber.java.pt.Dado;
+import io.cucumber.java.pt.E;
+import io.cucumber.java.pt.Entao;
+import io.cucumber.java.pt.Quando;
 
 import java.time.LocalDate;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 public class F06EsterilizacaoSteps {
 
@@ -16,14 +22,10 @@ public class F06EsterilizacaoSteps {
     private Instrumento ultimoInstrumento;
     private List<Instrumento> listaResultado;
 
-    // ─────────────────────── BACKGROUND ───────────────────────
-
     @Dado("que o instrumento {string} está cadastrado com prazo de validade de {int} dias")
     public void instrumentoCadastrado(String nome, int prazo) {
         service.cadastrar(nome, prazo);
     }
-
-    // ──────────── CENÁRIO 1: Marcação como Estéril ────────────
 
     @Quando("o auxiliar {string} marca {string} como Estéril na data de hoje")
     public void marcarComoEsteril(String responsavel, String nome) {
@@ -31,7 +33,7 @@ public class F06EsterilizacaoSteps {
         ultimoInstrumento = service.buscarPorNome(nome);
     }
 
-    @Então("o status do instrumento deve ser {string}")
+    @Entao("o status do instrumento deve ser {string}")
     public void statusInstrumentoDeveSer(String statusStr) {
         assertNotNull(ultimoInstrumento);
         assertEquals(mapearStatus(statusStr), ultimoInstrumento.getStatus());
@@ -52,8 +54,6 @@ public class F06EsterilizacaoSteps {
         assertEquals(LocalDate.now().plusDays(dias), ultimoInstrumento.getDataVencimento());
     }
 
-    // ──────────── CENÁRIO 2: Vencimento automático ────────────
-
     @Dado("que {string} foi esterilizado há {int} dias com status {string}")
     public void instrumentoEsterilizadoHaDias(String nome, int diasAtras, String statusStr) {
         try {
@@ -63,9 +63,7 @@ public class F06EsterilizacaoSteps {
         }
 
         service.marcarComoEsteril(nome, LocalDate.now().minusDays(diasAtras), "Sistema");
-
-        StatusEsterilizacao status = mapearStatus(statusStr);
-        service.definirStatus(nome, status, null);
+        service.definirStatus(nome, mapearStatus(statusStr), null);
     }
 
     @Quando("o sistema verifica a validade dos instrumentos")
@@ -73,12 +71,15 @@ public class F06EsterilizacaoSteps {
         service.verificarEAtualizarVencidos();
     }
 
-    @Então("o status de {string} deve ser atualizado para {string}")
+    @Entao("o status de {string} deve ser atualizado para {string}")
     public void statusDeveSerAtualizado(String nome, String statusStr) {
-        assertEquals(mapearStatus(statusStr), service.buscarPorNome(nome).getStatus());
+        try {
+            assertEquals(mapearStatus(statusStr), service.buscarPorNome(nome).getStatus());
+        } catch (IllegalArgumentException ex) {
+            assertEquals(mapearStatusChurn(statusStr),
+                    SharedTestServices.getChurnApplicationService().buscarAnalisePorPaciente(nome).getStatusChurn());
+        }
     }
-
-    // ──────────── CENÁRIO 3: Recálculo de validade global ─────
 
     @Dado("que {string} foi esterilizado hoje com prazo global de {int} dias")
     public void instrumentoEsterilizadoHojeComPrazo(String nome, int prazo) {
@@ -96,12 +97,10 @@ public class F06EsterilizacaoSteps {
         service.recalcularValidadeGlobal(novoPrazo);
     }
 
-    @Então("a nova data de vencimento de {string} deve ser calculada como hoje mais {int} dias")
+    @Entao("a nova data de vencimento de {string} deve ser calculada como hoje mais {int} dias")
     public void novaDataVencimentoDeveSer(String nome, int dias) {
         assertEquals(LocalDate.now().plusDays(dias), service.buscarPorNome(nome).getDataVencimento());
     }
-
-    // ──────────── CENÁRIO 4: Listagem de instrumentos prontos ─
 
     @Dado("que {string} está com status {string} e dentro do prazo")
     public void instrumentoComStatusEDentroDoPrazo(String nome, String statusStr) {
@@ -134,7 +133,7 @@ public class F06EsterilizacaoSteps {
         listaResultado = service.listarEstereisDentroDoPrazo();
     }
 
-    @Então("a lista deve conter apenas {string}")
+    @Entao("a lista deve conter apenas {string}")
     public void listaDeveConterApenas(String nome) {
         assertEquals(1, listaResultado.size());
         assertEquals(nome, listaResultado.get(0).getNome());
@@ -146,22 +145,28 @@ public class F06EsterilizacaoSteps {
         assertFalse(encontrado, "A lista não deveria conter: " + nome);
     }
 
-    // ──────────── CENÁRIO 5: Marcação como Contaminado ────────
-
     @Quando("o auxiliar marca {string} como Contaminado após uso no procedimento")
     public void marcarComoContaminado(String nome) {
         service.marcarComoContaminado(nome);
         ultimoInstrumento = service.buscarPorNome(nome);
     }
 
-    // ─────────────────────── HELPERS ──────────────────────────
-
     private StatusEsterilizacao mapearStatus(String statusStr) {
         return switch (statusStr) {
-            case "Estéril"     -> StatusEsterilizacao.ESTERIL;
-            case "Vencido"     -> StatusEsterilizacao.VENCIDO;
+            case "Estéril" -> StatusEsterilizacao.ESTERIL;
+            case "Vencido" -> StatusEsterilizacao.VENCIDO;
             case "Contaminado" -> StatusEsterilizacao.CONTAMINADO;
             default -> throw new IllegalArgumentException("Status desconhecido: " + statusStr);
+        };
+    }
+
+    private StatusChurn mapearStatusChurn(String statusStr) {
+        return switch (statusStr) {
+            case "Ativo" -> StatusChurn.ATIVO;
+            case "Zona de Risco" -> StatusChurn.ZONA_DE_RISCO;
+            case "Evadido" -> StatusChurn.EVADIDO;
+            case "Reativado" -> StatusChurn.REATIVADO;
+            default -> throw new IllegalArgumentException("Status de churn desconhecido: " + statusStr);
         };
     }
 }

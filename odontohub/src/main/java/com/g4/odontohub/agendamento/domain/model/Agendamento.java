@@ -37,6 +37,12 @@ public class Agendamento {
         this.dataUltimaAlteracao = LocalDateTime.now();
     }
 
+    public void registrarNaoComparecimento(String responsavel) {
+        this.status = StatusAgendamento.NAO_COMPARECEU;
+        this.responsavelAlteracao = responsavel;
+        this.dataUltimaAlteracao = LocalDateTime.now();
+    }
+
     public void remarcar(LocalDateTime novaDataHora, String responsavel) {
         this.dataHora = novaDataHora;
         this.status = StatusAgendamento.REMARCADO;
