@@ -46,6 +46,11 @@ public class F12EquipeSteps {
         assertTrue(service.houveErro());
     }
 
+    @Então("o sistema deve rejeitar o cadastro")
+    public void sistemaDeveRejeitarOCadastro() {
+        assertTrue(service.houveErro());
+    }
+
     @E("a mensagem de erro de colaborador deve informar {string}")
     public void mensagemDeErroDeColaboradorDeveInformar(String mensagem) {
         assertEquals(mensagem, service.getUltimoErro());
@@ -129,6 +134,49 @@ public class F12EquipeSteps {
     public void naoDeveConstarNaListaDeResponsaveis(String nome) {
         List<Colaborador> lista = service.listarResponsaveisEsterilizacao();
         assertFalse(lista.stream().anyMatch(c -> c.getNome().equals(nome)));
+    }
+
+    @Dado("que o colaborador {string} está com status {string}")
+    public void queOColaboradorEstaComStatus(String nome, String status) {
+        service.adicionarColaboradorComStatus(nome, "AUXILIAR", status);
+    }
+
+    @Dado("que o colaborador {string} com função {string} está com status {string}")
+    public void queOColaboradorComFuncaoEstaComStatus(String nome, String funcao, String status) {
+        service.adicionarColaboradorComStatus(nome, funcao, status);
+    }
+
+    @Dado("que {string} tem função {string} e status {string}")
+    public void queTemFuncaoEStatus(String nome, String funcao, String status) {
+        service.adicionarColaboradorComStatus(nome, funcao, status);
+    }
+
+    @Então("o status deve ser alterado para {string}")
+    public void oStatusDeveSerAlteradoPara(String status) {
+        Colaborador colaborador = service.getColaborador("Juliana Mendes");
+        assertNotNull(colaborador);
+        assertEquals(StatusColaborador.valueOf(status.toUpperCase()), colaborador.getStatus());
+    }
+
+    @Então("{string} não deve aparecer na lista")
+    public void naoDeveAparecerNaLista(String nome) {
+        List<Colaborador> lista = service.listarResponsaveisEsterilizacao();
+        assertFalse(lista.stream().anyMatch(c -> c.getNome().equals(nome)),
+                "Esperava que " + nome + " não aparecesse na lista");
+    }
+
+    @Então("{string} deve constar na lista")
+    public void deveConstarNaLista(String nome) {
+        List<Colaborador> lista = service.listarResponsaveisEsterilizacao();
+        assertTrue(lista.stream().anyMatch(c -> c.getNome().equals(nome)),
+                "Esperava que " + nome + " constasse na lista de responsáveis");
+    }
+
+    @Então("{string} não deve constar na lista")
+    public void naoDeveConstarNaLista(String nome) {
+        List<Colaborador> lista = service.listarResponsaveisEsterilizacao();
+        assertFalse(lista.stream().anyMatch(c -> c.getNome().equals(nome)),
+                "Esperava que " + nome + " não constasse na lista de responsáveis");
     }
 
     @E("{string} deve voltar a aparecer nas listas de seleção")
