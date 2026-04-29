@@ -26,16 +26,14 @@ public class F12EquipeSteps {
     public void colaboradorSalvoComStatus(String status) {
         Colaborador colaborador = service.getColaborador("Juliana Mendes");
         assertNotNull(colaborador);
-        StatusColaborador esperado = StatusColaborador.valueOf(status.toUpperCase());
-        assertEquals(esperado, colaborador.getStatus());
+        assertEquals(StatusColaborador.valueOf(status.toUpperCase()), colaborador.getStatus());
     }
 
     @E("a função {string} deve estar registrada")
     public void funcaoDeveEstarRegistrada(String funcao) {
         Colaborador colaborador = service.getColaborador("Juliana Mendes");
         assertNotNull(colaborador);
-        FuncaoColaborador esperada = FuncaoColaborador.valueOf(funcao.toUpperCase());
-        assertEquals(esperada, colaborador.getFuncao());
+        assertEquals(FuncaoColaborador.valueOf(funcao.toUpperCase()), colaborador.getFuncao());
     }
 
     @Quando("o dentista tenta cadastrar um colaborador sem informar a função")
@@ -43,13 +41,13 @@ public class F12EquipeSteps {
         service.cadastrarSemFuncao("Colaborador Teste", "111.111.111-11", "81900000000");
     }
 
-    @Então("o sistema deve rejeitar o cadastro")
-    public void sistemaDeveRejeitarCadastro() {
+    @Então("o sistema deve rejeitar o cadastro de colaborador")
+    public void sistemaDeveRejeitarCadastroColaborador() {
         assertTrue(service.houveErro());
     }
 
-    @E("a mensagem de erro deve informar {string}")
-    public void mensagemDeErroDeveInformar(String mensagem) {
+    @E("a mensagem de erro de colaborador deve informar {string}")
+    public void mensagemDeErroDeColaboradorDeveInformar(String mensagem) {
         assertEquals(mensagem, service.getUltimoErro());
     }
 
@@ -58,9 +56,19 @@ public class F12EquipeSteps {
         service.cadastrarSemCpf(nome);
     }
 
-    @Dado("que o colaborador {string} está com status {string}")
-    public void colaboradorComStatus(String nome, String status) {
-        service.adicionarColaboradorComStatus(nome, "AUXILIAR", status);
+    @Dado("que o colaborador {string} está ativo no sistema")
+    public void colaboradorAtivoNoSistema(String nome) {
+        service.adicionarColaboradorComStatus(nome, "AUXILIAR", "Ativo");
+    }
+
+    @Dado("que o colaborador {string} está inativo no sistema")
+    public void colaboradorInativoNoSistema(String nome) {
+        service.adicionarColaboradorComStatus(nome, "AUXILIAR", "Inativo");
+    }
+
+    @Dado("que o colaborador {string} com função {string} está inativo no sistema")
+    public void colaboradorComFuncaoInativoNoSistema(String nome, String funcao) {
+        service.adicionarColaboradorComStatus(nome, funcao, "Inativo");
     }
 
     @Quando("o dentista desativa o colaborador {string}")
@@ -68,12 +76,16 @@ public class F12EquipeSteps {
         service.desativarColaborador(nome);
     }
 
-    @Então("o status deve ser alterado para {string}")
-    public void statusAlteradoPara(String status) {
+    @Quando("o dentista reativa o colaborador {string}")
+    public void reativarColaborador(String nome) {
+        service.reativarColaborador(nome);
+    }
+
+    @Então("o status do colaborador deve ser alterado para {string}")
+    public void statusDoColaboradorAlteradoPara(String status) {
         Colaborador colaborador = service.getColaborador("Juliana Mendes");
         assertNotNull(colaborador);
-        StatusColaborador esperado = StatusColaborador.valueOf(status.toUpperCase());
-        assertEquals(esperado, colaborador.getStatus());
+        assertEquals(StatusColaborador.valueOf(status.toUpperCase()), colaborador.getStatus());
     }
 
     @E("os dados de {string} devem permanecer no sistema")
@@ -81,56 +93,47 @@ public class F12EquipeSteps {
         assertTrue(service.colaboradorExisteNoSistema(nome));
     }
 
-    @Dado("que o colaborador {string} com função {string} está com status {string}")
-    public void colaboradorComFuncaoEStatus(String nome, String funcao, String status) {
-        service.adicionarColaboradorComStatus(nome, funcao, status);
-    }
-
     @Quando("o auxiliar abre a lista de responsáveis disponíveis para registro de esterilização")
     public void abrirListaResponsaveis() {
-        // ação implícita — a listagem é verificada no Então
-    }
-
-    @Então("{string} não deve aparecer na lista")
-    public void naoDeveAparecerNaLista(String nome) {
-        List<Colaborador> lista = service.listarResponsaveisEsterilizacao();
-        boolean presente = lista.stream().anyMatch(c -> c.getNome().equals(nome));
-        assertFalse(presente);
-    }
-
-    @Dado("que {string} tem função {string} e status {string}")
-    public void colaboradorComFuncaoStatus(String nome, String funcao, String status) {
-        service.adicionarColaboradorComStatus(nome, funcao, status);
+        // ação implícita
     }
 
     @Quando("o sistema lista os responsáveis disponíveis para esterilização")
     public void listarResponsaveisEsterilizacao() {
-        // ação implícita — a listagem é verificada no Então
+        // ação implícita
     }
 
-    @Então("{string} deve constar na lista")
-    public void deveConstarNaLista(String nome) {
+    @Então("{string} não deve aparecer na lista de responsáveis")
+    public void naoDeveAparecerNaListaDeResponsaveis(String nome) {
         List<Colaborador> lista = service.listarResponsaveisEsterilizacao();
-        boolean presente = lista.stream().anyMatch(c -> c.getNome().equals(nome));
-        assertTrue(presente);
+        assertFalse(lista.stream().anyMatch(c -> c.getNome().equals(nome)));
     }
 
-    @E("{string} não deve constar na lista")
-    public void naoDeveConstarNaLista(String nome) {
+    @Dado("que {string} tem função {string} e está ativo")
+    public void colaboradorComFuncaoAtivo(String nome, String funcao) {
+        service.adicionarColaboradorComStatus(nome, funcao, "Ativo");
+    }
+
+    @E("que {string} tem função {string} e está ativa")
+    public void colaboradorComFuncaoAtiva(String nome, String funcao) {
+        service.adicionarColaboradorComStatus(nome, funcao, "Ativo");
+    }
+
+    @Então("{string} deve constar na lista de responsáveis")
+    public void deveConstarNaListaDeResponsaveis(String nome) {
         List<Colaborador> lista = service.listarResponsaveisEsterilizacao();
-        boolean presente = lista.stream().anyMatch(c -> c.getNome().equals(nome));
-        assertFalse(presente);
+        assertTrue(lista.stream().anyMatch(c -> c.getNome().equals(nome)));
     }
 
-    @Quando("o dentista reativa o colaborador {string}")
-    public void reativarColaborador(String nome) {
-        service.reativarColaborador(nome);
+    @E("{string} não deve constar na lista de responsáveis")
+    public void naoDeveConstarNaListaDeResponsaveis(String nome) {
+        List<Colaborador> lista = service.listarResponsaveisEsterilizacao();
+        assertFalse(lista.stream().anyMatch(c -> c.getNome().equals(nome)));
     }
 
     @E("{string} deve voltar a aparecer nas listas de seleção")
     public void deveVoltarAAparecer(String nome) {
         List<Colaborador> lista = service.listarResponsaveisEsterilizacao();
-        boolean presente = lista.stream().anyMatch(c -> c.getNome().equals(nome));
-        assertTrue(presente);
+        assertTrue(lista.stream().anyMatch(c -> c.getNome().equals(nome)));
     }
 }

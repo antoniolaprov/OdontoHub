@@ -16,8 +16,13 @@ public class F07RecallSteps {
     private final RecallApplicationService service = new RecallApplicationService();
     private Agendamento ultimoAgendamento;
 
-    @Dado("que o dentista realizou o procedimento {string} para {string}")
-    public void dentistaRealizouProcedimento(String procedimento, String nomePaciente) {
+    @Dado("que o paciente de recall {string} está registrado")
+    public void pacienteDeRecallRegistrado(String nome) {
+        service.cadastrarPaciente(nome);
+    }
+
+    @Dado("que o dentista executou o procedimento de recall {string} para {string}")
+    public void dentistaExecutouProcedimentoDeRecall(String procedimento, String nomePaciente) {
         service.cadastrarPaciente(nomePaciente);
         service.registrarProcedimento(nomePaciente, procedimento);
     }
