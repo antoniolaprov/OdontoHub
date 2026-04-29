@@ -86,7 +86,7 @@ O domínio do sistema está relacionado à **gestão de clínicas odontológicas
 Criar uma plataforma web que permita gerenciar todos esses processos de forma simples, segura e eficiente.
 
 🔗 Documento completo da descrição do domínio:
-https://docs.google.com/document/d/1in_TcAc0lF9e5tBAOWedj4N48vXn65GTV9aAGn454JA/edit?usp=sharing
+https://docs.google.com/document/d/1sPkmyYcac1Tn2CZPuVBI3__TN_wmp0nIcHhR2VIby1Q/edit?usp=sharing
 
 ---
 
