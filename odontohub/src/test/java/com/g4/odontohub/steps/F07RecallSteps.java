@@ -16,13 +16,9 @@ public class F07RecallSteps {
     private final RecallApplicationService service = new RecallApplicationService();
     private Agendamento ultimoAgendamento;
 
-   @Dado("que o paciente {string} está cadastrado no sistema")
-    public void pacienteCadastrado(String nome) {
-        service.cadastrarPaciente(nome);
-    }
-
     @Dado("que o dentista realizou o procedimento {string} para {string}")
     public void dentistaRealizouProcedimento(String procedimento, String nomePaciente) {
+        service.cadastrarPaciente(nomePaciente);
         service.registrarProcedimento(nomePaciente, procedimento);
     }
 
@@ -40,7 +36,6 @@ public class F07RecallSteps {
 
     @E("o status do recall deve ser {string}")
     public void statusDoRecallDeverSer(String statusEsperado) {
-        // O cenário contextualiza o paciente pelo último acesso; usamos "Ana Ferreira"
         FilaDeRecall fila = service.getFilaDeRecall("Ana Ferreira");
         assertNotNull(fila);
         StatusRecall esperado = StatusRecall.valueOf(
