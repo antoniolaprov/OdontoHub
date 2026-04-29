@@ -16,7 +16,7 @@ public class F07RecallSteps {
     private final RecallApplicationService service = new RecallApplicationService();
     private Agendamento ultimoAgendamento;
 
-    @Dado("que o paciente {string} está cadastrado no sistema")
+   @Dado("que o paciente {string} está cadastrado no sistema")
     public void pacienteCadastrado(String nome) {
         service.cadastrarPaciente(nome);
     }
