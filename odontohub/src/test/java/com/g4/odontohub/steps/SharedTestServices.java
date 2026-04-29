@@ -2,6 +2,7 @@ package com.g4.odontohub.steps;
 
 import com.g4.odontohub.estoque.application.MaterialApplicationService;
 import com.g4.odontohub.financeiro.application.FluxoCaixaApplicationService;
+import com.g4.odontohub.prescricao.application.PrescricaoApplicationService;
 import com.g4.odontohub.relacionamentopaciente.application.ChurnApplicationService;
 import com.g4.odontohub.relacionamentopaciente.application.FollowupApplicationService;
 import com.g4.odontohub.shared.DomainEventPublisher;
@@ -13,6 +14,7 @@ public class SharedTestServices {
     private static ChurnApplicationService churnApplicationService;
     private static FollowupApplicationService followupApplicationService;
     private static Exception lastException;
+    private static PrescricaoApplicationService prescricaoService;
 
     public static void initialize() {
         DomainEventPublisher.reset();
@@ -20,6 +22,7 @@ public class SharedTestServices {
         materialService = new MaterialApplicationService(fluxoCaixaService);
         churnApplicationService = new ChurnApplicationService();
         followupApplicationService = new FollowupApplicationService();
+        prescricaoService = new PrescricaoApplicationService();
         lastException = null;
     }
 
@@ -49,5 +52,10 @@ public class SharedTestServices {
 
     public static Exception getLastException() {
         return lastException;
+    }
+
+    public static PrescricaoApplicationService getPrescricaoService() {
+        if (prescricaoService == null) initialize();
+        return prescricaoService;
     }
 }

@@ -5,9 +5,9 @@ Funcionalidade: Registro de Medicamentos Prescritos
   Eu quero registrar rapidamente os medicamentos que receitei para um paciente
   Para ter um histórico organizado e consultável de todas as prescrições
 
-  Contexto:
-    Dado que o paciente "Roberto Lima" está cadastrado no sistema
-    E que o dentista "Dr. Carlos" está cadastrado no sistema
+ Contexto:
+    Dado que o paciente "Roberto Lima" está cadastrado no sistema para prescrição
+    E que o dentista "Dr. Carlos" está cadastrado no sistema para prescrição
 
   Cenário: Registro de prescrição após atendimento com múltiplos medicamentos
     Quando o dentista "Dr. Carlos" registra a prescrição para "Roberto Lima" com os medicamentos:
