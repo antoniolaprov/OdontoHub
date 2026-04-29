@@ -29,7 +29,6 @@ public class F02_anamnese_Steps {
     public void que_o_paciente_possui_anamnese_com_alergia_a(String nomePaciente, String alergia) {
         appService = new ProntuarioApplicationService();
         pacienteIdAtual = (long) nomePaciente.hashCode();
-        // MUDANÇA AQUI: Adicionado a string vazia "" para a condição sistêmica
         appService.getAnamneseService().registrarAnamnese(pacienteIdAtual, alergia, "", "", nomeDentista);
     }
 
@@ -37,13 +36,11 @@ public class F02_anamnese_Steps {
     public void que_o_paciente_possui_anamnese_registrada_na_versao_com_alergia_a(String nomePaciente, Integer versao, String alergia) {
         appService = new ProntuarioApplicationService();
         pacienteIdAtual = (long) nomePaciente.hashCode();
-        // MUDANÇA AQUI: Adicionado a string vazia "" para a condição sistêmica
         appService.getAnamneseService().registrarAnamnese(pacienteIdAtual, alergia, "", "", nomeDentista);
     }
 
     @Quando("o dentista registra a anamnese de {string} com alergia a {string} e condição sistêmica {string}")
     public void o_dentista_registra_a_anamnese_com_alergia_e_condicao(String nomePaciente, String alergia, String condicao) {
-        // MUDANÇA AQUI: Agora a criação acontece em apenas UMA linha, garantindo a Versão 1!
         appService.getAnamneseService().registrarAnamnese(pacienteIdAtual, alergia, "", condicao, nomeDentista);
     }
 
@@ -69,19 +66,19 @@ public class F02_anamnese_Steps {
 
     @Então("a anamnese deve ser salva com versão {int}")
     public void a_anamnese_deve_ser_salva_com_versao(Integer versaoEsperada) {
-        Anamnese anamnese = appService.getRepository().buscarPorPacienteId(pacienteIdAtual);
+        Anamnese anamnese = appService.getAnamneseRepository().buscarPorPacienteId(pacienteIdAtual);
         assertEquals(versaoEsperada, anamnese.getVersaoAtual());
     }
 
     @Então("a data de registro deve ser armazenada")
     public void a_data_de_registro_deve_ser_armazenada() {
-        Anamnese anamnese = appService.getRepository().buscarPorPacienteId(pacienteIdAtual);
+        Anamnese anamnese = appService.getAnamneseRepository().buscarPorPacienteId(pacienteIdAtual);
         assertNotNull(anamnese.getDataRegistro());
     }
 
     @Então("o responsável pelo cadastro deve ser registrado")
     public void o_responsavel_pelo_cadastro_deve_ser_registrado() {
-        Anamnese anamnese = appService.getRepository().buscarPorPacienteId(pacienteIdAtual);
+        Anamnese anamnese = appService.getAnamneseRepository().buscarPorPacienteId(pacienteIdAtual);
         assertNotNull(anamnese.getResponsavelCadastro());
     }
 
@@ -108,26 +105,26 @@ public class F02_anamnese_Steps {
 
     @Então("a anamnese deve ser atualizada para a versão {int}")
     public void a_anamnese_deve_ser_atualizada_para_a_versao(Integer versaoEsperada) {
-        Anamnese anamnese = appService.getRepository().buscarPorPacienteId(pacienteIdAtual);
+        Anamnese anamnese = appService.getAnamneseRepository().buscarPorPacienteId(pacienteIdAtual);
         assertEquals(versaoEsperada, anamnese.getVersaoAtual());
     }
 
     @Então("o histórico deve conter a versão {int} com os dados anteriores")
     public void o_historico_deve_conter_a_versao_com_os_dados_anteriores(Integer versaoAnterior) {
-        Anamnese anamnese = appService.getRepository().buscarPorPacienteId(pacienteIdAtual);
+        Anamnese anamnese = appService.getAnamneseRepository().buscarPorPacienteId(pacienteIdAtual);
         assertTrue(anamnese.getHistoricoVersoes().stream().anyMatch(v -> v.versao() == versaoAnterior));
     }
 
     @Então("a data e o responsável pela atualização devem ser registrados")
     public void a_data_e_o_responsavel_pela_atualizacao_devem_ser_registrados() {
-        Anamnese anamnese = appService.getRepository().buscarPorPacienteId(pacienteIdAtual);
+        Anamnese anamnese = appService.getAnamneseRepository().buscarPorPacienteId(pacienteIdAtual);
         assertNotNull(anamnese.getDataUltimaAtualizacao());
         assertNotNull(anamnese.getResponsavelCadastro());
     }
 
     @Então("a anamnese deve conter as alergias {string} e {string}")
     public void a_anamnese_deve_conter_as_alergias_e(String alergia1, String alergia2) {
-        Anamnese anamnese = appService.getRepository().buscarPorPacienteId(pacienteIdAtual);
+        Anamnese anamnese = appService.getAnamneseRepository().buscarPorPacienteId(pacienteIdAtual);
         assertTrue(anamnese.getAlergias().contains(alergia1));
         assertTrue(anamnese.getAlergias().contains(alergia2));
     }
