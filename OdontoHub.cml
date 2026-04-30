@@ -40,6 +40,8 @@ Domain OdontoHub {
 /* ============================================================
    BOUNDED CONTEXT: Agendamento
    Funcionalidade 1 — Agendamento de Consultas e Retornos
+   Funcionalidade 13 — Confirmação e Lembretes de Consulta
+   Funcionalidade 14 — Registro de Não Comparecimento (No-Show)
    ============================================================ */
 
 BoundedContext AgendamentoContext implements AgendamentoSubdomain {
@@ -56,7 +58,13 @@ BoundedContext AgendamentoContext implements AgendamentoSubdomain {
             Date dataHora
             - TipoAtendimento tipo
             - StatusAgendamento status
+            - RespostaPaciente respostaPaciente
             String motivoCancelamento
+            Date dataUltimoLembrete
+            Date dataConfirmacaoPaciente
+            String canalUltimoLembrete
+            String responsavelMarcacaoNoShow
+            Date dataMarcacaoNoShow
             String responsavelAlteracao
             Date dataUltimaAlteracao
         }
@@ -80,7 +88,11 @@ BoundedContext AgendamentoContext implements AgendamentoSubdomain {
         }
 
         enum StatusAgendamento {
-            AGENDADO, CONFIRMADO, CANCELADO, REMARCADO;
+            AGENDADO, CONFIRMADO, CANCELADO, REMARCADO, NAO_COMPARECEU;
+        }
+
+        enum RespostaPaciente {
+            PENDENTE, CONFIRMADO, RECUSADO;
         }
 
         DomainEvent AgendamentoRegistrado {
@@ -114,11 +126,49 @@ BoundedContext AgendamentoContext implements AgendamentoSubdomain {
             String responsavel
         }
 
+        DomainEvent LembreteConsultaEnviado {
+            - AgendamentoId agendamentoId
+            Long pacienteId
+            Date dataHoraConsulta
+            Date dataEnvio
+            String canal
+        }
+
+        DomainEvent ConfirmacaoPacienteRegistrada {
+            - AgendamentoId agendamentoId
+            Long pacienteId
+            Date dataConfirmacao
+        }
+
+        DomainEvent RecusaPacienteRegistrada {
+            - AgendamentoId agendamentoId
+            Long pacienteId
+            String motivo
+            Date dataRecusa
+        }
+
+        DomainEvent AgendamentoMarcadoComoNaoCompareceu {
+            - AgendamentoId agendamentoId
+            Long pacienteId
+            Date dataHoraConsulta
+            String responsavel
+        }
+
+        DomainEvent PacienteSinalizadoPorNaoComparecimento {
+            Long pacienteId
+            int quantidadeNoShowsRecentes
+            String classificacaoRisco
+        }
+
         Service AgendamentoService {
             void registrarAgendamento(@PacienteId pacienteId, @DentistaId dentistaId, Date dataHora, boolean pacienteTemPlanoAtivo, boolean pacienteInadimplente);
             void confirmarAgendamento(@AgendamentoId id, String responsavel);
             void cancelarAgendamento(@AgendamentoId id, String motivo, String responsavel);
             void remarcarAgendamento(@AgendamentoId id, Date novaDataHora, String responsavel);
+            void enviarLembreteConsulta(@AgendamentoId id, String canal);
+            void registrarConfirmacaoPaciente(@AgendamentoId id);
+            void registrarRecusaPaciente(@AgendamentoId id, String motivo, String responsavel);
+            void marcarNaoComparecimento(@AgendamentoId id, String responsavel);
             boolean existeConflitoDeHorario(@DentistaId dentistaId, Date dataHora);
         }
     }

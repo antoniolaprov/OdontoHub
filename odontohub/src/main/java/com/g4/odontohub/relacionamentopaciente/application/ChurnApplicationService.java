@@ -110,7 +110,7 @@ public class ChurnApplicationService {
     public void registrarNaoComparecimento(String nomePaciente) {
         Long pacienteId = garantirPaciente(nomePaciente);
         Agendamento agendamento = obterOuCriarAgendamentoConfirmadoDoPaciente(pacienteId);
-        agendamento.registrarNaoComparecimento("Sistema");
+        agendamento.registrarNaoComparecimento("Sistema", agendamento.getDataHora().plusMinutes(1));
         ultimoAgendamento = agendamento;
     }
 

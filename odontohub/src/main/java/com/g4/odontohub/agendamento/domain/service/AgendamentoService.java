@@ -40,7 +40,54 @@ public class AgendamentoService {
     }
 
     public void remarcarAgendamento(AgendamentoId id, LocalDateTime novaDataHora, String responsavel) {
-        agendamentos.get(id).remarcar(novaDataHora, responsavel);
+        obterAgendamento(id).remarcar(novaDataHora, responsavel);
+    }
+
+    public void enviarLembreteConsulta(AgendamentoId id, String canal) {
+        Agendamento agendamento = obterAgendamento(id);
+        if (agendamento.getStatus() == StatusAgendamento.CANCELADO) {
+            throw new IllegalArgumentException("Nao e permitido enviar lembrete para agendamento cancelado");
+        }
+        if (agendamento.getStatus() != StatusAgendamento.CONFIRMADO) {
+            throw new IllegalArgumentException("Nao e permitido enviar lembrete para agendamento nao confirmado");
+        }
+        if (agendamento.getDataUltimoLembrete() != null
+                && agendamento.getDataUltimoLembrete().isAfter(LocalDateTime.now().minusHours(24))) {
+            throw new IllegalArgumentException("Ja existe lembrete enviado para este agendamento no periodo configurado");
+        }
+        agendamento.enviarLembrete(canal);
+    }
+
+    public void registrarConfirmacaoPaciente(AgendamentoId id) {
+        obterAgendamento(id).registrarConfirmacaoPaciente();
+    }
+
+    public void registrarRecusaPaciente(AgendamentoId id, String motivo, String responsavel) {
+        obterAgendamento(id).registrarRecusaPaciente(motivo, responsavel);
+    }
+
+    public void marcarNaoComparecimento(AgendamentoId id, String responsavel) {
+        marcarNaoComparecimento(id, responsavel, LocalDateTime.now());
+    }
+
+    public void marcarNaoComparecimento(AgendamentoId id, String responsavel, LocalDateTime dataHoraAtual) {
+        obterAgendamento(id).registrarNaoComparecimento(responsavel, dataHoraAtual);
+    }
+
+    public Agendamento obterAgendamento(AgendamentoId id) {
+        Agendamento agendamento = agendamentos.get(id);
+        if (agendamento == null) {
+            throw new IllegalArgumentException("Agendamento nao encontrado");
+        }
+        return agendamento;
+    }
+
+    public Agendamento obterAgendamentoPorPacienteEData(PacienteId pacienteId, LocalDateTime dataHora) {
+        return agendamentos.values().stream()
+                .filter(a -> a.getPacienteId().equals(pacienteId))
+                .filter(a -> a.getDataHora().equals(dataHora))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Agendamento nao encontrado"));
     }
 
     public boolean existeConflitoDeHorario(DentistaId dentistaId, LocalDateTime dataHora) {
@@ -49,4 +96,28 @@ public class AgendamentoService {
                 .filter(a -> a.getStatus() != StatusAgendamento.CANCELADO)
                 .anyMatch(a -> a.getDataHora().equals(dataHora));
     }
+
+    public long contarNoShowsRecentes(PacienteId pacienteId, LocalDateTime dataReferencia) {
+        LocalDateTime inicioJanela = dataReferencia.minusMonths(6);
+        return agendamentos.values().stream()
+                .filter(a -> a.getPacienteId().equals(pacienteId))
+                .filter(a -> a.getStatus() == StatusAgendamento.NAO_COMPARECEU)
+                .filter(a -> !a.getDataHora().isBefore(inicioJanela))
+                .filter(a -> !a.getDataHora().isAfter(dataReferencia))
+                .count();
+    }
+
+    public ResumoOcorrenciasAgenda consultarResumoOcorrencias(PacienteId pacienteId) {
+        long quantidadeNoShows = agendamentos.values().stream()
+                .filter(a -> a.getPacienteId().equals(pacienteId))
+                .filter(a -> a.getStatus() == StatusAgendamento.NAO_COMPARECEU)
+                .count();
+        long quantidadeCancelamentos = agendamentos.values().stream()
+                .filter(a -> a.getPacienteId().equals(pacienteId))
+                .filter(a -> a.getStatus() == StatusAgendamento.CANCELADO)
+                .count();
+        return new ResumoOcorrenciasAgenda(quantidadeNoShows, quantidadeCancelamentos);
+    }
+
+    public record ResumoOcorrenciasAgenda(long quantidadeNoShows, long quantidadeCancelamentos) {}
 }
