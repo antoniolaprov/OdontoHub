@@ -20,6 +20,20 @@ public class InstrumentoApplicationService {
         return instrumento;
     }
 
+    public Instrumento cadastrarInstrumento(String nome, String categoria, String codigoIdentificador) {
+        Instrumento instrumento = service.cadastrarInstrumento(nome, categoria, codigoIdentificador);
+        instrumentoIds.put(nome, instrumento.getId().id());
+        return instrumento;
+    }
+
+    public void desativarInstrumento(String nome) {
+        service.desativarInstrumento(resolverIdPorNome(nome));
+    }
+
+    public boolean existeCodigoIdentificador(String codigoIdentificador) {
+        return service.existeCodigoIdentificador(codigoIdentificador);
+    }
+
     public void marcarComoEsteril(String nome, LocalDate dataEsterilizacao, String responsavel) {
         service.marcarComoEsteril(resolverIdPorNome(nome), dataEsterilizacao, responsavel);
     }
@@ -38,6 +52,10 @@ public class InstrumentoApplicationService {
 
     public List<Instrumento> listarEstereisDentroDoPrazo() {
         return service.listarEstereisDentroDoPrazo();
+    }
+
+    public List<Instrumento> listarInstrumentosAtivos() {
+        return service.listarInstrumentosAtivos();
     }
 
     public Instrumento buscarPorNome(String nome) {

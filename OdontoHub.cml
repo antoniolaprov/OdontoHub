@@ -585,6 +585,8 @@ BoundedContext EstoqueContext implements EstoqueSubdomain {
             - InstrumentoId id
             String nome
             String categoria
+            String codigoIdentificador
+            - StatusInstrumento statusInstrumento
             - StatusEsterilizacao status
             Date dataUltimaEsterilizacao
             Date dataVencimento
@@ -596,8 +598,23 @@ BoundedContext EstoqueContext implements EstoqueSubdomain {
             Long id
         }
 
+        enum StatusInstrumento {
+            ATIVO, INATIVO;
+        }
+
         enum StatusEsterilizacao {
             ESTERIL, CONTAMINADO, VENCIDO;
+        }
+
+        DomainEvent InstrumentoCadastrado {
+            - InstrumentoId instrumentoId
+            String nome
+            String categoria
+            String codigoIdentificador
+        }
+
+        DomainEvent InstrumentoDesativado {
+            - InstrumentoId instrumentoId
         }
 
         DomainEvent InstrumentoEsterilizado {
@@ -617,10 +634,14 @@ BoundedContext EstoqueContext implements EstoqueSubdomain {
         }
 
         Service InstrumentoService {
+            void cadastrarInstrumento(String nome, String categoria, String codigoIdentificador);
+            void desativarInstrumento(@InstrumentoId instrumentoId);
+            boolean existeCodigoIdentificador(String codigoIdentificador);
             void marcarComoEsteril(@InstrumentoId instrumentoId, Date dataEsterilizacao, String responsavel);
             void marcarComoContaminado(@InstrumentoId instrumentoId);
             void recalcularValidadeGlobal(int novoPrazoDias);
             void verificarEAtualizarVencidos();
+            void listarInstrumentosAtivos();
             void listarEstereisDentroDoPrazo();
         }
     }

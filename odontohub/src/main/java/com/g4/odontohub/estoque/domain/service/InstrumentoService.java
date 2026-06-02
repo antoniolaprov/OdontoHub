@@ -1,11 +1,14 @@
 package com.g4.odontohub.estoque.domain.service;
 
 import com.g4.odontohub.estoque.domain.event.InstrumentoContaminado;
+import com.g4.odontohub.estoque.domain.event.InstrumentoCadastrado;
+import com.g4.odontohub.estoque.domain.event.InstrumentoDesativado;
 import com.g4.odontohub.estoque.domain.event.InstrumentoEsterilizado;
 import com.g4.odontohub.estoque.domain.event.InstrumentoVencido;
 import com.g4.odontohub.estoque.domain.model.Instrumento;
 import com.g4.odontohub.estoque.domain.model.InstrumentoId;
 import com.g4.odontohub.estoque.domain.model.StatusEsterilizacao;
+import com.g4.odontohub.estoque.domain.model.StatusInstrumento;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
 import java.time.LocalDate;
@@ -18,12 +21,37 @@ public class InstrumentoService {
 
     private final Map<Long, Instrumento> repositorio = new HashMap<>();
     private long nextId = 1;
+    private int prazoValidadeGlobalDias = 7;
 
     public Instrumento cadastrar(String nome, int prazoValidadeDias) {
+        return cadastrarInstrumento(nome, "", "LEGACY-" + nextId, prazoValidadeDias);
+    }
+
+    public Instrumento cadastrarInstrumento(String nome, String categoria, String codigoIdentificador) {
+        return cadastrarInstrumento(nome, categoria, codigoIdentificador, prazoValidadeGlobalDias);
+    }
+
+    private Instrumento cadastrarInstrumento(String nome, String categoria, String codigoIdentificador,
+                                             int prazoValidadeDias) {
+        if (existeCodigoIdentificador(codigoIdentificador)) {
+            throw new IllegalArgumentException("Código de instrumento já cadastrado");
+        }
         InstrumentoId id = new InstrumentoId(nextId++);
-        Instrumento instrumento = new Instrumento(id, nome, prazoValidadeDias);
+        Instrumento instrumento = new Instrumento(id, nome, categoria, codigoIdentificador, prazoValidadeDias);
         repositorio.put(id.id(), instrumento);
+        DomainEventPublisher.publish(new InstrumentoCadastrado(id, nome, categoria, codigoIdentificador));
         return instrumento;
+    }
+
+    public void desativarInstrumento(Long instrumentoId) {
+        Instrumento instrumento = buscarPorId(instrumentoId);
+        instrumento.desativar();
+        DomainEventPublisher.publish(new InstrumentoDesativado(instrumento.getId()));
+    }
+
+    public boolean existeCodigoIdentificador(String codigoIdentificador) {
+        return repositorio.values().stream()
+                .anyMatch(i -> i.getCodigoIdentificador().equals(codigoIdentificador));
     }
 
     public void marcarComoEsteril(Long instrumentoId, LocalDate dataEsterilizacao, String responsavel) {
@@ -44,13 +72,17 @@ public class InstrumentoService {
     }
 
     public void recalcularValidadeGlobal(int novoPrazoDias) {
-        repositorio.values().forEach(i -> i.recalcularVencimento(novoPrazoDias));
+        this.prazoValidadeGlobalDias = novoPrazoDias;
+        repositorio.values().stream()
+                .filter(i -> i.getStatusInstrumento() == StatusInstrumento.ATIVO)
+                .forEach(i -> i.recalcularVencimento(novoPrazoDias));
     }
 
     public void verificarEAtualizarVencidos() {
         LocalDate hoje = LocalDate.now();
         repositorio.values().forEach(instrumento -> {
             if (instrumento.getStatus() == StatusEsterilizacao.ESTERIL
+                    && instrumento.getStatusInstrumento() == StatusInstrumento.ATIVO
                     && instrumento.getDataVencimento() != null
                     && hoje.isAfter(instrumento.getDataVencimento())) {
                 instrumento.marcarComoVencido();
@@ -63,8 +95,15 @@ public class InstrumentoService {
         LocalDate hoje = LocalDate.now();
         return repositorio.values().stream()
                 .filter(i -> i.getStatus() == StatusEsterilizacao.ESTERIL
+                        && i.getStatusInstrumento() == StatusInstrumento.ATIVO
                         && i.getDataVencimento() != null
                         && !hoje.isAfter(i.getDataVencimento()))
+                .collect(Collectors.toList());
+    }
+
+    public List<Instrumento> listarInstrumentosAtivos() {
+        return repositorio.values().stream()
+                .filter(i -> i.getStatusInstrumento() == StatusInstrumento.ATIVO)
                 .collect(Collectors.toList());
     }
 

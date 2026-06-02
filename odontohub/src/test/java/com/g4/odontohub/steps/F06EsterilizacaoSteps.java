@@ -3,6 +3,7 @@ package com.g4.odontohub.steps;
 import com.g4.odontohub.estoque.application.InstrumentoApplicationService;
 import com.g4.odontohub.estoque.domain.model.Instrumento;
 import com.g4.odontohub.estoque.domain.model.StatusEsterilizacao;
+import com.g4.odontohub.estoque.domain.model.StatusInstrumento;
 import io.cucumber.java.pt.*;
 
 import java.time.LocalDate;
@@ -15,15 +16,101 @@ public class F06EsterilizacaoSteps {
     private final InstrumentoApplicationService service = new InstrumentoApplicationService();
     private Instrumento ultimoInstrumento;
     private List<Instrumento> listaResultado;
+    private Exception ultimaExcecao;
+    private String nomeInstrumentoAtual;
 
     // ─────────────────────── BACKGROUND ───────────────────────
+
+    @Dado("que o prazo global de validade da esterilização é de {int} dias")
+    public void prazoGlobalValidadeEsterilizacao(int prazo) {
+        service.recalcularValidadeGlobal(prazo);
+    }
 
     @Dado("que o instrumento {string} está cadastrado com prazo de validade de {int} dias")
     public void instrumentoCadastrado(String nome, int prazo) {
         service.cadastrar(nome, prazo);
     }
 
-    // ──────────── CENÁRIO 1: Marcação como Estéril ────────────
+    @Dado("que o instrumento {string} está cadastrado")
+    public void instrumentoCadastrado(String nome) {
+        cadastrarInstrumentoParaCenario(nome);
+    }
+
+    // ──────────── CENÁRIO 1: Cadastro de instrumento ──────────
+
+    @Quando("o auxiliar cadastra o instrumento {string} da categoria {string} com código {string}")
+    public void cadastrarInstrumento(String nome, String categoria, String codigoIdentificador) {
+        ultimoInstrumento = service.cadastrarInstrumento(nome, categoria, codigoIdentificador);
+    }
+
+    @Então("o instrumento deve ser salvo no sistema")
+    public void instrumentoDeveSerSalvo() {
+        assertNotNull(ultimoInstrumento);
+        assertSame(ultimoInstrumento, service.buscarPorNome(ultimoInstrumento.getNome()));
+    }
+
+    @E("o status inicial deve ser {string}")
+    public void statusInicialDeveSer(String statusStr) {
+        assertEquals(mapearStatus(statusStr), ultimoInstrumento.getStatus());
+    }
+
+    @E("o instrumento deve estar marcado como ativo")
+    public void instrumentoDeveEstarAtivo() {
+        assertEquals(StatusInstrumento.ATIVO, ultimoInstrumento.getStatusInstrumento());
+    }
+
+    // ──────────── CENÁRIO 2: Bloqueio de código duplicado ─────
+
+    @Dado("que já existe um instrumento cadastrado com código {string}")
+    public void instrumentoCadastradoComCodigo(String codigoIdentificador) {
+        service.cadastrarInstrumento("Instrumento existente", "", codigoIdentificador);
+    }
+
+    @Quando("o auxiliar tenta cadastrar outro instrumento com código {string}")
+    public void tentarCadastrarInstrumentoComCodigo(String codigoIdentificador) {
+        try {
+            service.cadastrarInstrumento("Outro instrumento", "", codigoIdentificador);
+        } catch (Exception e) {
+            ultimaExcecao = e;
+        }
+    }
+
+    @Então("o sistema deve impedir o cadastro")
+    public void sistemaDeveImpedirCadastro() {
+        assertNotNull(ultimaExcecao);
+    }
+
+    @E("deve exibir a mensagem {string}")
+    public void deveExibirMensagem(String mensagem) {
+        assertEquals(mensagem, ultimaExcecao.getMessage());
+    }
+
+    // ──────────── CENÁRIO 3: Desativação de instrumento ───────
+
+    @Dado("que o instrumento {string} está ativo")
+    public void instrumentoEstaAtivo(String nome) {
+        ultimoInstrumento = cadastrarInstrumentoParaCenario(nome);
+        nomeInstrumentoAtual = nome;
+    }
+
+    @Quando("o auxiliar desativa o instrumento")
+    public void desativarInstrumento() {
+        service.desativarInstrumento(nomeInstrumentoAtual);
+    }
+
+    @Então("o instrumento não deve aparecer em novas listas de esterilização")
+    public void instrumentoNaoDeveAparecerEmListasDeEsterilizacao() {
+        listaResultado = service.listarInstrumentosAtivos();
+        assertFalse(listaResultado.stream().anyMatch(i -> i.getNome().equals(nomeInstrumentoAtual)));
+    }
+
+    @E("o instrumento deve permanecer salvo para fins históricos")
+    public void instrumentoDevePermanecerSalvo() {
+        Instrumento instrumento = service.buscarPorNome(nomeInstrumentoAtual);
+        assertEquals(StatusInstrumento.INATIVO, instrumento.getStatusInstrumento());
+    }
+
+    // ──────────── CENÁRIO 4: Marcação como Estéril ────────────
 
     @Quando("o auxiliar {string} marca {string} como Estéril na data de hoje")
     public void marcarComoEsteril(String responsavel, String nome) {
@@ -52,7 +139,7 @@ public class F06EsterilizacaoSteps {
         assertEquals(LocalDate.now().plusDays(dias), ultimoInstrumento.getDataVencimento());
     }
 
-    // ──────────── CENÁRIO 2: Vencimento automático ────────────
+    // ──────────── CENÁRIO 5: Vencimento automático ────────────
 
     @Dado("que {string} foi esterilizado há {int} dias com status {string}")
     public void instrumentoEsterilizadoHaDias(String nome, int diasAtras, String statusStr) {
@@ -78,7 +165,7 @@ public class F06EsterilizacaoSteps {
         assertEquals(mapearStatus(statusStr), service.buscarPorNome(nome).getStatus());
     }
 
-    // ──────────── CENÁRIO 3: Recálculo de validade global ─────
+    // ──────────── CENÁRIO 6: Recálculo de validade global ─────
 
     @Dado("que {string} foi esterilizado hoje com prazo global de {int} dias")
     public void instrumentoEsterilizadoHojeComPrazo(String nome, int prazo) {
@@ -101,7 +188,7 @@ public class F06EsterilizacaoSteps {
         assertEquals(LocalDate.now().plusDays(dias), service.buscarPorNome(nome).getDataVencimento());
     }
 
-    // ──────────── CENÁRIO 4: Listagem de instrumentos prontos ─
+    // ──────────── CENÁRIO 7: Listagem de instrumentos prontos ─
 
     @Dado("que {string} está com status {string} e dentro do prazo")
     public void instrumentoComStatusEDentroDoPrazo(String nome, String statusStr) {
@@ -146,7 +233,7 @@ public class F06EsterilizacaoSteps {
         assertFalse(encontrado, "A lista não deveria conter: " + nome);
     }
 
-    // ──────────── CENÁRIO 5: Marcação como Contaminado ────────
+    // ──────────── CENÁRIO 8: Marcação como Contaminado ────────
 
     @Quando("o auxiliar marca {string} como Contaminado após uso no procedimento")
     public void marcarComoContaminado(String nome) {
@@ -155,6 +242,14 @@ public class F06EsterilizacaoSteps {
     }
 
     // ─────────────────────── HELPERS ──────────────────────────
+
+    private Instrumento cadastrarInstrumentoParaCenario(String nome) {
+        try {
+            return service.buscarPorNome(nome);
+        } catch (Exception e) {
+            return service.cadastrar(nome, 7);
+        }
+    }
 
     private StatusEsterilizacao mapearStatus(String statusStr) {
         return switch (statusStr) {
