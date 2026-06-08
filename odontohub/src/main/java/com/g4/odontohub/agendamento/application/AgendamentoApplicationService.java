@@ -16,6 +16,7 @@ public class AgendamentoApplicationService {
     // ACL: simulação de dados cross-context (em memória para testes)
     private final Map<String, Long> pacienteIds = new HashMap<>();
     private final Map<String, Long> dentistaIds = new HashMap<>();
+    private final Map<Long, String> nomesDentistas = new HashMap<>();
     private final Map<Long, Boolean> pacientesComPlanoAtivo = new HashMap<>();
     private final Map<Long, Boolean> pacientesInadimplentes = new HashMap<>();
 
@@ -23,7 +24,9 @@ public class AgendamentoApplicationService {
     private long nextDentistaId = 1L;
 
     public void cadastrarDentista(String nome) {
-        dentistaIds.put(nome, nextDentistaId++);
+        Long id = nextDentistaId++;
+        dentistaIds.put(nome, id);
+        nomesDentistas.put(id, nome);
     }
 
     public void cadastrarPaciente(String nome) {
@@ -45,7 +48,8 @@ public class AgendamentoApplicationService {
         boolean inadimplente = pacientesInadimplentes.getOrDefault(pacId, false);
 
         Agendamento ag = agendamentoService.registrarAgendamento(
-                new PacienteId(pacId), new DentistaId(denId), dataHora, planoAtivo, inadimplente);
+                new PacienteId(pacId), new DentistaId(denId), dataHora, planoAtivo, inadimplente,
+                nomesDentistas.getOrDefault(denId, nomeDentista));
         DomainEventPublisher.publish(new AgendamentoRegistrado(ag.getId(), pacId, denId, dataHora, ag.getTipo()));
         return ag;
     }

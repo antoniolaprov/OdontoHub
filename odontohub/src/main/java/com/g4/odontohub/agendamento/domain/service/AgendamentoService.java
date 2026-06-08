@@ -3,25 +3,29 @@ package com.g4.odontohub.agendamento.domain.service;
 import com.g4.odontohub.agendamento.domain.model.*;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 
 public class AgendamentoService {
+
+    private static final DateTimeFormatter HORA_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
     private final Map<AgendamentoId, Agendamento> agendamentos = new HashMap<>();
     private long nextId = 1L;
 
     public Agendamento registrarAgendamento(PacienteId pacienteId, DentistaId dentistaId,
                                             LocalDateTime dataHora, boolean pacienteTemPlanoAtivo,
-                                            boolean pacienteInadimplente) {
+                                            boolean pacienteInadimplente, String nomeDentista) {
         if (dataHora.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Não é permitido registrar agendamentos em datas passadas");
+            throw new IllegalArgumentException("Não é possível agendar para datas passadas.");
         }
         if (pacienteInadimplente) {
-            throw new IllegalArgumentException("Paciente restrito: possui parcelas em atraso há mais de 30 dias");
+            throw new IllegalArgumentException("Paciente inadimplente");
         }
         if (existeConflitoDeHorario(dentistaId, dataHora)) {
-            throw new IllegalArgumentException("Conflito de horário: o dentista já possui um agendamento neste horário");
+            throw new IllegalArgumentException("Conflito de horário: " + nomeDentista
+                    + " já possui agendamento às " + dataHora.format(HORA_FORMATTER) + " neste dia.");
         }
 
         TipoAtendimento tipo = pacienteTemPlanoAtivo ? TipoAtendimento.RETORNO : TipoAtendimento.CONSULTA;
