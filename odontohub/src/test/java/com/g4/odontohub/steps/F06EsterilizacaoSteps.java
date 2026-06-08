@@ -3,6 +3,7 @@ package com.g4.odontohub.steps;
 import com.g4.odontohub.estoque.application.InstrumentoApplicationService;
 import com.g4.odontohub.estoque.domain.model.Instrumento;
 import com.g4.odontohub.estoque.domain.model.StatusEsterilizacao;
+import com.g4.odontohub.estoque.domain.model.StatusInstrumento;
 import io.cucumber.java.pt.*;
 
 import java.time.LocalDate;
@@ -15,6 +16,11 @@ public class F06EsterilizacaoSteps {
     private final InstrumentoApplicationService service = new InstrumentoApplicationService();
     private Instrumento ultimoInstrumento;
     private List<Instrumento> listaResultado;
+    private static Instrumento ultimoInstrumentoCompartilhado;
+
+    public static void definirUltimoInstrumentoCompartilhado(Instrumento instrumento) {
+        ultimoInstrumentoCompartilhado = instrumento;
+    }
 
     @Dado("que o instrumento {string} está cadastrado na F16 com prazo de validade de {int} dias e status ativo")
     public void instrumentoCadastradoNaF16ComPrazoEAtivo(String nome, int prazo) {
@@ -83,8 +89,13 @@ public class F06EsterilizacaoSteps {
 
     @Então("o status do instrumento deve ser {string}")
     public void statusInstrumentoDeveSer(String statusStr) {
-        assertNotNull(ultimoInstrumento);
-        assertEquals(mapearStatus(statusStr), ultimoInstrumento.getStatus());
+        Instrumento instrumento = ultimoInstrumento != null ? ultimoInstrumento : ultimoInstrumentoCompartilhado;
+        assertNotNull(instrumento);
+        if (ehStatusInstrumento(statusStr)) {
+            assertEquals(StatusInstrumento.valueOf(statusStr), instrumento.getStatusInstrumento());
+        } else {
+            assertEquals(mapearStatus(statusStr), instrumento.getStatus());
+        }
     }
 
     @Então("o status de {string} deve ser atualizado para {string}")
@@ -137,5 +148,14 @@ public class F06EsterilizacaoSteps {
 
     private StatusEsterilizacao mapearStatus(String statusStr) {
         return StatusEsterilizacao.valueOf(statusStr);
+    }
+
+    private boolean ehStatusInstrumento(String statusStr) {
+        try {
+            StatusInstrumento.valueOf(statusStr);
+            return true;
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 }

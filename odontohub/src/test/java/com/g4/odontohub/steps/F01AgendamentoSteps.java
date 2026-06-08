@@ -237,11 +237,6 @@ public class F01AgendamentoSteps {
         assertEquals(horaEsperada, ultimoAgendamento.getDataHora().format(HORA_FORMATTER));
     }
 
-    @E("o responsável pela alteração deve ser registrado como {string}")
-    public void responsavelPelaAlteracao(String responsavel) {
-        assertEquals(responsavel, ultimoAgendamento.getResponsavelAlteracao());
-    }
-
     @E("a data da última alteração deve ser registrada")
     public void dataUltimaAlteracaoDeveSerRegistrada() {
         assertNotNull(ultimoAgendamento.getDataUltimaAlteracao());

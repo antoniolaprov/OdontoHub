@@ -26,6 +26,22 @@ public class InstrumentoApplicationService {
         return instrumento;
     }
 
+    public Instrumento cadastrarInstrumentoComPrazo(String nome, String categoria, String codigoIdentificador,
+                                                    int prazoValidadeDias) {
+        Instrumento instrumento = service.cadastrarInstrumentoComPrazo(
+                nome, categoria, codigoIdentificador, prazoValidadeDias);
+        instrumentoIds.put(nome, instrumento.getId().id());
+        return instrumento;
+    }
+
+    public Instrumento cadastrarKit(String nome, String categoria, String codigoIdentificador,
+                                    int prazoValidadeDias, List<String> codigosComponentes) {
+        Instrumento instrumento = service.cadastrarKit(
+                nome, categoria, codigoIdentificador, prazoValidadeDias, codigosComponentes);
+        instrumentoIds.put(nome, instrumento.getId().id());
+        return instrumento;
+    }
+
     public void desativarInstrumento(String nome) {
         service.desativarInstrumento(resolverIdPorNome(nome));
     }
@@ -46,6 +62,14 @@ public class InstrumentoApplicationService {
         service.recalcularValidadeGlobal(novoPrazoDias);
     }
 
+    public void configurarPrazoGlobal(int novoPrazoDias) {
+        service.configurarPrazoGlobal(novoPrazoDias);
+    }
+
+    public void configurarPrazoPorCategoria(String categoria, int novoPrazoDias) {
+        service.configurarPrazoPorCategoria(categoria, novoPrazoDias);
+    }
+
     public void verificarEAtualizarVencidos() {
         service.verificarEAtualizarVencidos();
     }
@@ -62,6 +86,10 @@ public class InstrumentoApplicationService {
         return service.buscarPorNome(nome);
     }
 
+    public Instrumento buscarPorCodigo(String codigoIdentificador) {
+        return service.buscarPorCodigo(codigoIdentificador);
+    }
+
     public void definirStatus(String nome, StatusEsterilizacao status, LocalDate dataVencimento) {
         Instrumento instrumento = service.buscarPorNome(nome);
         instrumento.setStatus(status);
@@ -72,7 +100,9 @@ public class InstrumentoApplicationService {
 
     private Long resolverIdPorNome(String nome) {
         Long id = instrumentoIds.get(nome);
-        if (id == null) throw new IllegalArgumentException("Instrumento não cadastrado: " + nome);
+        if (id == null) {
+            throw new IllegalArgumentException("Instrumento não cadastrado: " + nome);
+        }
         return id;
     }
 }

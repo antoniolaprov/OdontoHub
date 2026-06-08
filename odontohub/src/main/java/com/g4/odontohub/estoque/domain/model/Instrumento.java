@@ -1,6 +1,9 @@
 package com.g4.odontohub.estoque.domain.model;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Instrumento {
 
@@ -14,6 +17,8 @@ public class Instrumento {
     private LocalDate dataVencimento;
     private int prazoValidadeDias;
     private String responsavelEsterilizacao;
+    private String tipo;
+    private final List<String> codigosComponentes = new ArrayList<>();
 
     public Instrumento(InstrumentoId id, String nome, String categoria,
                        String codigoIdentificador, int prazoValidadeDias) {
@@ -24,6 +29,7 @@ public class Instrumento {
         this.prazoValidadeDias = prazoValidadeDias;
         this.statusInstrumento = StatusInstrumento.ATIVO;
         this.status = StatusEsterilizacao.CONTAMINADO;
+        this.tipo = "INDIVIDUAL";
     }
 
     public void desativar() {
@@ -72,6 +78,17 @@ public class Instrumento {
     public LocalDate getDataVencimento() { return dataVencimento; }
     public int getPrazoValidadeDias() { return prazoValidadeDias; }
     public String getResponsavelEsterilizacao() { return responsavelEsterilizacao; }
+    public String getTipo() { return tipo; }
+    public List<String> getCodigosComponentes() { return Collections.unmodifiableList(codigosComponentes); }
+
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
+
+    public void adicionarComponentes(List<String> codigosComponentes) {
+        this.codigosComponentes.clear();
+        this.codigosComponentes.addAll(codigosComponentes);
+    }
 
     public void setStatus(StatusEsterilizacao status) {
         validarAtivo();

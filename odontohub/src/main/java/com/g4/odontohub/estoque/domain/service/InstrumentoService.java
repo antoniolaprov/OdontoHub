@@ -1,7 +1,7 @@
 package com.g4.odontohub.estoque.domain.service;
 
-import com.g4.odontohub.estoque.domain.event.InstrumentoContaminado;
 import com.g4.odontohub.estoque.domain.event.InstrumentoCadastrado;
+import com.g4.odontohub.estoque.domain.event.InstrumentoContaminado;
 import com.g4.odontohub.estoque.domain.event.InstrumentoDesativado;
 import com.g4.odontohub.estoque.domain.event.InstrumentoEsterilizado;
 import com.g4.odontohub.estoque.domain.event.InstrumentoVencido;
@@ -12,6 +12,7 @@ import com.g4.odontohub.estoque.domain.model.StatusInstrumento;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,17 +25,39 @@ public class InstrumentoService {
     private int prazoValidadeGlobalDias = 7;
 
     public Instrumento cadastrar(String nome, int prazoValidadeDias) {
-        return cadastrarInstrumento(nome, "", "LEGACY-" + nextId, prazoValidadeDias);
+        return cadastrarInstrumento(nome, "", "LEGACY-" + nextId, prazoValidadeDias, false);
     }
 
     public Instrumento cadastrarInstrumento(String nome, String categoria, String codigoIdentificador) {
-        return cadastrarInstrumento(nome, categoria, codigoIdentificador, prazoValidadeGlobalDias);
+        return cadastrarInstrumento(nome, categoria, codigoIdentificador, prazoValidadeGlobalDias, true);
+    }
+
+    public Instrumento cadastrarInstrumentoComPrazo(String nome, String categoria, String codigoIdentificador,
+                                                    int prazoValidadeDias) {
+        return cadastrarInstrumento(nome, categoria, codigoIdentificador, prazoValidadeDias, true);
+    }
+
+    public Instrumento cadastrarKit(String nome, String categoria, String codigoIdentificador,
+                                    int prazoValidadeDias, List<String> codigosComponentes) {
+        validarCadastro(nome, categoria, codigoIdentificador);
+        if (existeCodigoIdentificador(codigoIdentificador)) {
+            throw new IllegalArgumentException("Código já cadastrado. Use um código único.");
+        }
+
+        Instrumento instrumento = cadastrarInstrumento(
+                nome, categoria, codigoIdentificador, prazoValidadeDias, false);
+        instrumento.setTipo("KIT");
+        instrumento.adicionarComponentes(new ArrayList<>(codigosComponentes));
+        return instrumento;
     }
 
     private Instrumento cadastrarInstrumento(String nome, String categoria, String codigoIdentificador,
-                                             int prazoValidadeDias) {
+                                             int prazoValidadeDias, boolean validarObrigatorios) {
+        if (validarObrigatorios) {
+            validarCadastro(nome, categoria, codigoIdentificador);
+        }
         if (existeCodigoIdentificador(codigoIdentificador)) {
-            throw new IllegalArgumentException("Código de instrumento já cadastrado");
+            throw new IllegalArgumentException("Código já cadastrado. Use um código único.");
         }
         InstrumentoId id = new InstrumentoId(nextId++);
         Instrumento instrumento = new Instrumento(id, nome, categoria, codigoIdentificador, prazoValidadeDias);
@@ -78,6 +101,23 @@ public class InstrumentoService {
                 .forEach(i -> i.recalcularVencimento(novoPrazoDias));
     }
 
+    public void recalcularValidadePorCategoria(String categoria, int novoPrazoDias) {
+        repositorio.values().stream()
+                .filter(i -> i.getStatusInstrumento() == StatusInstrumento.ATIVO)
+                .filter(i -> i.getCategoria().equals(categoria))
+                .forEach(i -> i.recalcularVencimento(novoPrazoDias));
+    }
+
+    public void configurarPrazoGlobal(int novoPrazoDias) {
+        validarPrazo(novoPrazoDias);
+        recalcularValidadeGlobal(novoPrazoDias);
+    }
+
+    public void configurarPrazoPorCategoria(String categoria, int novoPrazoDias) {
+        validarPrazo(novoPrazoDias);
+        recalcularValidadePorCategoria(categoria, novoPrazoDias);
+    }
+
     public void verificarEAtualizarVencidos() {
         LocalDate hoje = LocalDate.now();
         repositorio.values().forEach(instrumento -> {
@@ -114,9 +154,36 @@ public class InstrumentoService {
                 .orElseThrow(() -> new IllegalArgumentException("Instrumento não encontrado: " + nome));
     }
 
+    public Instrumento buscarPorCodigo(String codigoIdentificador) {
+        return repositorio.values().stream()
+                .filter(i -> i.getCodigoIdentificador().equals(codigoIdentificador))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Instrumento não encontrado: " + codigoIdentificador));
+    }
+
+    private void validarCadastro(String nome, String categoria, String codigoIdentificador) {
+        if (nome == null || nome.isBlank()) {
+            throw new IllegalArgumentException("Nome é obrigatório.");
+        }
+        if (categoria == null || categoria.isBlank()) {
+            throw new IllegalArgumentException("Categoria é obrigatória.");
+        }
+        if (codigoIdentificador == null || codigoIdentificador.isBlank()) {
+            throw new IllegalArgumentException("Código é obrigatório.");
+        }
+    }
+
+    private void validarPrazo(int novoPrazoDias) {
+        if (novoPrazoDias < 1) {
+            throw new IllegalArgumentException("Informe um número de dias válido (mínimo 1).");
+        }
+    }
+
     private Instrumento buscarPorId(Long id) {
         Instrumento instrumento = repositorio.get(id);
-        if (instrumento == null) throw new IllegalArgumentException("Instrumento não encontrado: " + id);
+        if (instrumento == null) {
+            throw new IllegalArgumentException("Instrumento não encontrado: " + id);
+        }
         return instrumento;
     }
 }

@@ -35,6 +35,10 @@ Domain OdontoHub {
         type = GENERIC_SUBDOMAIN
         domainVisionStatement = "Cadastra e controla colaboradores (Auxiliares e Recepcionistas) com vínculo às ações operacionais do consultório."
     }
+    Subdomain CadastroPacienteSubdomain {
+        type = CORE_DOMAIN
+        domainVisionStatement = "Centraliza o cadastro e a gestão do perfil dos pacientes, garantindo unicidade de CPF e e-mail, suporte a cadastro rápido em situações emergenciais e rastreabilidade completa de alterações cadastrais."
+    }
 }
 
 /* ============================================================
@@ -59,6 +63,7 @@ BoundedContext AgendamentoContext implements AgendamentoSubdomain {
             String motivoCancelamento
             String responsavelAlteracao
             Date dataUltimaAlteracao
+            List historico
         }
 
         /* Identificadores deste bounded context.
@@ -73,6 +78,12 @@ BoundedContext AgendamentoContext implements AgendamentoSubdomain {
 
         ValueObject DentistaId {
             Long id
+        }
+
+        ValueObject EntradaHistorico {
+            String acao
+            String responsavel
+            Date dataRegistro
         }
 
         enum TipoAtendimento {
@@ -91,7 +102,8 @@ BoundedContext AgendamentoContext implements AgendamentoSubdomain {
             - TipoAtendimento tipo
         }
 
-        /* Regra de negócio explícita: datas passadas não são aceitas */
+        /* Regra de negócio explícita: datas passadas não são aceitas.
+           Este evento é registrado internamente mas não publicado externamente. */
         DomainEvent AgendamentoRecusadoPorDataPassada {
             Long pacienteId
             Date dataInformada
@@ -115,7 +127,7 @@ BoundedContext AgendamentoContext implements AgendamentoSubdomain {
         }
 
         Service AgendamentoService {
-            void registrarAgendamento(@PacienteId pacienteId, @DentistaId dentistaId, Date dataHora, boolean pacienteTemPlanoAtivo, boolean pacienteInadimplente);
+            void registrarAgendamento(@PacienteId pacienteId, @DentistaId dentistaId, String nomeDentista, Date dataHora, boolean pacienteTemPlanoAtivo, boolean pacienteInadimplente);
             void confirmarAgendamento(@AgendamentoId id, String responsavel);
             void cancelarAgendamento(@AgendamentoId id, String motivo, String responsavel);
             void remarcarAgendamento(@AgendamentoId id, Date novaDataHora, String responsavel);
@@ -586,6 +598,8 @@ BoundedContext EstoqueContext implements EstoqueSubdomain {
             String nome
             String categoria
             String codigoIdentificador
+            String tipo
+            List codigosComponentes
             - StatusInstrumento statusInstrumento
             - StatusEsterilizacao status
             Date dataUltimaEsterilizacao
@@ -635,16 +649,23 @@ BoundedContext EstoqueContext implements EstoqueSubdomain {
 
         Service InstrumentoService {
             void cadastrarInstrumento(String nome, String categoria, String codigoIdentificador);
+            void cadastrarInstrumentoComPrazo(String nome, String categoria, String codigoIdentificador, int prazoValidadeDias);
+            void cadastrarKit(String nome, String categoria, String codigoIdentificador, int prazoValidadeDias, List codigosComponentes);
             void desativarInstrumento(@InstrumentoId instrumentoId);
             boolean existeCodigoIdentificador(String codigoIdentificador);
             void marcarComoEsteril(@InstrumentoId instrumentoId, Date dataEsterilizacao, String responsavel);
             void marcarComoContaminado(@InstrumentoId instrumentoId);
             void recalcularValidadeGlobal(int novoPrazoDias);
+            void configurarPrazoGlobal(int novoPrazoDias);
+            void recalcularValidadePorCategoria(String categoria, int novoPrazoDias);
+            void configurarPrazoPorCategoria(String categoria, int novoPrazoDias);
             void verificarEAtualizarVencidos();
             void listarInstrumentosAtivos();
             void listarEstereisDentroDoPrazo();
         }
     }
+
+    
 }
 
 /* ============================================================
@@ -868,6 +889,77 @@ BoundedContext EquipeContext implements EquipeSubdomain {
 }
 
 /* ============================================================
+   BOUNDED CONTEXT: Cadastro de Paciente
+   Funcionalidade 15 — Cadastro de Pacientes
+   ============================================================ */
+
+BoundedContext CadastroPacienteContext implements CadastroPacienteSubdomain {
+    type = FEATURE
+    domainVisionStatement = "Registra e mantém o perfil dos pacientes com validação de unicidade, suporte a cadastro rápido emergencial e histórico completo de alterações cadastrais."
+
+    Aggregate Paciente {
+
+        Entity Paciente {
+            aggregateRoot
+            - PacienteRegistroId id
+            String nomeCompleto
+            String cpf
+            String dataNascimento
+            String telefone
+            String email
+            - StatusPaciente status
+        }
+
+        ValueObject PacienteRegistroId {
+            Long id
+        }
+
+        ValueObject AlteracaoCadastral {
+            String campo
+            String valorAnterior
+            String valorAtualizado
+            String responsavel
+            Date dataAlteracao
+        }
+
+        enum StatusPaciente {
+            ATIVO, INATIVO, INCOMPLETO, RESTRITO;
+        }
+
+        DomainEvent PacienteCadastrado {
+            - PacienteRegistroId pacienteId
+            String nomeCompleto
+            String cpf
+            - StatusPaciente status
+        }
+
+        DomainEvent PacienteCadastradoRapido {
+            - PacienteRegistroId pacienteId
+            String nomeCompleto
+            String telefone
+        }
+
+        DomainEvent CadastroPacienteAtualizado {
+            - PacienteRegistroId pacienteId
+            - AlteracaoCadastral alteracao
+        }
+
+        DomainEvent PacienteRestrito {
+            - PacienteRegistroId pacienteId
+        }
+
+        Service PacienteService {
+            void cadastrarCompleto(String nomeCompleto, String cpf, String dataNascimento, String telefone, String email, String responsavel);
+            void cadastrarRapido(String nomeCompleto, String telefone, String responsavel);
+            void atualizarCadastro(@PacienteRegistroId pacienteId, String campo, String novoValor, String responsavel);
+            void restringirPaciente(@PacienteRegistroId pacienteId);
+            boolean cpfJaCadastrado(String cpf);
+            boolean emailJaCadastrado(String email);
+        }
+    }
+}
+
+/* ============================================================
    Context Map — Relacionamentos entre Bounded Contexts
    (definido por último pois referencia os BCs acima)
    ============================================================ */
@@ -879,6 +971,7 @@ ContextMap OdontoHubContextMap {
     contains EstoqueContext
     contains RelacionamentoPacienteContext
     contains EquipeContext
+    contains CadastroPacienteContext
 
     /*
      * Agendamento [D] consulta Prontuário [U] para verificar se o paciente
@@ -970,5 +1063,23 @@ ContextMap OdontoHubContextMap {
     AgendamentoContext [D, ACL] <- [U, OHS, PL] EquipeContext {
         implementationTechnology = "Java"
         exposedAggregates = Colaborador
+    }
+
+    /*
+     * Agendamento [D] consulta CadastroPaciente [U] para verificar se o
+     * paciente existe antes de registrar um novo agendamento.
+     */
+    AgendamentoContext [D, ACL] <- [U, OHS, PL] CadastroPacienteContext {
+        implementationTechnology = "Java"
+        exposedAggregates = Paciente
+    }
+
+    /*
+     * Financeiro [D] notifica CadastroPaciente [U] para marcar o paciente
+     * como Restrito quando possui parcelas vencidas há mais de 30 dias.
+     */
+    CadastroPacienteContext [D, CF] <- [U, OHS, PL] FinanceiroContext {
+        implementationTechnology = "Java"
+        exposedAggregates = Parcela
     }
 }
