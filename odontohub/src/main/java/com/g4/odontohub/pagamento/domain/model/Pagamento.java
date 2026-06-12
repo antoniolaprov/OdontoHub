@@ -20,6 +20,18 @@ public class Pagamento {
         this.status = status;
     }
 
+    /** Reconstitui o agregado a partir da persistência (uso da camada de infraestrutura). */
+    public static Pagamento reconstituir(PagamentoId id, String parcelaReferencia, double valorRecebido,
+                                         LocalDate dataPagamento, FormaPagamento formaPagamento,
+                                         StatusPagamento status, String observacao, String justificativaCancelamento) {
+        Pagamento pagamento = new Pagamento(id, parcelaReferencia, formaPagamento, status);
+        pagamento.valorRecebido = valorRecebido;
+        pagamento.dataPagamento = dataPagamento;
+        pagamento.observacao = observacao;
+        pagamento.justificativaCancelamento = justificativaCancelamento;
+        return pagamento;
+    }
+
     public void confirmar(double valorRecebido, LocalDate dataPagamento) {
         this.valorRecebido = valorRecebido;
         this.dataPagamento = dataPagamento;

@@ -25,7 +25,6 @@ public class PagamentoService {
 
     private final PagamentoRepository repositorio;
     private final List<Double> entradasFluxoCaixa = new ArrayList<>();
-    private long nextId = 1;
 
     public PagamentoService(PagamentoRepository repositorio) {
         this.repositorio = repositorio;
@@ -44,10 +43,11 @@ public class PagamentoService {
         if (parcela.estaQuitada()) {
             throw new IllegalStateException("Parcela já quitada não permite novo registro");
         }
-        Pagamento pagamento = new Pagamento(new PagamentoId(nextId++), referencia, forma, StatusPagamento.PAGO);
+        Pagamento pagamento = new Pagamento(new PagamentoId(repositorio.proximoId()), referencia, forma, StatusPagamento.PAGO);
         pagamento.confirmar(valor, data);
         repositorio.salvarPagamento(pagamento);
         parcela.registrarPagamento(valor);
+        repositorio.salvarParcela(parcela);
         entradasFluxoCaixa.add(valor);
         DomainEventPublisher.publish(new PagamentoRegistrado(pagamento.getId(), referencia, valor));
         return pagamento;
@@ -59,7 +59,7 @@ public class PagamentoService {
             throw new IllegalStateException("Já existe um lançamento aguardando comprovante para esta parcela");
         }
         parcela(referencia); // garante que a parcela existe
-        Pagamento pagamento = new Pagamento(new PagamentoId(nextId++), referencia, forma,
+        Pagamento pagamento = new Pagamento(new PagamentoId(repositorio.proximoId()), referencia, forma,
                 StatusPagamento.AGUARDANDO_COMPROVANTE);
         repositorio.salvarPagamento(pagamento);
         DomainEventPublisher.publish(new LancamentoAguardandoCriado(pagamento.getId(), referencia));
@@ -71,7 +71,10 @@ public class PagamentoService {
         Pagamento pagamento = aguardandoDe(referencia)
                 .orElseThrow(() -> new IllegalStateException("Sem lançamento aguardando para a parcela " + referencia));
         pagamento.confirmar(valor, data);
-        parcela(referencia).registrarPagamento(valor);
+        repositorio.salvarPagamento(pagamento);
+        ParcelaPagavel parcela = parcela(referencia);
+        parcela.registrarPagamento(valor);
+        repositorio.salvarParcela(parcela);
         entradasFluxoCaixa.add(valor);
         DomainEventPublisher.publish(new PagamentoRegistrado(pagamento.getId(), referencia, valor));
         return pagamento;
@@ -84,6 +87,7 @@ public class PagamentoService {
         Pagamento pagamento = aguardandoDe(referencia)
                 .orElseThrow(() -> new IllegalStateException("Sem lançamento aguardando para a parcela " + referencia));
         pagamento.cancelar(justificativa);
+        repositorio.salvarPagamento(pagamento);
         DomainEventPublisher.publish(new PagamentoCancelado(pagamento.getId(), justificativa));
     }
 

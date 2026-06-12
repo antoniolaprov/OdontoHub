@@ -6,18 +6,19 @@ import com.g4.odontohub.equipe.domain.event.ColaboradorReativado;
 import com.g4.odontohub.equipe.domain.model.Colaborador;
 import com.g4.odontohub.equipe.domain.model.ColaboradorId;
 import com.g4.odontohub.equipe.domain.model.FuncaoColaborador;
-import com.g4.odontohub.equipe.domain.model.StatusColaborador;
+import com.g4.odontohub.equipe.domain.repository.ColaboradorRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class ColaboradorService {
 
-    private final Map<Long, Colaborador> repositorio = new HashMap<>();
-    private long nextId = 1;
+    private final ColaboradorRepository repositorio;
+
+    public ColaboradorService(ColaboradorRepository repositorio) {
+        this.repositorio = repositorio;
+    }
 
     public Colaborador cadastrar(String nomeCompleto, String cpf, String telefone, String funcaoLabel) {
         if (funcaoLabel == null || funcaoLabel.isBlank()) {
@@ -30,9 +31,9 @@ public class ColaboradorService {
             throw new IllegalArgumentException("Nome completo é obrigatório");
         }
         FuncaoColaborador funcao = FuncaoColaborador.fromLabel(funcaoLabel);
-        ColaboradorId id = new ColaboradorId(nextId++);
+        ColaboradorId id = new ColaboradorId(repositorio.proximoId());
         Colaborador colaborador = new Colaborador(id, nomeCompleto, cpf, telefone, funcao);
-        repositorio.put(id.id(), colaborador);
+        repositorio.salvar(colaborador);
         DomainEventPublisher.publish(new ColaboradorCadastrado(id, funcao));
         return colaborador;
     }
@@ -40,30 +41,33 @@ public class ColaboradorService {
     public void desativar(String nome) {
         Colaborador colaborador = buscarPorNome(nome);
         colaborador.desativar();
+        repositorio.salvar(colaborador);
         DomainEventPublisher.publish(new ColaboradorDesativado(colaborador.getId()));
     }
 
     public void reativar(String nome) {
         Colaborador colaborador = buscarPorNome(nome);
         colaborador.reativar();
+        repositorio.salvar(colaborador);
         DomainEventPublisher.publish(new ColaboradorReativado(colaborador.getId()));
     }
 
     public List<Colaborador> listarResponsaveisEsterilizacao() {
-        return repositorio.values().stream()
+        return repositorio.todos().stream()
                 .filter(c -> c.getFuncao() == FuncaoColaborador.AUXILIAR)
                 .filter(Colaborador::estaAtivo)
                 .collect(Collectors.toList());
     }
 
     public Colaborador buscarPorNome(String nome) {
-        return repositorio.values().stream()
-                .filter(c -> c.getNomeCompleto().equals(nome))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Colaborador não encontrado: " + nome));
+        Colaborador colaborador = repositorio.buscarPorNome(nome);
+        if (colaborador == null) {
+            throw new IllegalArgumentException("Colaborador não encontrado: " + nome);
+        }
+        return colaborador;
     }
 
     public boolean existe(String nome) {
-        return repositorio.values().stream().anyMatch(c -> c.getNomeCompleto().equals(nome));
+        return repositorio.buscarPorNome(nome) != null;
     }
 }

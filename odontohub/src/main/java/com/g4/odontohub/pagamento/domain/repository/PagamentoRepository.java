@@ -23,4 +23,7 @@ public interface PagamentoRepository {
     void salvarPagamento(Pagamento pagamento);
 
     List<Pagamento> todosPagamentos();
+
+    /** Próximo identificador de pagamento (restart-safe quando persistido). */
+    long proximoId();
 }

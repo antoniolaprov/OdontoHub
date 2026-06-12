@@ -17,6 +17,15 @@ public class Recall {
         this.status = StatusRecall.NA_FILA;
     }
 
+    /** Reconstitui o agregado a partir da persistência (camada de infraestrutura). */
+    public static Recall reconstituir(RecallId id, String paciente, String procedimentoGatilho,
+                                      int diasParaRetorno, StatusRecall status, boolean flagConversaoRecall) {
+        Recall r = new Recall(id, paciente, procedimentoGatilho, diasParaRetorno);
+        r.status = status;
+        r.flagConversaoRecall = flagConversaoRecall;
+        return r;
+    }
+
     public void cancelar() {
         this.status = StatusRecall.CANCELADO;
     }

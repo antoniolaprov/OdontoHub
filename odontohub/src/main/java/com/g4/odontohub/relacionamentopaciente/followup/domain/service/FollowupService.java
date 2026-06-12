@@ -6,20 +6,22 @@ import com.g4.odontohub.relacionamentopaciente.followup.domain.event.FollowupCri
 import com.g4.odontohub.relacionamentopaciente.followup.domain.model.ChecklistFollowup;
 import com.g4.odontohub.relacionamentopaciente.followup.domain.model.FollowupId;
 import com.g4.odontohub.relacionamentopaciente.followup.domain.model.FollowupPosOperatorio;
+import com.g4.odontohub.relacionamentopaciente.followup.domain.repository.FollowupRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class FollowupService {
 
-    private final Map<Long, FollowupPosOperatorio> repositorio = new HashMap<>();
-    private long nextId = 1;
+    private final FollowupRepository repositorio;
     private EmergenciaIdentificada ultimaEmergencia;
+
+    public FollowupService(FollowupRepository repositorio) {
+        this.repositorio = repositorio;
+    }
 
     /** Procedimentos do tipo "Cirurgia" geram tarefas inadiáveis em 24h e 72h. */
     public void processarGatilhosPosOperatorio(String paciente, String tipoProcedimento) {
@@ -30,9 +32,9 @@ public class FollowupService {
     }
 
     public FollowupPosOperatorio criarTarefa(String paciente, String tipoLigacao) {
-        FollowupId id = new FollowupId(nextId++);
+        FollowupId id = new FollowupId(repositorio.proximoId());
         FollowupPosOperatorio tarefa = new FollowupPosOperatorio(id, paciente, tipoLigacao);
-        repositorio.put(id.id(), tarefa);
+        repositorio.salvar(tarefa);
         DomainEventPublisher.publish(new FollowupCriado(id, paciente, tipoLigacao));
         return tarefa;
     }
@@ -44,6 +46,7 @@ public class FollowupService {
         ChecklistFollowup checklist = new ChecklistFollowup(
                 sangramentoAtivo, nivelDor, observacoes, LocalDate.now(), responsavel);
         tarefa.registrarChecklist(checklist);
+        repositorio.salvar(tarefa);
         DomainEventPublisher.publish(new ChecklistRegistrado(
                 tarefa.getId(), tarefa.getTipoLigacao(), sangramentoAtivo, nivelDor));
 
@@ -55,19 +58,19 @@ public class FollowupService {
     }
 
     public boolean existeTarefa(String paciente, String tipoLigacao) {
-        return repositorio.values().stream()
+        return repositorio.todos().stream()
                 .anyMatch(t -> t.getPaciente().equals(paciente) && t.getTipoLigacao().equals(tipoLigacao));
     }
 
     public FollowupPosOperatorio buscarTarefa(String paciente, String tipoLigacao) {
-        return repositorio.values().stream()
+        return repositorio.todos().stream()
                 .filter(t -> t.getPaciente().equals(paciente) && t.getTipoLigacao().equals(tipoLigacao))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Tarefa não encontrada para: " + paciente));
     }
 
     public List<FollowupPosOperatorio> tarefasDe(String paciente) {
-        return repositorio.values().stream()
+        return repositorio.todos().stream()
                 .filter(t -> t.getPaciente().equals(paciente))
                 .collect(Collectors.toList());
     }
@@ -77,7 +80,7 @@ public class FollowupService {
     }
 
     private Optional<FollowupPosOperatorio> tarefaPendente(String paciente) {
-        return repositorio.values().stream()
+        return repositorio.todos().stream()
                 .filter(t -> t.getPaciente().equals(paciente) && !t.isConcluida())
                 .findFirst();
     }

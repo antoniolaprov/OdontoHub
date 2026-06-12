@@ -6,6 +6,7 @@ import com.g4.odontohub.relacionamentopaciente.recall.domain.event.RecallDispara
 import com.g4.odontohub.relacionamentopaciente.recall.domain.model.Recall;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.model.RecallId;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.model.StatusRecall;
+import com.g4.odontohub.relacionamentopaciente.recall.domain.repository.RecallRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
 import java.util.HashMap;
@@ -14,10 +15,13 @@ import java.util.Optional;
 
 public class RecallService {
 
-    private final Map<Long, Recall> repositorio = new HashMap<>();
+    private final RecallRepository repositorio;
     private final Map<String, Long> agendamentoFuturoPorPaciente = new HashMap<>();
-    private long nextId = 1;
     private RecallCanceladoPorAgendamentoExistente ultimoCancelamento;
+
+    public RecallService(RecallRepository repositorio) {
+        this.repositorio = repositorio;
+    }
 
     /** Gatilhos temporais dinâmicos por tipo de procedimento (configuráveis). */
     private int prazoParaRetorno(String procedimento) {
@@ -32,9 +36,9 @@ public class RecallService {
 
     public Recall dispararRecall(String paciente, String procedimentoGatilho) {
         int dias = prazoParaRetorno(procedimentoGatilho);
-        RecallId id = new RecallId(nextId++);
+        RecallId id = new RecallId(repositorio.proximoId());
         Recall recall = new Recall(id, paciente, procedimentoGatilho, dias);
-        repositorio.put(id.id(), recall);
+        repositorio.salvar(recall);
         DomainEventPublisher.publish(new RecallDisparado(id, paciente, procedimentoGatilho, dias));
         return recall;
     }
@@ -54,6 +58,7 @@ public class RecallService {
         }
         recallNaFila(paciente).ifPresent(recall -> {
             recall.cancelar();
+            repositorio.salvar(recall);
             ultimoCancelamento = new RecallCanceladoPorAgendamentoExistente(recall.getId(), agendamentoId);
             DomainEventPublisher.publish(ultimoCancelamento);
         });
@@ -63,6 +68,7 @@ public class RecallService {
         Recall recall = recallNaFila(paciente)
                 .orElseThrow(() -> new IllegalStateException("Paciente não está na fila de recall: " + paciente));
         recall.converter();
+        repositorio.salvar(recall);
         DomainEventPublisher.publish(new RecallConvertido(recall.getId(), agendamentoGeradoId));
         return recall;
     }
@@ -72,7 +78,7 @@ public class RecallService {
     }
 
     public Recall buscarPorPaciente(String paciente) {
-        return repositorio.values().stream()
+        return repositorio.todos().stream()
                 .filter(r -> r.getPaciente().equals(paciente))
                 .reduce((primeiro, segundo) -> segundo)
                 .orElseThrow(() -> new IllegalArgumentException("Recall não encontrado para: " + paciente));
@@ -83,7 +89,7 @@ public class RecallService {
     }
 
     private Optional<Recall> recallNaFila(String paciente) {
-        return repositorio.values().stream()
+        return repositorio.todos().stream()
                 .filter(r -> r.getPaciente().equals(paciente))
                 .filter(r -> r.getStatus() == StatusRecall.NA_FILA)
                 .findFirst();

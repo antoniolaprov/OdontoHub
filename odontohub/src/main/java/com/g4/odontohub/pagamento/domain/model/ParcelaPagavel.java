@@ -13,6 +13,15 @@ public class ParcelaPagavel {
         this.status = StatusParcelaPagamento.EM_ABERTO;
     }
 
+    /** Reconstitui o agregado a partir da persistência (uso da camada de infraestrutura). */
+    public static ParcelaPagavel reconstituir(String referencia, double valorDevido,
+                                              double valorPago, StatusParcelaPagamento status) {
+        ParcelaPagavel parcela = new ParcelaPagavel(referencia, valorDevido);
+        parcela.valorPago = valorPago;
+        parcela.status = status;
+        return parcela;
+    }
+
     public void registrarPagamento(double valor) {
         this.valorPago += valor;
         if (valorPago >= valorDevido) {

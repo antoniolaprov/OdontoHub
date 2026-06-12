@@ -4,22 +4,25 @@ import com.g4.odontohub.medicamento.domain.event.MedicamentoCadastrado;
 import com.g4.odontohub.medicamento.domain.event.MedicamentoInativado;
 import com.g4.odontohub.medicamento.domain.model.Medicamento;
 import com.g4.odontohub.medicamento.domain.model.MedicamentoId;
+import com.g4.odontohub.medicamento.domain.repository.MedicamentoRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 public class MedicamentoService {
 
-    private final Map<Long, Medicamento> repositorio = new HashMap<>();
-    private long nextId = 1;
-
     /** Mapeia substância de alergia -> classe farmacológica para verificação cruzada (F8 ↔ Anamnese). */
     private static final Map<String, String> ALERGIA_PARA_CLASSE = Map.of(
             "PENICILINA", "Beta-lactâmicos",
             "AMOXICILINA", "Beta-lactâmicos");
+
+    private final MedicamentoRepository repositorio;
+
+    public MedicamentoService(MedicamentoRepository repositorio) {
+        this.repositorio = repositorio;
+    }
 
     public Medicamento cadastrar(String nomeComercial, String principioAtivo,
                                  String categoriaTerapeutica, String classeFarmacologica) {
@@ -28,10 +31,10 @@ public class MedicamentoService {
             throw new IllegalArgumentException(
                     "Já existe um medicamento com o mesmo nome comercial e princípio ativo");
         }
-        MedicamentoId id = new MedicamentoId(nextId++);
+        MedicamentoId id = new MedicamentoId(repositorio.proximoId());
         Medicamento medicamento = new Medicamento(id, nomeComercial, principioAtivo,
                 categoriaTerapeutica, classeFarmacologica);
-        repositorio.put(id.id(), medicamento);
+        repositorio.salvar(medicamento);
         DomainEventPublisher.publish(new MedicamentoCadastrado(id, nomeComercial, classeFarmacologica));
         return medicamento;
     }
@@ -39,20 +42,22 @@ public class MedicamentoService {
     public void inativar(String nomeComercial, String justificativa) {
         Medicamento medicamento = buscarPorNome(nomeComercial);
         medicamento.inativar();
+        repositorio.salvar(medicamento);
         DomainEventPublisher.publish(new MedicamentoInativado(medicamento.getId(), justificativa));
     }
 
     public void adicionarPosologiaPadrao(String nomeComercial, String posologia) {
-        buscarPorNome(nomeComercial).adicionarPosologiaPadrao(posologia);
+        Medicamento medicamento = buscarPorNome(nomeComercial);
+        medicamento.adicionarPosologiaPadrao(posologia);
+        repositorio.salvar(medicamento);
     }
 
     public List<Medicamento> listarParaSelecao() {
-        return repositorio.values().stream()
+        return repositorio.todos().stream()
                 .filter(Medicamento::estaAtivo)
                 .collect(Collectors.toList());
     }
 
-    /** Verifica contraindicação cruzada: alergia do paciente x classe farmacológica do medicamento. */
     public boolean haContraindicacaoCruzada(String nomeComercial, String alergiaPaciente) {
         Medicamento medicamento = buscarPorNome(nomeComercial);
         String classeDaAlergia = ALERGIA_PARA_CLASSE.get(alergiaPaciente.trim().toUpperCase());
@@ -75,10 +80,11 @@ public class MedicamentoService {
     }
 
     public Medicamento buscarPorNome(String nomeComercial) {
-        return repositorio.values().stream()
-                .filter(m -> m.getNomeComercial().equals(nomeComercial))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Medicamento não encontrado: " + nomeComercial));
+        Medicamento medicamento = repositorio.buscarPorNome(nomeComercial);
+        if (medicamento == null) {
+            throw new IllegalArgumentException("Medicamento não encontrado: " + nomeComercial);
+        }
+        return medicamento;
     }
 
     public boolean existeParaSelecao(String nomeComercial) {
@@ -86,11 +92,11 @@ public class MedicamentoService {
     }
 
     public boolean existeNoCatalogo(String nomeComercial) {
-        return repositorio.values().stream().anyMatch(m -> m.getNomeComercial().equals(nomeComercial));
+        return repositorio.buscarPorNome(nomeComercial) != null;
     }
 
     private boolean existeDuplicata(String nomeComercial, String principioAtivo) {
-        return repositorio.values().stream()
+        return repositorio.todos().stream()
                 .anyMatch(m -> m.getNomeComercial().equalsIgnoreCase(nomeComercial)
                         && m.getPrincipioAtivo().equalsIgnoreCase(principioAtivo));
     }

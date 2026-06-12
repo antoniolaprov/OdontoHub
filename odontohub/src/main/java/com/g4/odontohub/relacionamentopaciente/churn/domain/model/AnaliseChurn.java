@@ -15,6 +15,17 @@ public class AnaliseChurn {
         this.statusChurn = StatusChurn.ATIVO;
     }
 
+    /** Reconstitui o agregado a partir da persistência (camada de infraestrutura). */
+    public static AnaliseChurn reconstituir(ChurnId id, String paciente, boolean possuiAgendamentoFuturo,
+                                            int mesesSemRetorno, boolean possuiPlanoAtivo, StatusChurn statusChurn) {
+        AnaliseChurn a = new AnaliseChurn(id, paciente);
+        a.possuiAgendamentoFuturo = possuiAgendamentoFuturo;
+        a.mesesSemRetorno = mesesSemRetorno;
+        a.possuiPlanoAtivo = possuiPlanoAtivo;
+        a.statusChurn = statusChurn;
+        return a;
+    }
+
     public void classificar(StatusChurn status) {
         this.statusChurn = status;
     }

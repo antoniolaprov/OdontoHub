@@ -25,6 +25,22 @@ public class Medicamento {
         this.status = StatusMedicamento.ATIVO;
     }
 
+    /** Reconstitui o agregado a partir da persistência (camada de infraestrutura). */
+    public static Medicamento reconstituir(MedicamentoId id, String nomeComercial, String principioAtivo,
+                                           String categoriaTerapeutica, String classeFarmacologica,
+                                           StatusMedicamento status, java.util.List<String> posologias,
+                                           java.util.List<String> contraindicacoes) {
+        Medicamento m = new Medicamento(id, nomeComercial, principioAtivo, categoriaTerapeutica, classeFarmacologica);
+        m.status = status;
+        if (posologias != null) {
+            posologias.forEach(m::adicionarPosologiaPadrao);
+        }
+        if (contraindicacoes != null) {
+            contraindicacoes.forEach(m::adicionarContraindicacao);
+        }
+        return m;
+    }
+
     public void inativar() {
         this.status = StatusMedicamento.INATIVO;
     }

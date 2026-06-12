@@ -1,15 +1,25 @@
 package com.g4.odontohub.medicamento.application;
 
 import com.g4.odontohub.medicamento.domain.model.Medicamento;
+import com.g4.odontohub.medicamento.domain.repository.MedicamentoRepository;
 import com.g4.odontohub.medicamento.domain.service.MedicamentoService;
 import com.g4.odontohub.medicamento.domain.service.MedicamentoService.LinhaImportacao;
 import com.g4.odontohub.medicamento.domain.service.ResultadoImportacao;
+import com.g4.odontohub.medicamento.infrastructure.persistence.InMemoryMedicamentoRepository;
 
 import java.util.List;
 
 public class MedicamentoApplicationService {
 
-    private final MedicamentoService service = new MedicamentoService();
+    private final MedicamentoService service;
+
+    public MedicamentoApplicationService() {
+        this(new InMemoryMedicamentoRepository());
+    }
+
+    public MedicamentoApplicationService(MedicamentoRepository repositorio) {
+        this.service = new MedicamentoService(repositorio);
+    }
 
     public Medicamento cadastrar(String nomeComercial, String principioAtivo,
                                  String categoriaTerapeutica, String classeFarmacologica) {

@@ -16,7 +16,11 @@ import java.time.LocalDate;
 @RequestMapping("/api/pagamentos")
 public class PagamentoRestController {
 
-    private final PagamentoApplicationService applicationService = new PagamentoApplicationService();
+    private final PagamentoApplicationService applicationService;
+
+    public PagamentoRestController(PagamentoApplicationService applicationService) {
+        this.applicationService = applicationService;
+    }
 
     @PostMapping("/parcelas")
     public ResponseEntity<ParcelaPagavel> criarParcela(@RequestBody ParcelaRequest request) {

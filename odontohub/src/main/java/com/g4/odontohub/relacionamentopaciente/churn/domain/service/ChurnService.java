@@ -6,11 +6,10 @@ import com.g4.odontohub.relacionamentopaciente.churn.domain.event.PacienteReativ
 import com.g4.odontohub.relacionamentopaciente.churn.domain.model.AnaliseChurn;
 import com.g4.odontohub.relacionamentopaciente.churn.domain.model.ChurnId;
 import com.g4.odontohub.relacionamentopaciente.churn.domain.model.StatusChurn;
+import com.g4.odontohub.relacionamentopaciente.churn.domain.repository.ChurnRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
 public class ChurnService {
@@ -18,35 +17,62 @@ public class ChurnService {
     private static final int MESES_EVASAO = 12;
     private static final int MESES_ZONA_RISCO = 6;
 
-    private final Map<String, AnaliseChurn> analisesPorPaciente = new HashMap<>();
+    private final ChurnRepository repositorio;
     private final Set<String> alertasInatividade = new HashSet<>();
-    private long nextId = 1;
 
     private double valorMedioHora;
     private String ultimoRegistroAgendamento;
     private int noShowCount;
     private int cancelamentoCount;
 
-    public AnaliseChurn dados(String paciente) {
-        return analisesPorPaciente.computeIfAbsent(paciente,
-                p -> new AnaliseChurn(new ChurnId(nextId++), p));
+    public ChurnService(ChurnRepository repositorio) {
+        this.repositorio = repositorio;
+    }
+
+    private AnaliseChurn obterOuCriar(String paciente) {
+        AnaliseChurn analise = repositorio.buscarPorPaciente(paciente);
+        if (analise == null) {
+            analise = new AnaliseChurn(new ChurnId(repositorio.proximoId()), paciente);
+            repositorio.salvar(analise);
+        }
+        return analise;
     }
 
     public void definirValorMedioHora(double valorMedioHora) {
         this.valorMedioHora = valorMedioHora;
     }
 
+    public void definirSemAgendamentoFuturo(String paciente) {
+        AnaliseChurn a = obterOuCriar(paciente);
+        a.setPossuiAgendamentoFuturo(false);
+        repositorio.salvar(a);
+    }
+
+    public void definirMesesSemRetorno(String paciente, int meses) {
+        AnaliseChurn a = obterOuCriar(paciente);
+        a.setMesesSemRetorno(meses);
+        repositorio.salvar(a);
+    }
+
+    public void definirPlanoAtivo(String paciente, boolean ativo) {
+        AnaliseChurn a = obterOuCriar(paciente);
+        a.setPossuiPlanoAtivo(ativo);
+        repositorio.salvar(a);
+    }
+
     public void recalcularStatusChurn() {
-        for (AnaliseChurn analise : analisesPorPaciente.values()) {
+        for (AnaliseChurn analise : repositorio.todos()) {
             boolean semRetornoProlongado = analise.getMesesSemRetorno() >= MESES_EVASAO;
             boolean naZonaDeRisco = analise.getMesesSemRetorno() >= MESES_ZONA_RISCO
                     && analise.getMesesSemRetorno() < MESES_EVASAO;
 
             if (!analise.isPossuiAgendamentoFuturo() && semRetornoProlongado && analise.isPossuiPlanoAtivo()) {
                 analise.classificar(StatusChurn.EVADIDO);
+                repositorio.salvar(analise);
                 DomainEventPublisher.publish(new PacienteClassificadoComoChurn(analise.getId(), analise.getPaciente()));
             } else if (naZonaDeRisco && analise.isPossuiPlanoAtivo()) {
                 analise.classificar(StatusChurn.ZONA_DE_RISCO);
+                repositorio.salvar(analise);
                 alertasInatividade.add(analise.getPaciente());
                 DomainEventPublisher.publish(new PacienteEntrandoZonaDeRisco(
                         analise.getId(), analise.getPaciente(), analise.getMesesSemRetorno()));
@@ -55,17 +81,20 @@ public class ChurnService {
     }
 
     public void classificarManualmente(String paciente, StatusChurn status) {
-        dados(paciente).classificar(status);
+        AnaliseChurn a = obterOuCriar(paciente);
+        a.classificar(status);
+        repositorio.salvar(a);
     }
 
     public void reativar(String paciente) {
-        AnaliseChurn analise = dados(paciente);
+        AnaliseChurn analise = obterOuCriar(paciente);
         analise.classificar(StatusChurn.REATIVADO);
+        repositorio.salvar(analise);
         DomainEventPublisher.publish(new PacienteReativado(analise.getId(), analise.getPaciente()));
     }
 
     public StatusChurn statusDe(String paciente) {
-        return dados(paciente).getStatusChurn();
+        return obterOuCriar(paciente).getStatusChurn();
     }
 
     public boolean temAlertaInatividade(String paciente) {

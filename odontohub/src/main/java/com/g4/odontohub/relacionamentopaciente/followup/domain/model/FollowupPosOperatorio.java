@@ -14,6 +14,15 @@ public class FollowupPosOperatorio {
         this.tipoLigacao = tipoLigacao;
     }
 
+    /** Reconstitui o agregado a partir da persistência (camada de infraestrutura). */
+    public static FollowupPosOperatorio reconstituir(FollowupId id, String paciente, String tipoLigacao,
+                                                     boolean concluida, ChecklistFollowup checklist) {
+        FollowupPosOperatorio t = new FollowupPosOperatorio(id, paciente, tipoLigacao);
+        t.concluida = concluida;
+        t.checklist = checklist;
+        return t;
+    }
+
     public void registrarChecklist(ChecklistFollowup checklist) {
         this.checklist = checklist;
         this.concluida = true;

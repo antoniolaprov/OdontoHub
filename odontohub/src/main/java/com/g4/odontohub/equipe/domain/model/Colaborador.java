@@ -18,6 +18,14 @@ public class Colaborador {
         this.status = StatusColaborador.ATIVO;
     }
 
+    /** Reconstitui o agregado a partir da persistência (camada de infraestrutura). */
+    public static Colaborador reconstituir(ColaboradorId id, String nomeCompleto, String cpf,
+                                           String telefone, FuncaoColaborador funcao, StatusColaborador status) {
+        Colaborador c = new Colaborador(id, nomeCompleto, cpf, telefone, funcao);
+        c.status = status;
+        return c;
+    }
+
     public void desativar() {
         this.status = StatusColaborador.INATIVO;
     }

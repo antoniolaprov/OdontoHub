@@ -11,13 +11,14 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Adapter de persistência em memória (camada de infraestrutura).
+ * Adapter de persistência em memória (camada de infraestrutura), usado pelos testes.
  * Implementa a porta {@link PagamentoRepository} definida no domínio.
  */
 public class InMemoryPagamentoRepository implements PagamentoRepository {
 
     private final Map<String, ParcelaPagavel> parcelas = new LinkedHashMap<>();
-    private final List<Pagamento> pagamentos = new ArrayList<>();
+    private final Map<Long, Pagamento> pagamentos = new LinkedHashMap<>();
+    private long sequencia = 0;
 
     @Override
     public void salvarParcela(ParcelaPagavel parcela) {
@@ -41,11 +42,16 @@ public class InMemoryPagamentoRepository implements PagamentoRepository {
 
     @Override
     public void salvarPagamento(Pagamento pagamento) {
-        pagamentos.add(pagamento);
+        pagamentos.put(pagamento.getId().id(), pagamento);
     }
 
     @Override
     public List<Pagamento> todosPagamentos() {
-        return pagamentos;
+        return new ArrayList<>(pagamentos.values());
+    }
+
+    @Override
+    public long proximoId() {
+        return ++sequencia;
     }
 }

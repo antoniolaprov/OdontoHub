@@ -1,26 +1,36 @@
 package com.g4.odontohub.relacionamentopaciente.churn.application;
 
 import com.g4.odontohub.relacionamentopaciente.churn.domain.model.StatusChurn;
+import com.g4.odontohub.relacionamentopaciente.churn.domain.repository.ChurnRepository;
 import com.g4.odontohub.relacionamentopaciente.churn.domain.service.ChurnService;
+import com.g4.odontohub.relacionamentopaciente.churn.infrastructure.persistence.InMemoryChurnRepository;
 
 public class ChurnApplicationService {
 
-    private final ChurnService service = new ChurnService();
+    private final ChurnService service;
+
+    public ChurnApplicationService() {
+        this(new InMemoryChurnRepository());
+    }
+
+    public ChurnApplicationService(ChurnRepository repositorio) {
+        this.service = new ChurnService(repositorio);
+    }
 
     public void definirValorMedioHora(double valor) {
         service.definirValorMedioHora(valor);
     }
 
     public void definirSemAgendamentoFuturo(String paciente) {
-        service.dados(paciente).setPossuiAgendamentoFuturo(false);
+        service.definirSemAgendamentoFuturo(paciente);
     }
 
     public void definirMesesSemRetorno(String paciente, int meses) {
-        service.dados(paciente).setMesesSemRetorno(meses);
+        service.definirMesesSemRetorno(paciente, meses);
     }
 
     public void definirPlanoAtivo(String paciente, boolean ativo) {
-        service.dados(paciente).setPossuiPlanoAtivo(ativo);
+        service.definirPlanoAtivo(paciente, ativo);
     }
 
     public void recalcular() {
