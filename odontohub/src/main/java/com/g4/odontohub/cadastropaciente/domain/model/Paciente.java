@@ -27,6 +27,17 @@ public class Paciente {
         this.status = status;
     }
 
+    /** Reconstitui o agregado a partir da persistência (camada de infraestrutura). */
+    public static Paciente reconstituir(PacienteRegistroId id, String nomeCompleto, String cpf,
+                                        String dataNascimento, String telefone, String email,
+                                        StatusPaciente status, List<AlteracaoCadastral> historico) {
+        Paciente p = new Paciente(id, nomeCompleto, cpf, dataNascimento, telefone, email, status);
+        if (historico != null) {
+            p.historicoAlteracoes.addAll(historico);
+        }
+        return p;
+    }
+
     public void atualizarCadastro(String campo, String novoValor, String responsavel) {
         String valorAnterior = valorDoCampo(campo);
         alterarCampo(campo, novoValor);

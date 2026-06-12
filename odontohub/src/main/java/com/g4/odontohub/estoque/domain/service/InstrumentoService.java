@@ -9,23 +9,25 @@ import com.g4.odontohub.estoque.domain.model.Instrumento;
 import com.g4.odontohub.estoque.domain.model.InstrumentoId;
 import com.g4.odontohub.estoque.domain.model.StatusEsterilizacao;
 import com.g4.odontohub.estoque.domain.model.StatusInstrumento;
+import com.g4.odontohub.estoque.domain.repository.InstrumentoRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 public class InstrumentoService {
 
-    private final Map<Long, Instrumento> repositorio = new HashMap<>();
-    private long nextId = 1;
+    private final InstrumentoRepository repositorio;
     private int prazoValidadeGlobalDias = 7;
 
+    public InstrumentoService(InstrumentoRepository repositorio) {
+        this.repositorio = repositorio;
+    }
+
     public Instrumento cadastrar(String nome, int prazoValidadeDias) {
-        return cadastrarInstrumento(nome, "", "LEGACY-" + nextId, prazoValidadeDias, false);
+        return cadastrarInstrumento(nome, "", "LEGACY-" + nome, prazoValidadeDias, false);
     }
 
     public Instrumento cadastrarInstrumento(String nome, String categoria, String codigoIdentificador) {
@@ -43,11 +45,11 @@ public class InstrumentoService {
         if (existeCodigoIdentificador(codigoIdentificador)) {
             throw new IllegalArgumentException("Código já cadastrado. Use um código único.");
         }
-
         Instrumento instrumento = cadastrarInstrumento(
                 nome, categoria, codigoIdentificador, prazoValidadeDias, false);
         instrumento.setTipo("KIT");
         instrumento.adicionarComponentes(new ArrayList<>(codigosComponentes));
+        repositorio.salvar(instrumento);
         return instrumento;
     }
 
@@ -59,9 +61,9 @@ public class InstrumentoService {
         if (existeCodigoIdentificador(codigoIdentificador)) {
             throw new IllegalArgumentException("Código já cadastrado. Use um código único.");
         }
-        InstrumentoId id = new InstrumentoId(nextId++);
+        InstrumentoId id = new InstrumentoId(repositorio.proximoId());
         Instrumento instrumento = new Instrumento(id, nome, categoria, codigoIdentificador, prazoValidadeDias);
-        repositorio.put(id.id(), instrumento);
+        repositorio.salvar(instrumento);
         DomainEventPublisher.publish(new InstrumentoCadastrado(id, nome, categoria, codigoIdentificador));
         return instrumento;
     }
@@ -69,43 +71,48 @@ public class InstrumentoService {
     public void desativarInstrumento(Long instrumentoId) {
         Instrumento instrumento = buscarPorId(instrumentoId);
         instrumento.desativar();
+        repositorio.salvar(instrumento);
         DomainEventPublisher.publish(new InstrumentoDesativado(instrumento.getId()));
     }
 
     public boolean existeCodigoIdentificador(String codigoIdentificador) {
-        return repositorio.values().stream()
+        return repositorio.todos().stream()
                 .anyMatch(i -> i.getCodigoIdentificador().equals(codigoIdentificador));
     }
 
     public void marcarComoEsteril(Long instrumentoId, LocalDate dataEsterilizacao, String responsavel) {
         Instrumento instrumento = buscarPorId(instrumentoId);
         instrumento.marcarComoEsteril(dataEsterilizacao, responsavel);
+        repositorio.salvar(instrumento);
         DomainEventPublisher.publish(new InstrumentoEsterilizado(
-                instrumento.getId(),
-                dataEsterilizacao,
-                responsavel,
-                instrumento.getDataVencimento()
-        ));
+                instrumento.getId(), dataEsterilizacao, responsavel, instrumento.getDataVencimento()));
     }
 
     public void marcarComoContaminado(Long instrumentoId) {
         Instrumento instrumento = buscarPorId(instrumentoId);
         instrumento.marcarComoContaminado();
+        repositorio.salvar(instrumento);
         DomainEventPublisher.publish(new InstrumentoContaminado(instrumento.getId()));
     }
 
     public void recalcularValidadeGlobal(int novoPrazoDias) {
         this.prazoValidadeGlobalDias = novoPrazoDias;
-        repositorio.values().stream()
+        repositorio.todos().stream()
                 .filter(i -> i.getStatusInstrumento() == StatusInstrumento.ATIVO)
-                .forEach(i -> i.recalcularVencimento(novoPrazoDias));
+                .forEach(i -> {
+                    i.recalcularVencimento(novoPrazoDias);
+                    repositorio.salvar(i);
+                });
     }
 
     public void recalcularValidadePorCategoria(String categoria, int novoPrazoDias) {
-        repositorio.values().stream()
+        repositorio.todos().stream()
                 .filter(i -> i.getStatusInstrumento() == StatusInstrumento.ATIVO)
                 .filter(i -> i.getCategoria().equals(categoria))
-                .forEach(i -> i.recalcularVencimento(novoPrazoDias));
+                .forEach(i -> {
+                    i.recalcularVencimento(novoPrazoDias);
+                    repositorio.salvar(i);
+                });
     }
 
     public void configurarPrazoGlobal(int novoPrazoDias) {
@@ -120,12 +127,13 @@ public class InstrumentoService {
 
     public void verificarEAtualizarVencidos() {
         LocalDate hoje = LocalDate.now();
-        repositorio.values().forEach(instrumento -> {
+        repositorio.todos().forEach(instrumento -> {
             if (instrumento.getStatus() == StatusEsterilizacao.ESTERIL
                     && instrumento.getStatusInstrumento() == StatusInstrumento.ATIVO
                     && instrumento.getDataVencimento() != null
                     && hoje.isAfter(instrumento.getDataVencimento())) {
                 instrumento.marcarComoVencido();
+                repositorio.salvar(instrumento);
                 DomainEventPublisher.publish(new InstrumentoVencido(instrumento.getId(), instrumento.getNome()));
             }
         });
@@ -133,7 +141,7 @@ public class InstrumentoService {
 
     public List<Instrumento> listarEstereisDentroDoPrazo() {
         LocalDate hoje = LocalDate.now();
-        return repositorio.values().stream()
+        return repositorio.todos().stream()
                 .filter(i -> i.getStatus() == StatusEsterilizacao.ESTERIL
                         && i.getStatusInstrumento() == StatusInstrumento.ATIVO
                         && i.getDataVencimento() != null
@@ -142,23 +150,29 @@ public class InstrumentoService {
     }
 
     public List<Instrumento> listarInstrumentosAtivos() {
-        return repositorio.values().stream()
+        return repositorio.todos().stream()
                 .filter(i -> i.getStatusInstrumento() == StatusInstrumento.ATIVO)
                 .collect(Collectors.toList());
     }
 
     public Instrumento buscarPorNome(String nome) {
-        return repositorio.values().stream()
-                .filter(i -> i.getNome().equals(nome))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Instrumento não encontrado: " + nome));
+        Instrumento i = repositorio.buscarPorNome(nome);
+        if (i == null) {
+            throw new IllegalArgumentException("Instrumento não encontrado: " + nome);
+        }
+        return i;
     }
 
     public Instrumento buscarPorCodigo(String codigoIdentificador) {
-        return repositorio.values().stream()
-                .filter(i -> i.getCodigoIdentificador().equals(codigoIdentificador))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Instrumento não encontrado: " + codigoIdentificador));
+        Instrumento i = repositorio.buscarPorCodigo(codigoIdentificador);
+        if (i == null) {
+            throw new IllegalArgumentException("Instrumento não encontrado: " + codigoIdentificador);
+        }
+        return i;
+    }
+
+    public void salvar(Instrumento instrumento) {
+        repositorio.salvar(instrumento);
     }
 
     private void validarCadastro(String nome, String categoria, String codigoIdentificador) {
@@ -180,7 +194,7 @@ public class InstrumentoService {
     }
 
     private Instrumento buscarPorId(Long id) {
-        Instrumento instrumento = repositorio.get(id);
+        Instrumento instrumento = repositorio.buscarPorId(id);
         if (instrumento == null) {
             throw new IllegalArgumentException("Instrumento não encontrado: " + id);
         }

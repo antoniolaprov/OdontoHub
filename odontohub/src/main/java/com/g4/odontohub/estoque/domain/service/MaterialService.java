@@ -1,29 +1,31 @@
 package com.g4.odontohub.estoque.domain.service;
 
 import com.g4.odontohub.estoque.domain.model.*;
+import com.g4.odontohub.estoque.domain.repository.MaterialRepository;
 
 import java.time.LocalDate;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class MaterialService {
 
-    private final Map<String, MaterialConsumivel> materiais = new HashMap<>();
-    private long nextMaterialId = 1L;
+    private final MaterialRepository repositorio;
     private long nextReposicaoId = 1L;
+
+    public MaterialService(MaterialRepository repositorio) {
+        this.repositorio = repositorio;
+    }
 
     public MaterialConsumivel cadastrarMaterial(String nome, String unidadeMedida,
                                                 int saldoInicial, int pontoMinimo) {
         MaterialConsumivel m = new MaterialConsumivel(
-                new MaterialId(nextMaterialId++), nome, unidadeMedida,
+                new MaterialId(repositorio.proximoId()), nome, unidadeMedida,
                 saldoInicial, pontoMinimo, LocalDate.now());
-        materiais.put(nome, m);
+        repositorio.salvar(m);
         return m;
     }
 
     public MaterialConsumivel buscarPorNome(String nome) {
-        return materiais.get(nome);
+        return repositorio.buscarPorNome(nome);
     }
 
     public List<Object> registrarReposicao(String materialNome, String fornecedor,
@@ -32,20 +34,26 @@ public class MaterialService {
             throw new IllegalArgumentException(
                     "Quantidade e custo unitário devem ser valores positivos");
         }
-        MaterialConsumivel material = materiais.get(materialNome);
+        MaterialConsumivel material = repositorio.buscarPorNome(materialNome);
         Reposicao r = new Reposicao(
                 new ReposicaoId(nextReposicaoId++),
                 new ReposicaomaterialId(material.getId().id()),
                 fornecedor, quantidade, custoUnitario, LocalDate.now());
-        return material.registrarReposicao(r);
+        List<Object> eventos = material.registrarReposicao(r);
+        repositorio.salvar(material);
+        return eventos;
     }
 
     public List<Object> descontarConsumo(String materialNome, int quantidade, Long procedimentoId) {
-        MaterialConsumivel material = materiais.get(materialNome);
-        return material.registrarConsumo(quantidade, procedimentoId);
+        MaterialConsumivel material = repositorio.buscarPorNome(materialNome);
+        List<Object> eventos = material.registrarConsumo(quantidade, procedimentoId);
+        repositorio.salvar(material);
+        return eventos;
     }
 
     public void ajustarSaldo(String materialNome, int novaQuantidade) {
-        materiais.get(materialNome).ajustarSaldo(novaQuantidade);
+        MaterialConsumivel material = repositorio.buscarPorNome(materialNome);
+        material.ajustarSaldo(novaQuantidade);
+        repositorio.salvar(material);
     }
 }

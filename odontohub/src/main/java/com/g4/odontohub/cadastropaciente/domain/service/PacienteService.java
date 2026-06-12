@@ -3,17 +3,15 @@ package com.g4.odontohub.cadastropaciente.domain.service;
 import com.g4.odontohub.cadastropaciente.domain.model.Paciente;
 import com.g4.odontohub.cadastropaciente.domain.model.PacienteRegistroId;
 import com.g4.odontohub.cadastropaciente.domain.model.StatusPaciente;
-
-import java.util.Map;
+import com.g4.odontohub.cadastropaciente.domain.repository.PacienteRepository;
 
 public class PacienteService {
 
-    private final Map<PacienteRegistroId, Paciente> pacientes;
-    private long nextId = 1L;
+    private final PacienteRepository repositorio;
     private Paciente ultimoPaciente;
 
-    public PacienteService(Map<PacienteRegistroId, Paciente> pacientes) {
-        this.pacientes = pacientes;
+    public PacienteService(PacienteRepository repositorio) {
+        this.repositorio = repositorio;
     }
 
     public void cadastrarCompleto(String nomeCompleto, String cpf, String dataNascimento,
@@ -30,44 +28,46 @@ public class PacienteService {
             throw new IllegalArgumentException("E-mail já cadastrado.");
         }
 
-        PacienteRegistroId id = new PacienteRegistroId(nextId++);
+        PacienteRegistroId id = new PacienteRegistroId(repositorio.proximoId());
         ultimoPaciente = new Paciente(id, nomeCompleto, cpf, dataNascimento, telefone, email, StatusPaciente.ATIVO);
-        pacientes.put(id, ultimoPaciente);
+        repositorio.salvar(ultimoPaciente);
     }
 
     public void cadastrarRapido(String nomeCompleto, String telefone, String responsavel) {
         validarNome(nomeCompleto);
         validarTelefone(telefone);
 
-        PacienteRegistroId id = new PacienteRegistroId(nextId++);
+        PacienteRegistroId id = new PacienteRegistroId(repositorio.proximoId());
         ultimoPaciente = new Paciente(id, nomeCompleto, null, null, telefone, null, StatusPaciente.INCOMPLETO);
-        pacientes.put(id, ultimoPaciente);
+        repositorio.salvar(ultimoPaciente);
     }
 
     public void atualizarCadastro(PacienteRegistroId pacienteId, String campo, String novoValor, String responsavel) {
         Paciente paciente = buscarPorId(pacienteId);
         paciente.atualizarCadastro(campo, novoValor, responsavel);
+        repositorio.salvar(paciente);
         ultimoPaciente = paciente;
     }
 
     public void restringirPaciente(PacienteRegistroId pacienteId) {
         Paciente paciente = buscarPorId(pacienteId);
         paciente.restringir();
+        repositorio.salvar(paciente);
         ultimoPaciente = paciente;
     }
 
     public boolean cpfJaCadastrado(String cpf) {
-        return pacientes.values().stream()
+        return repositorio.todos().stream()
                 .anyMatch(p -> p.getCpf() != null && p.getCpf().equals(cpf));
     }
 
     public boolean emailJaCadastrado(String email) {
-        return pacientes.values().stream()
+        return repositorio.todos().stream()
                 .anyMatch(p -> p.getEmail() != null && p.getEmail().equals(email));
     }
 
     public Paciente buscarPorId(PacienteRegistroId pacienteId) {
-        Paciente paciente = pacientes.get(pacienteId);
+        Paciente paciente = repositorio.buscarPorId(pacienteId);
         if (paciente == null) {
             throw new IllegalArgumentException("Paciente não encontrado: " + pacienteId.id());
         }
@@ -75,10 +75,11 @@ public class PacienteService {
     }
 
     public Paciente buscarPorNome(String nomeCompleto) {
-        return pacientes.values().stream()
-                .filter(p -> p.getNomeCompleto().equals(nomeCompleto))
-                .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Paciente não encontrado: " + nomeCompleto));
+        Paciente paciente = repositorio.buscarPorNome(nomeCompleto);
+        if (paciente == null) {
+            throw new IllegalArgumentException("Paciente não encontrado: " + nomeCompleto);
+        }
+        return paciente;
     }
 
     public Paciente getUltimoPaciente() {

@@ -32,6 +32,25 @@ public class Instrumento {
         this.tipo = "INDIVIDUAL";
     }
 
+    /** Reconstitui o agregado a partir da persistência (camada de infraestrutura). */
+    public static Instrumento reconstituir(InstrumentoId id, String nome, String categoria, String codigoIdentificador,
+                                           StatusInstrumento statusInstrumento, StatusEsterilizacao status,
+                                           LocalDate dataUltimaEsterilizacao, LocalDate dataVencimento,
+                                           int prazoValidadeDias, String responsavelEsterilizacao,
+                                           String tipo, List<String> codigosComponentes) {
+        Instrumento i = new Instrumento(id, nome, categoria, codigoIdentificador, prazoValidadeDias);
+        i.statusInstrumento = statusInstrumento;
+        i.status = status;
+        i.dataUltimaEsterilizacao = dataUltimaEsterilizacao;
+        i.dataVencimento = dataVencimento;
+        i.responsavelEsterilizacao = responsavelEsterilizacao;
+        i.tipo = tipo;
+        if (codigosComponentes != null) {
+            i.codigosComponentes.addAll(codigosComponentes);
+        }
+        return i;
+    }
+
     public void desativar() {
         this.statusInstrumento = StatusInstrumento.INATIVO;
     }

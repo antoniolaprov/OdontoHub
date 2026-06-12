@@ -3,7 +3,9 @@ package com.g4.odontohub.estoque.application;
 import com.g4.odontohub.estoque.domain.event.EstoqueBaixoAlertado;
 import com.g4.odontohub.estoque.domain.event.ReposicaoRegistrada;
 import com.g4.odontohub.estoque.domain.model.MaterialConsumivel;
+import com.g4.odontohub.estoque.domain.repository.MaterialRepository;
 import com.g4.odontohub.estoque.domain.service.MaterialService;
+import com.g4.odontohub.estoque.infrastructure.persistence.InMemoryMaterialRepository;
 import com.g4.odontohub.financeiro.application.FluxoCaixaApplicationService;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
@@ -11,12 +13,18 @@ import java.util.List;
 
 public class MaterialApplicationService {
 
-    private final MaterialService materialService = new MaterialService();
+    private final MaterialService materialService;
     private final FluxoCaixaApplicationService fluxoCaixaService;
     private EstoqueBaixoAlertado ultimoAlertaEstoque;
 
     public MaterialApplicationService(FluxoCaixaApplicationService fluxoCaixaService) {
+        this(fluxoCaixaService, new InMemoryMaterialRepository());
+    }
+
+    public MaterialApplicationService(FluxoCaixaApplicationService fluxoCaixaService,
+                                      MaterialRepository materialRepository) {
         this.fluxoCaixaService = fluxoCaixaService;
+        this.materialService = new MaterialService(materialRepository);
         DomainEventPublisher.subscribe(ReposicaoRegistrada.class, evento ->
                 this.fluxoCaixaService.registrarSaidaAutomatica(
                         evento.valorTotalLancamento(), "Insumos", "Reposição de material"));

@@ -7,16 +7,22 @@ import com.g4.odontohub.cadastropaciente.domain.event.PacienteRestrito;
 import com.g4.odontohub.cadastropaciente.domain.model.AlteracaoCadastral;
 import com.g4.odontohub.cadastropaciente.domain.model.Paciente;
 import com.g4.odontohub.cadastropaciente.domain.model.PacienteRegistroId;
+import com.g4.odontohub.cadastropaciente.domain.repository.PacienteRepository;
 import com.g4.odontohub.cadastropaciente.domain.service.PacienteService;
+import com.g4.odontohub.cadastropaciente.infrastructure.persistence.InMemoryPacienteRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class PacienteApplicationService {
 
-    private final Map<PacienteRegistroId, Paciente> pacientes = new HashMap<>();
-    private final PacienteService service = new PacienteService(pacientes);
+    private final PacienteService service;
+
+    public PacienteApplicationService() {
+        this(new InMemoryPacienteRepository());
+    }
+
+    public PacienteApplicationService(PacienteRepository repositorio) {
+        this.service = new PacienteService(repositorio);
+    }
 
     public Paciente cadastrarCompleto(String nomeCompleto, String cpf, String dataNascimento,
                                       String telefone, String email, String responsavel) {
