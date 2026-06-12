@@ -3,38 +3,40 @@ package com.g4.odontohub.financeiro.domain.service;
 import com.g4.odontohub.financeiro.domain.model.LancamentoFinanceiro;
 import com.g4.odontohub.financeiro.domain.model.LancamentoId;
 import com.g4.odontohub.financeiro.domain.model.TipoLancamento;
+import com.g4.odontohub.financeiro.domain.repository.LancamentoRepository;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class FluxoCaixaService {
 
-    private final List<LancamentoFinanceiro> lancamentos = new ArrayList<>();
-    private long nextId = 1L;
+    private final LancamentoRepository repositorio;
+
+    public FluxoCaixaService(LancamentoRepository repositorio) {
+        this.repositorio = repositorio;
+    }
 
     public LancamentoFinanceiro registrarEntrada(double valor, String descricao, LocalDate data, boolean automatico) {
         LancamentoFinanceiro l = new LancamentoFinanceiro(
-                new LancamentoId(nextId++), TipoLancamento.ENTRADA,
+                new LancamentoId(repositorio.proximoId()), TipoLancamento.ENTRADA,
                 valor, data, "Pagamento", descricao, automatico);
-        lancamentos.add(l);
+        repositorio.salvar(l);
         return l;
     }
 
     public LancamentoFinanceiro registrarSaida(double valor, String categoria, String descricao, boolean automatico) {
         LancamentoFinanceiro l = new LancamentoFinanceiro(
-                new LancamentoId(nextId++), TipoLancamento.SAIDA,
+                new LancamentoId(repositorio.proximoId()), TipoLancamento.SAIDA,
                 valor, LocalDate.now(), categoria, descricao, automatico);
-        lancamentos.add(l);
+        repositorio.salvar(l);
         return l;
     }
 
     public double calcularSaldo() {
-        double entradas = lancamentos.stream()
+        double entradas = repositorio.todos().stream()
                 .filter(l -> l.getTipo() == TipoLancamento.ENTRADA)
                 .mapToDouble(LancamentoFinanceiro::getValor).sum();
-        double saidas = lancamentos.stream()
+        double saidas = repositorio.todos().stream()
                 .filter(l -> l.getTipo() == TipoLancamento.SAIDA)
                 .mapToDouble(LancamentoFinanceiro::getValor).sum();
         return entradas - saidas;
@@ -45,6 +47,6 @@ public class FluxoCaixaService {
     }
 
     public List<LancamentoFinanceiro> getLancamentos() {
-        return Collections.unmodifiableList(lancamentos);
+        return repositorio.todos();
     }
 }

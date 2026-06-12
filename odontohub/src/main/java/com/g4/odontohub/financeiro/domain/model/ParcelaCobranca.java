@@ -26,6 +26,14 @@ public class ParcelaCobranca {
                 "Juros e multa são calculados automaticamente e não podem ser editados manualmente");
     }
 
+    /** Reconstitui a parcela a partir da persistência (camada de infraestrutura). */
+    public static ParcelaCobranca reconstituir(double valor, int diasAtraso, double multa,
+                                               double juros, StatusParcela status) {
+        ParcelaCobranca p = new ParcelaCobranca(valor, diasAtraso, multa, juros);
+        p.status = status;
+        return p;
+    }
+
     public void substituir() {
         this.status = StatusParcela.SUBSTITUIDA;
     }

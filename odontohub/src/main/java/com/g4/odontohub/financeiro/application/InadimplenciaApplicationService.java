@@ -2,11 +2,21 @@ package com.g4.odontohub.financeiro.application;
 
 import com.g4.odontohub.financeiro.domain.model.Acordo;
 import com.g4.odontohub.financeiro.domain.model.ParcelaCobranca;
+import com.g4.odontohub.financeiro.domain.repository.InadimplenciaRepository;
 import com.g4.odontohub.financeiro.domain.service.InadimplenciaService;
+import com.g4.odontohub.financeiro.infrastructure.persistence.InMemoryInadimplenciaRepository;
 
 public class InadimplenciaApplicationService {
 
-    private final InadimplenciaService service = new InadimplenciaService();
+    private final InadimplenciaService service;
+
+    public InadimplenciaApplicationService() {
+        this(new InMemoryInadimplenciaRepository());
+    }
+
+    public InadimplenciaApplicationService(InadimplenciaRepository repositorio) {
+        this.service = new InadimplenciaService(repositorio);
+    }
 
     public ParcelaCobranca registrarParcelaVencida(String paciente, double valor, int diasAtraso) {
         return service.registrarParcelaVencida(paciente, valor, diasAtraso);

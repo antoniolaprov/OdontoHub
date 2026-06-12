@@ -5,8 +5,10 @@ import com.g4.odontohub.financeiro.domain.event.EntradaGeradaAutomaticamente;
 import com.g4.odontohub.financeiro.domain.event.SaidaRegistradaManualmente;
 import com.g4.odontohub.financeiro.domain.model.LancamentoFinanceiro;
 import com.g4.odontohub.financeiro.domain.model.Parcela;
+import com.g4.odontohub.financeiro.domain.repository.LancamentoRepository;
 import com.g4.odontohub.financeiro.domain.service.FluxoCaixaService;
 import com.g4.odontohub.financeiro.domain.service.ParcelaService;
+import com.g4.odontohub.financeiro.infrastructure.persistence.InMemoryLancamentoRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
 import java.time.LocalDate;
@@ -14,10 +16,18 @@ import java.util.List;
 
 public class FluxoCaixaApplicationService {
 
-    private final FluxoCaixaService fluxoCaixaService = new FluxoCaixaService();
+    private final FluxoCaixaService fluxoCaixaService;
     private final ParcelaService parcelaService = new ParcelaService();
     private AlertaFluxoNegativo ultimoAlerta;
     private LancamentoFinanceiro ultimoLancamento;
+
+    public FluxoCaixaApplicationService() {
+        this(new InMemoryLancamentoRepository());
+    }
+
+    public FluxoCaixaApplicationService(LancamentoRepository lancamentoRepository) {
+        this.fluxoCaixaService = new FluxoCaixaService(lancamentoRepository);
+    }
 
     public Parcela criarParcela(double valor) {
         return parcelaService.criarParcela(valor, LocalDate.now().plusDays(30));

@@ -21,6 +21,17 @@ public class Acordo {
         this.parcelasOriginais.forEach(ParcelaCobranca::substituir);
     }
 
+    /** Reconstitui o acordo a partir da persistência (camada de infraestrutura), sem re-marcar parcelas. */
+    public static Acordo reconstituir(AcordoId id, String paciente, List<ParcelaCobranca> parcelasOriginais,
+                                      List<ParcelaCobranca> novasParcelas, boolean inadimplido,
+                                      boolean multasRetroativasAtivas) {
+        Acordo a = new Acordo(id, paciente, new java.util.ArrayList<>(), novasParcelas);
+        a.parcelasOriginais.addAll(parcelasOriginais);
+        a.inadimplido = inadimplido;
+        a.multasRetroativasAtivas = multasRetroativasAtivas;
+        return a;
+    }
+
     public void inadimplir() {
         this.inadimplido = true;
         // Se o acordo é inadimplido, as multas retroativas originais voltam a valer.

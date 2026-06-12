@@ -30,6 +30,21 @@ public class Anamnese {
         this.responsavelCadastro = responsavelCadastro;
     }
 
+    /** Reconstitui o agregado a partir da persistência (camada de infraestrutura). */
+    public static Anamnese reconstituir(AnamneseId id, Anamnesepaciente pacienteId, String alergias,
+                                        String contraindicacoes, String condicoesSistemicas, int versaoAtual,
+                                        Date dataRegistro, Date dataUltimaAtualizacao, String responsavelCadastro,
+                                        List<VersaoAnamnese> historico) {
+        Anamnese a = new Anamnese(id, pacienteId, alergias, contraindicacoes, condicoesSistemicas, responsavelCadastro);
+        a.versaoAtual = versaoAtual;
+        a.dataRegistro = dataRegistro;
+        a.dataUltimaAtualizacao = dataUltimaAtualizacao;
+        if (historico != null) {
+            a.historicoVersoes.addAll(historico);
+        }
+        return a;
+    }
+
     public void atualizarCondicoesSistemicas(String condicoes, String responsavel) {
         salvarVersaoAtualNoHistorico();
         this.condicoesSistemicas = condicoes;

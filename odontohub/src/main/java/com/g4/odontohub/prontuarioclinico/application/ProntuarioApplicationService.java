@@ -11,9 +11,13 @@ public class ProntuarioApplicationService {
     private final PlanoTratamentoRepository planoRepository;
 
     public ProntuarioApplicationService() {
-        this.anamneseRepository = new InMemoryAnamneseRepository();
-        this.planoRepository = new InMemoryPlanoTratamentoRepository();
-        
+        this(new InMemoryAnamneseRepository(), new InMemoryPlanoTratamentoRepository());
+    }
+
+    public ProntuarioApplicationService(AnamneseRepository anamneseRepository,
+                                        PlanoTratamentoRepository planoRepository) {
+        this.anamneseRepository = anamneseRepository;
+        this.planoRepository = planoRepository;
         this.anamneseService = new AnamneseService(this.anamneseRepository);
         this.planoTratamentoService = new PlanoTratamentoService(this.anamneseService, this.planoRepository);
     }
