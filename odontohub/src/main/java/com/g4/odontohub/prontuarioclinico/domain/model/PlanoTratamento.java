@@ -26,6 +26,25 @@ public class PlanoTratamento {
         this.dataCriacao = new Date();
     }
 
+    /** Reconstitui o agregado a partir da persistência (camada de infraestrutura). */
+    public static PlanoTratamento reconstituir(PlanoId id, Planotratamentopaciente pacienteId,
+                                               Planotratamentodentista dentistaId, StatusPlano status, int versao,
+                                               Date dataCriacao, String justificativaEncerramento,
+                                               List<Procedimento> procedimentos, List<LogAuditoria> logs) {
+        PlanoTratamento p = new PlanoTratamento(id, pacienteId, dentistaId);
+        p.status = status;
+        p.versao = versao;
+        p.dataCriacao = dataCriacao;
+        p.justificativaEncerramento = justificativaEncerramento;
+        if (procedimentos != null) {
+            p.procedimentos.addAll(procedimentos);
+        }
+        if (logs != null) {
+            p.logsAuditoria.addAll(logs);
+        }
+        return p;
+    }
+
     public void adicionarProcedimento(Procedimento procedimento) {
         this.procedimentos.add(procedimento);
         this.versao++;

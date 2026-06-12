@@ -22,6 +22,22 @@ public class Procedimento {
         this.status = StatusProcedimento.PENDENTE;
     }
 
+    /** Reconstitui o procedimento a partir da persistência (camada de infraestrutura). */
+    public static Procedimento reconstituir(ProcedimentoId id, String nome, String tipoProcedimento,
+                                            StatusProcedimento status, ProcedimentoAgendamentoVinculado agendamentoVinculado,
+                                            EvolucaoClinica evolucao, Date dataRealizacao, String executor,
+                                            String justificativaCancelamento, Date dataConfirmacaoRegistro) {
+        Procedimento p = new Procedimento(id, nome, tipoProcedimento);
+        p.status = status;
+        p.agendamentoVinculado = agendamentoVinculado;
+        p.evolucao = evolucao;
+        p.dataRealizacao = dataRealizacao;
+        p.executor = executor;
+        p.justificativaCancelamento = justificativaCancelamento;
+        p.dataConfirmacaoRegistro = dataConfirmacaoRegistro;
+        return p;
+    }
+
     public void realizar(EvolucaoClinica evolucao, ProcedimentoAgendamentoVinculado agendamento) {
         this.status = StatusProcedimento.REALIZADO;
         this.evolucao = evolucao;
