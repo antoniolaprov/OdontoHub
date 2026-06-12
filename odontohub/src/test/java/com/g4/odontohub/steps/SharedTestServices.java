@@ -1,20 +1,40 @@
 package com.g4.odontohub.steps;
 
+import com.g4.odontohub.agendamento.application.AgendamentoApplicationService;
+import com.g4.odontohub.agendamento.domain.model.Agendamento;
 import com.g4.odontohub.estoque.application.MaterialApplicationService;
 import com.g4.odontohub.financeiro.application.FluxoCaixaApplicationService;
+import com.g4.odontohub.prescricao.application.PrescricaoApplicationService;
+import com.g4.odontohub.relacionamentopaciente.application.ChurnApplicationService;
+import com.g4.odontohub.relacionamentopaciente.application.FollowupApplicationService;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
 public class SharedTestServices {
 
+    private static AgendamentoApplicationService agendamentoApplicationService;
     private static FluxoCaixaApplicationService fluxoCaixaService;
     private static MaterialApplicationService materialService;
+    private static ChurnApplicationService churnApplicationService;
+    private static FollowupApplicationService followupApplicationService;
     private static Exception lastException;
+    private static PrescricaoApplicationService prescricaoService;
+    private static Agendamento lastAgendamento;
 
     public static void initialize() {
         DomainEventPublisher.reset();
+        agendamentoApplicationService = new AgendamentoApplicationService();
         fluxoCaixaService = new FluxoCaixaApplicationService();
         materialService = new MaterialApplicationService(fluxoCaixaService);
+        churnApplicationService = new ChurnApplicationService();
+        followupApplicationService = new FollowupApplicationService();
+        prescricaoService = new PrescricaoApplicationService();
         lastException = null;
+        lastAgendamento = null;
+    }
+
+    public static AgendamentoApplicationService getAgendamentoApplicationService() {
+        if (agendamentoApplicationService == null) initialize();
+        return agendamentoApplicationService;
     }
 
     public static FluxoCaixaApplicationService getFluxoCaixaService() {
@@ -27,11 +47,34 @@ public class SharedTestServices {
         return materialService;
     }
 
+    public static ChurnApplicationService getChurnApplicationService() {
+        if (churnApplicationService == null) initialize();
+        return churnApplicationService;
+    }
+
+    public static FollowupApplicationService getFollowupApplicationService() {
+        if (followupApplicationService == null) initialize();
+        return followupApplicationService;
+    }
+
     public static void setLastException(Exception e) {
         lastException = e;
     }
 
     public static Exception getLastException() {
         return lastException;
+    }
+
+    public static PrescricaoApplicationService getPrescricaoService() {
+        if (prescricaoService == null) initialize();
+        return prescricaoService;
+    }
+
+    public static void setLastAgendamento(Agendamento agendamento) {
+        lastAgendamento = agendamento;
+    }
+
+    public static Agendamento getLastAgendamento() {
+        return lastAgendamento;
     }
 }

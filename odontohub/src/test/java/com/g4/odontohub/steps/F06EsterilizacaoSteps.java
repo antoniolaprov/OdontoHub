@@ -43,7 +43,10 @@ public class F06EsterilizacaoSteps {
     @Dado("que {string} está com status {string}")
     public void instrumentoComStatus(String nome, String statusStr) {
         ultimoInstrumento = cadastrarSeNecessario(nome, 7);
-        definirStatus(nome, mapearStatus(statusStr));
+        StatusEsterilizacao status = mapearStatus(statusStr);
+        LocalDate dataVenc = status == StatusEsterilizacao.VENCIDO ? LocalDate.now().minusDays(1) : null;
+        service.definirStatus(nome, status, dataVenc);
+        ultimoInstrumento = service.buscarPorNome(nome);
     }
 
     @Dado("que {string} está com status {string} e dentro do prazo")
@@ -62,7 +65,14 @@ public class F06EsterilizacaoSteps {
     public void instrumentoEsterilizadoHaDias(String nome, int diasAtras, String statusStr) {
         ultimoInstrumento = cadastrarSeNecessario(nome, 7);
         service.marcarComoEsteril(nome, LocalDate.now().minusDays(diasAtras), "Sistema");
-        definirStatus(nome, mapearStatus(statusStr));
+        service.definirStatus(nome, mapearStatus(statusStr), null);
+        ultimoInstrumento = service.buscarPorNome(nome);
+    }
+
+    @Dado("que {string} foi esterilizado hoje com prazo global de {int} dias")
+    public void instrumentoEsterilizadoHojeComPrazo(String nome, int prazo) {
+        cadastrarSeNecessario(nome, prazo);
+        service.marcarComoEsteril(nome, LocalDate.now(), "Sistema");
     }
 
     @Quando("o auxiliar {string} marca {string} como Estéril na data de hoje")
@@ -85,6 +95,11 @@ public class F06EsterilizacaoSteps {
     public void marcarComoContaminado(String nome) {
         service.marcarComoContaminado(nome);
         ultimoInstrumento = service.buscarPorNome(nome);
+    }
+
+    @Quando("o dentista altera o prazo global de esterilização para {int} dias")
+    public void alterarPrazoGlobal(int novoPrazo) {
+        service.recalcularValidadeGlobal(novoPrazo);
     }
 
     @Então("o status do instrumento deve ser {string}")
@@ -110,6 +125,13 @@ public class F06EsterilizacaoSteps {
                 "A lista deveria conter: " + nome);
     }
 
+    @Então("a lista deve conter apenas {string}")
+    public void listaDeveConterApenas(String nome) {
+        assertNotNull(listaResultado);
+        assertEquals(1, listaResultado.size());
+        assertEquals(nome, listaResultado.get(0).getNome());
+    }
+
     @E("a lista não deve conter {string}")
     public void listaNaoDeveConter(String nome) {
         assertNotNull(listaResultado);
@@ -132,6 +154,11 @@ public class F06EsterilizacaoSteps {
         assertEquals(LocalDate.now().plusDays(dias), ultimoInstrumento.getDataVencimento());
     }
 
+    @Então("a nova data de vencimento de {string} deve ser calculada como hoje mais {int} dias")
+    public void novaDataVencimentoDeveSer(String nome, int dias) {
+        assertEquals(LocalDate.now().plusDays(dias), service.buscarPorNome(nome).getDataVencimento());
+    }
+
     private Instrumento cadastrarSeNecessario(String nome, int prazo) {
         try {
             return service.buscarPorNome(nome);
@@ -147,7 +174,12 @@ public class F06EsterilizacaoSteps {
     }
 
     private StatusEsterilizacao mapearStatus(String statusStr) {
-        return StatusEsterilizacao.valueOf(statusStr);
+        return switch (statusStr) {
+            case "Estéril" -> StatusEsterilizacao.ESTERIL;
+            case "Vencido" -> StatusEsterilizacao.VENCIDO;
+            case "Contaminado" -> StatusEsterilizacao.CONTAMINADO;
+            default -> StatusEsterilizacao.valueOf(statusStr);
+        };
     }
 
     private boolean ehStatusInstrumento(String statusStr) {
