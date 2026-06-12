@@ -1,0 +1,5 @@
+package com.g4.odontohub.relacionamentopaciente.churn.domain.event;
+
+import com.g4.odontohub.relacionamentopaciente.churn.domain.model.ChurnId;
+
+public record PacienteEntrandoZonaDeRisco(ChurnId churnId, String paciente, int mesesSemRetorno) {}

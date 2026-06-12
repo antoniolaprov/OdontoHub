@@ -108,7 +108,8 @@ public class F15Steps {
 
     @Então("o sistema deve rejeitar o cadastro")
     public void sistemaDeveRejeitarCadastro() {
-        assertNotNull(excecaoCapturada, "O sistema deveria ter rejeitado o cadastro");
+        Exception ex = excecaoCapturada != null ? excecaoCapturada : SharedTestServices.getLastException();
+        assertNotNull(ex, "O sistema deveria ter rejeitado o cadastro");
     }
 
     @Então("o cadastro do paciente deve refletir o novo telefone {string}")

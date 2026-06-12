@@ -39,6 +39,16 @@ Domain OdontoHub {
         type = CORE_DOMAIN
         domainVisionStatement = "Centraliza o cadastro e a gestão do perfil dos pacientes, garantindo unicidade de CPF e e-mail, suporte a cadastro rápido em situações emergenciais e rastreabilidade completa de alterações cadastrais."
     }
+
+    Subdomain MedicamentoSubdomain {
+        type = SUPPORTING_DOMAIN
+        domainVisionStatement = "Centraliza o catálogo de medicamentos com classe farmacológica, contraindicações e posologias padrão, alimentando as prescrições com verificação automática de contraindicações cruzadas."
+    }
+
+    Subdomain PagamentoSubdomain {
+        type = SUPPORTING_DOMAIN
+        domainVisionStatement = "Registra pagamentos presenciais e remotos, baixa parcelas, gera comprovantes e declarações de quitação e alimenta automaticamente o fluxo de caixa."
+    }
 }
 
 /* ============================================================
@@ -960,6 +970,131 @@ BoundedContext CadastroPacienteContext implements CadastroPacienteSubdomain {
 }
 
 /* ============================================================
+   BOUNDED CONTEXT: Catálogo de Medicamentos
+   Funcionalidade 8 — Cadastro e Gestão de Medicamentos
+   ============================================================ */
+
+BoundedContext MedicamentoContext implements MedicamentoSubdomain {
+    type = FEATURE
+    domainVisionStatement = "Mantém o catálogo padronizado de medicamentos, suas classes farmacológicas, posologias padrão e regras de contraindicação cruzada usadas pela emissão de prescrições."
+
+    Aggregate Medicamento {
+
+        Entity Medicamento {
+            aggregateRoot
+            - MedicamentoId id
+            String nomeComercial
+            String principioAtivo
+            String categoriaTerapeutica
+            String classeFarmacologica
+            - StatusMedicamento status
+            List posologiasPadrao
+            List contraindicacoes
+        }
+
+        ValueObject MedicamentoId {
+            Long id
+        }
+
+        enum StatusMedicamento {
+            ATIVO, INATIVO;
+        }
+
+        DomainEvent MedicamentoCadastrado {
+            - MedicamentoId medicamentoId
+            String nomeComercial
+            String classeFarmacologica
+        }
+
+        DomainEvent MedicamentoInativado {
+            - MedicamentoId medicamentoId
+            String justificativa
+        }
+
+        Service MedicamentoService {
+            void cadastrar(String nomeComercial, String principioAtivo, String categoriaTerapeutica, String classeFarmacologica);
+            void inativar(String nomeComercial, String justificativa);
+            void adicionarPosologiaPadrao(String nomeComercial, String posologia);
+            boolean haContraindicacaoCruzada(String nomeComercial, String alergiaPaciente);
+            void importarLote(List linhas);
+        }
+    }
+}
+
+/* ============================================================
+   BOUNDED CONTEXT: Pagamento
+   Funcionalidade 17 — Gestão de Pagamentos e Quitação de Débitos
+   ============================================================ */
+
+BoundedContext PagamentoContext implements PagamentoSubdomain {
+    type = FEATURE
+    domainVisionStatement = "Registra pagamentos presenciais e remotos sobre parcelas, baixa débitos, gera comprovantes e declarações de quitação e alimenta automaticamente o fluxo de caixa."
+
+    Aggregate Pagamento {
+
+        Entity Pagamento {
+            aggregateRoot
+            - PagamentoId id
+            String parcelaReferencia
+            double valorRecebido
+            Date dataPagamento
+            - FormaPagamento formaPagamento
+            - StatusPagamento status
+            String observacao
+            String justificativaCancelamento
+        }
+
+        Entity ParcelaPagavel {
+            String referencia
+            double valorDevido
+            double valorPago
+            - StatusParcelaPagamento status
+        }
+
+        ValueObject PagamentoId {
+            Long id
+        }
+
+        enum FormaPagamento {
+            PIX, CARTAO_CREDITO, CARTAO_DEBITO, DINHEIRO, TRANSFERENCIA;
+        }
+
+        enum StatusPagamento {
+            PAGO, AGUARDANDO_COMPROVANTE, CANCELADO;
+        }
+
+        enum StatusParcelaPagamento {
+            EM_ABERTO, PAGA, PARCIALMENTE_PAGA;
+        }
+
+        DomainEvent PagamentoRegistrado {
+            - PagamentoId pagamentoId
+            String parcelaReferencia
+            double valorRecebido
+        }
+
+        DomainEvent LancamentoAguardandoCriado {
+            - PagamentoId pagamentoId
+            String parcelaReferencia
+        }
+
+        DomainEvent PagamentoCancelado {
+            - PagamentoId pagamentoId
+            String justificativa
+        }
+
+        Service PagamentoService {
+            void registrarPagamentoPresencial(String referencia, double valor, Date data, String forma);
+            void lancarAguardandoComprovante(String referencia, String forma);
+            void confirmarPagamento(String referencia, double valor, Date data);
+            void cancelarLancamentoAguardando(String referencia, String justificativa);
+            boolean comprovanteDisponivel(String referencia);
+            boolean declaracaoQuitacaoDisponivel();
+        }
+    }
+}
+
+/* ============================================================
    Context Map — Relacionamentos entre Bounded Contexts
    (definido por último pois referencia os BCs acima)
    ============================================================ */
@@ -972,6 +1107,8 @@ ContextMap OdontoHubContextMap {
     contains RelacionamentoPacienteContext
     contains EquipeContext
     contains CadastroPacienteContext
+    contains MedicamentoContext
+    contains PagamentoContext
 
     /*
      * Agendamento [D] consulta Prontuário [U] para verificar se o paciente
@@ -1081,5 +1218,32 @@ ContextMap OdontoHubContextMap {
     CadastroPacienteContext [D, CF] <- [U, OHS, PL] FinanceiroContext {
         implementationTechnology = "Java"
         exposedAggregates = Parcela
+    }
+
+    /*
+     * Prontuário [D] consulta o Catálogo de Medicamentos [U] ao emitir prescrições,
+     * obtendo classe farmacológica, contraindicações e posologias padrão.
+     */
+    ProntuarioClinicoContext [D, ACL] <- [U, OHS, PL] MedicamentoContext {
+        implementationTechnology = "Java"
+        exposedAggregates = Medicamento
+    }
+
+    /*
+     * Pagamento [D] consome Parcelas do Financeiro [U] para registrar a baixa de débitos;
+     * e, ao confirmar pagamentos, publica entradas automáticas de volta no Fluxo de Caixa.
+     */
+    PagamentoContext [D, ACL] <- [U, OHS, PL] FinanceiroContext {
+        implementationTechnology = "Java"
+        exposedAggregates = Parcela
+    }
+
+    /*
+     * Pagamento [U] alimenta automaticamente o Fluxo de Caixa do Financeiro [D]
+     * a cada pagamento confirmado.
+     */
+    PagamentoContext [U, OHS, PL] -> [D, CF] FinanceiroContext {
+        implementationTechnology = "Java"
+        exposedAggregates = Pagamento
     }
 }
