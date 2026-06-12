@@ -2,7 +2,9 @@ package com.g4.odontohub.agendamento.application;
 
 import com.g4.odontohub.agendamento.domain.event.*;
 import com.g4.odontohub.agendamento.domain.model.*;
+import com.g4.odontohub.agendamento.domain.repository.AgendamentoRepository;
 import com.g4.odontohub.agendamento.domain.service.AgendamentoService;
+import com.g4.odontohub.agendamento.infrastructure.persistence.InMemoryAgendamentoRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
 import java.time.LocalDateTime;
@@ -11,7 +13,15 @@ import java.util.Map;
 
 public class AgendamentoApplicationService {
 
-    private final AgendamentoService agendamentoService = new AgendamentoService();
+    private final AgendamentoService agendamentoService;
+
+    public AgendamentoApplicationService() {
+        this(new InMemoryAgendamentoRepository());
+    }
+
+    public AgendamentoApplicationService(AgendamentoRepository repositorio) {
+        this.agendamentoService = new AgendamentoService(repositorio);
+    }
 
     // ACL: simulação de dados cross-context (em memória para testes)
     private final Map<String, Long> pacienteIds = new HashMap<>();

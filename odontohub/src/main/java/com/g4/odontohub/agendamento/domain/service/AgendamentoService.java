@@ -1,18 +1,20 @@
 package com.g4.odontohub.agendamento.domain.service;
 
 import com.g4.odontohub.agendamento.domain.model.*;
+import com.g4.odontohub.agendamento.domain.repository.AgendamentoRepository;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
-import java.util.Map;
 
 public class AgendamentoService {
 
     private static final DateTimeFormatter HORA_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
 
-    private final Map<AgendamentoId, Agendamento> agendamentos = new HashMap<>();
-    private long nextId = 1L;
+    private final AgendamentoRepository repositorio;
+
+    public AgendamentoService(AgendamentoRepository repositorio) {
+        this.repositorio = repositorio;
+    }
 
     public Agendamento registrarAgendamento(PacienteId pacienteId, DentistaId dentistaId,
                                             LocalDateTime dataHora, boolean pacienteTemPlanoAtivo,
@@ -29,28 +31,42 @@ public class AgendamentoService {
         }
 
         TipoAtendimento tipo = pacienteTemPlanoAtivo ? TipoAtendimento.RETORNO : TipoAtendimento.CONSULTA;
-        AgendamentoId id = new AgendamentoId(nextId++);
+        AgendamentoId id = new AgendamentoId(repositorio.proximoId());
         Agendamento agendamento = new Agendamento(id, pacienteId, dentistaId, dataHora, tipo);
-        agendamentos.put(id, agendamento);
+        repositorio.salvar(agendamento);
         return agendamento;
     }
 
     public void confirmarAgendamento(AgendamentoId id, String responsavel) {
-        agendamentos.get(id).confirmar(responsavel);
+        Agendamento a = buscar(id);
+        a.confirmar(responsavel);
+        repositorio.salvar(a);
     }
 
     public void cancelarAgendamento(AgendamentoId id, String motivo, String responsavel) {
-        agendamentos.get(id).cancelar(motivo, responsavel);
+        Agendamento a = buscar(id);
+        a.cancelar(motivo, responsavel);
+        repositorio.salvar(a);
     }
 
     public void remarcarAgendamento(AgendamentoId id, LocalDateTime novaDataHora, String responsavel) {
-        agendamentos.get(id).remarcar(novaDataHora, responsavel);
+        Agendamento a = buscar(id);
+        a.remarcar(novaDataHora, responsavel);
+        repositorio.salvar(a);
     }
 
     public boolean existeConflitoDeHorario(DentistaId dentistaId, LocalDateTime dataHora) {
-        return agendamentos.values().stream()
+        return repositorio.todos().stream()
                 .filter(a -> a.getDentistaId().equals(dentistaId))
                 .filter(a -> a.getStatus() != StatusAgendamento.CANCELADO)
                 .anyMatch(a -> a.getDataHora().equals(dataHora));
+    }
+
+    private Agendamento buscar(AgendamentoId id) {
+        Agendamento a = repositorio.buscarPorId(id);
+        if (a == null) {
+            throw new IllegalArgumentException("Agendamento não encontrado: " + id.id());
+        }
+        return a;
     }
 }

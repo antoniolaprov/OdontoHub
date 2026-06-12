@@ -32,6 +32,22 @@ public class Agendamento {
         this.status = StatusAgendamento.AGENDADO;
     }
 
+    /** Reconstitui o agregado a partir da persistência (camada de infraestrutura). */
+    public static Agendamento reconstituir(AgendamentoId id, PacienteId pacienteId, DentistaId dentistaId,
+                                           LocalDateTime dataHora, TipoAtendimento tipo, StatusAgendamento status,
+                                           String motivoCancelamento, String responsavelAlteracao,
+                                           LocalDateTime dataUltimaAlteracao, List<EntradaHistorico> historico) {
+        Agendamento a = new Agendamento(id, pacienteId, dentistaId, dataHora, tipo);
+        a.status = status;
+        a.motivoCancelamento = motivoCancelamento;
+        a.responsavelAlteracao = responsavelAlteracao;
+        a.dataUltimaAlteracao = dataUltimaAlteracao;
+        if (historico != null) {
+            a.historico.addAll(historico);
+        }
+        return a;
+    }
+
     public void confirmar(String responsavel) {
         this.status = StatusAgendamento.CONFIRMADO;
         this.responsavelAlteracao = RESPONSAVEL_RECEPCAO;
