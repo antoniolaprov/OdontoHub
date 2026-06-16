@@ -1,0 +1,15 @@
+# Artefatos de build e runtime (regerados dentro da imagem)
+target/
+data/
+*.log
+
+# Frontend gerado pelo Vaadin (regerado no build)
+src/main/frontend/generated/
+node_modules/
+
+# Metadados de IDE / VCS
+.git/
+.github/
+.idea/
+.vscode/
+*.iml

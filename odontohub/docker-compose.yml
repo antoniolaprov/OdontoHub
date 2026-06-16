@@ -1,0 +1,16 @@
+# Execução local do OdontoHub com Docker Compose.
+#   docker compose up --build      (sobe a aplicação em http://localhost:8080)
+#   docker compose down            (para e remove o container)
+services:
+  odontohub:
+    build: .
+    image: odontohub:latest
+    container_name: odontohub
+    ports:
+      - "8080:8080"
+    volumes:
+      # Persiste o banco H2 entre reinícios do container
+      - odontohub-data:/app/data
+
+volumes:
+  odontohub-data:

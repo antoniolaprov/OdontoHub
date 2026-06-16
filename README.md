@@ -45,6 +45,45 @@ cd odontohub
 
 ---
 
+## 🐳 Executar com Docker
+
+A aplicação pode ser executada localmente em um container, sem instalar Java ou Maven na máquina (apenas o Docker é necessário). Os arquivos estão em `odontohub/`.
+
+### Opção A — Docker Compose (recomendado)
+
+```bash
+cd odontohub
+docker compose up --build
+```
+
+A API sobe em **http://localhost:8080**. Para parar: `docker compose down`.
+
+### Opção B — Docker puro
+
+```bash
+cd odontohub
+docker build -t odontohub:latest .
+docker run -d --name odontohub -p 8080:8080 odontohub:latest
+```
+
+Parar e remover: `docker rm -f odontohub`.
+
+> O build é multi-stage: o estágio 1 (Maven + JDK 21) empacota o JAR com o frontend
+> Vaadin já embutido; o estágio 2 (apenas JRE 21) executa o JAR. O banco H2 fica em
+> arquivo dentro do volume `/app/data`, persistindo entre reinícios do container.
+
+### Endpoints de exemplo (REST)
+
+```bash
+# Fluxo de caixa
+curl http://localhost:8080/api/fluxo-caixa/lancamentos
+# Fila priorizada de recall (F07)
+curl http://localhost:8080/api/recalls/fila-priorizada
+# Console do banco H2 (navegador): http://localhost:8080/h2-console
+```
+
+---
+
 ## 📌 Status do Projeto
 
 ✅ Backend completo — 15 funcionalidades (F1–F12, F15–F17) com domínio, infraestrutura (JPA),
