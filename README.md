@@ -291,15 +291,22 @@ Executados via Maven Wrapper.
 
 ---
 
-## 👥 Equipe
+## 👥 Equipe e Autoria das Funcionalidades
 
-* João Patriota
-* Mateus Dornellas
-* Jarbas Esteves
-* Daniel Andrade
-* Felipe Andrade
-* Antônio Augusto
-* Gabriel Belo
+| Membro | Funcionalidades |
+|---|---|
+| **João Patriota** | F1 – Agendamento de Consultas e Retornos · F6 – Status de Esterilização · F15 – Cadastro de Pacientes · F16 – Cadastro de Instrumentos |
+| **Mateus Dornellas** | F8 – Cadastro e Gestão de Medicamentos · F9 – Gestão Ativa de Inadimplência e Acordos · F17 – Gestão de Pagamentos e Quitação de Débitos |
+| **Jarbas Esteves** | F11 – Dashboard de Churn e Inteligência de Retenção · F10 – Execução de Protocolos de Pós-Operatório Ativo |
+| **Daniel Andrade** | F7 – Automação e Fila de Recall · F12 – Gestão de Equipe e Colaboradores |
+| **Felipe Andrade** | F2 – Registro de Anamnese · F3 – Gestão e Execução do Plano de Tratamento |
+| **Antônio Augusto** | F4 – Fluxo de Caixa do Consultório · F5 – Controle de Estoque de Materiais Consumíveis |
+| **Gabriel Belo** | F13 – Confirmação e Lembretes de Consulta · F14 – Registro de Não Comparecimento |
+
+> **Nota:** as funcionalidades **F13** e **F14** estão atribuídas e planejadas, mas
+> ainda **não foram implementadas** neste repositório (sem `.feature` nem código
+> correspondente). As demais (F1–F12, F15, F16, F17) estão implementadas com BDD
+> automatizado, persistência JPA e API REST.
 
 ---
 
