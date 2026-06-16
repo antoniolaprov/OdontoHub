@@ -185,6 +185,62 @@ OdontoHub.cml
 
 ---
 
+## 🧱 Padrões de Projeto Implementados
+
+> A coluna **"Implementado por"** reflete a autoria registrada no histórico Git
+> dos arquivos de cada padrão. Os caminhos usam `…` para indicar que a convenção
+> se repete em todos os bounded contexts (Agendamento, Prontuário, Financeiro,
+> Estoque, Relacionamento, Equipe, Cadastro, Medicamento, Pagamento).
+
+### 1. Repository (com Ports & Adapters / Arquitetura Hexagonal)
+A camada de domínio define a **porta** (interface) de persistência; a infraestrutura provê os **adaptadores**. O domínio não conhece JPA.
+- **Implementado por:** Antônio Augusto (`antoniolaprov`)
+- **Arquivos:**
+  - Portas: `…/domain/repository/<Agregado>Repository.java` (ex.: `pagamento/domain/repository/PagamentoRepository.java`, `equipe/domain/repository/ColaboradorRepository.java`, `financeiro/domain/repository/LancamentoRepository.java`)
+
+### 2. Adapter
+Cada porta tem **dois adaptadores**: um em memória (usado pelos testes BDD) e um JPA (usado pela aplicação real).
+- **Implementado por:** Antônio Augusto (`antoniolaprov`)
+- **Arquivos:**
+  - Em memória: `…/infrastructure/persistence/InMemory<Agregado>Repository.java`
+  - JPA: `…/infrastructure/persistence/jpa/Jpa<Agregado>Repository.java` + `SpringData<Agregado>Repository.java`
+
+### 3. Data Mapper
+Tradução entre o **modelo de domínio** e o **modelo de persistência** (entidade JPA), mantendo o domínio livre de anotações de ORM.
+- **Implementado por:** Antônio Augusto (`antoniolaprov`)
+- **Arquivos:**
+  - `…/infrastructure/persistence/jpa/<Agregado>JpaEntity.java` (métodos `fromDomain` / `toDomain`)
+  - `…/infrastructure/persistence/jpa/*Embeddable.java` (coleções aninhadas, ex.: `ProcedimentoEmbeddable.java`, `LogAuditoriaEmbeddable.java`)
+
+### 4. Observer / Publish-Subscribe (Domain Events)
+Barramento de eventos de domínio: serviços de domínio **publicam** eventos; serviços de aplicação **assinam** para integrar contextos (ex.: Estoque e Pagamento alimentam o Fluxo de Caixa).
+- **Implementado por:** Antônio Augusto (`antoniolaprov`)
+- **Arquivos:**
+  - Barramento: `shared/DomainEventPublisher.java`
+  - Eventos: `…/domain/event/*.java` (ex.: `pagamento/domain/event/PagamentoRegistrado.java`, `recall/domain/event/RecallEscalonado.java`)
+  - Assinantes: `estoque/application/MaterialApplicationService.java`, `pagamento/application/PagamentoApplicationService.java`
+
+### 5. Factory Method
+Fábricas estáticas para **reconstituir** agregados a partir da persistência e para converter rótulos em enums.
+- **Implementado por:** Antônio Augusto (`antoniolaprov`)
+- **Arquivos:**
+  - `reconstituir(...)` em agregados: `pagamento/domain/model/Pagamento.java`, `equipe/domain/model/Colaborador.java`, `relacionamentopaciente/recall/domain/model/Recall.java`, `prontuarioclinico/domain/model/PlanoTratamento.java`
+  - `fromLabel(...)` em enums: `equipe/domain/model/FuncaoColaborador.java`, `StatusColaborador.java`, `pagamento/domain/model/FormaPagamento.java`
+
+### 6. Dependency Injection / Inversion of Control
+A composição (porta → adaptador JPA) é feita por configuração Spring no **composition root**, e não com `new` espalhado.
+- **Implementado por:** Antônio Augusto (`antoniolaprov`)
+- **Arquivos:**
+  - `…/infrastructure/config/<Contexto>BeanConfig.java` (ex.: `pagamento/infrastructure/config/PagamentoBeanConfig.java`, `equipe/infrastructure/config/EquipeBeanConfig.java`)
+  - `OdontoHubApplication.java`
+
+### 7. Facade (Application Service)
+Os serviços de aplicação oferecem uma **fachada** simples sobre os serviços de domínio e coordenam integrações entre contextos.
+- **Implementado por:** Antônio Augusto (`antoniolaprov`)
+- **Arquivos:** `…/application/<Contexto>ApplicationService.java`
+
+---
+
 ## 🧪 Cenários de Teste BDD
 
 Os cenários BDD foram escritos em **Gherkin** (um arquivo `.feature` por funcionalidade) e estão disponíveis em:
