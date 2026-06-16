@@ -14,6 +14,7 @@ public class F12EquipeSteps {
     private final ColaboradorApplicationService service = new ColaboradorApplicationService();
     private Colaborador ultimoColaborador;
     private List<Colaborador> listaResponsaveis;
+    private boolean ultimoLoginOk;
 
     @Quando("o dentista cadastra o colaborador {string} com CPF {string}, telefone {string} e função {string}")
     public void cadastrarColaborador(String nome, String cpf, String telefone, String funcao) {
@@ -125,9 +126,88 @@ public class F12EquipeSteps {
         }
     }
 
+    // ----- Permissões por função -----
+
+    @Então("o colaborador {string} deve poder validar procedimentos")
+    public void devePoderValidarProcedimentos(String nome) {
+        assertTrue(service.buscarPorNome(nome).podeValidarProcedimentos(),
+                nome + " deveria poder validar procedimentos");
+    }
+
+    @Então("o colaborador {string} deve poder acessar dados financeiros")
+    public void devePoderAcessarFinanceiro(String nome) {
+        assertTrue(service.buscarPorNome(nome).podeAcessarFinanceiro(),
+                nome + " deveria poder acessar dados financeiros");
+    }
+
+    @Então("o colaborador {string} não deve poder acessar dados financeiros")
+    public void naoDevePoderAcessarFinanceiro(String nome) {
+        assertFalse(service.buscarPorNome(nome).podeAcessarFinanceiro(),
+                nome + " não deveria poder acessar dados financeiros");
+    }
+
+    @Então("o colaborador {string} deve poder alterar permissões")
+    public void devePoderAlterarPermissoes(String nome) {
+        assertTrue(service.buscarPorNome(nome).podeAlterarPermissoes(),
+                nome + " deveria poder alterar permissões");
+    }
+
+    @Então("o colaborador {string} não deve poder alterar permissões")
+    public void naoDevePoderAlterarPermissoes(String nome) {
+        assertFalse(service.buscarPorNome(nome).podeAlterarPermissoes(),
+                nome + " não deveria poder alterar permissões");
+    }
+
+    // ----- Login e segurança -----
+
+    @Dado("que existe o colaborador {string} com login {string} e senha {string}")
+    public void existeColaboradorComLoginSenha(String nome, String login, String senha) {
+        ultimoColaborador = service.cadastrarCompleto(nome, cpfFor(nome), "81999990000",
+                login + "@odontohub.com", login, senha, "Recepcionista");
+    }
+
+    @Dado("que existe o colaborador {string} com CPF {string}")
+    public void existeColaboradorComCpf(String nome, String cpf) {
+        ultimoColaborador = service.cadastrar(nome, cpf, "81999990000", "Auxiliar");
+    }
+
+    @Quando("o dentista tenta cadastrar outro colaborador com o CPF {string}")
+    public void tentaCadastrarComCpfDuplicado(String cpf) {
+        tentar(() -> service.cadastrar("Outro Colaborador", cpf, "81999990000", "Auxiliar"));
+    }
+
+    @Quando("{string} tenta fazer login com a senha {string}")
+    public void tentaFazerLogin(String nome, String senha) {
+        ultimoLoginOk = service.tentarLogin(nome, senha);
+    }
+
+    @Quando("{string} erra a senha {int} vezes")
+    public void erraASenha(String nome, int vezes) {
+        for (int i = 0; i < vezes; i++) {
+            ultimoLoginOk = service.tentarLogin(nome, "senha-errada");
+        }
+    }
+
+    @Então("o login deve ser negado")
+    public void loginDeveSerNegado() {
+        assertFalse(ultimoLoginOk, "O login deveria ter sido negado");
+    }
+
+    @Então("a conta de {string} deve estar bloqueada")
+    public void contaDeveEstarBloqueada(String nome) {
+        assertTrue(service.estaBloqueado(nome), "A conta de " + nome + " deveria estar bloqueada");
+    }
+
+    @Então("{string} não deve conseguir login mesmo com a senha correta {string}")
+    public void naoDeveLogarMesmoComSenhaCorreta(String nome, String senhaCorreta) {
+        assertFalse(service.tentarLogin(nome, senhaCorreta),
+                nome + " não deveria conseguir login com a conta bloqueada");
+    }
+
     private void aplicarStatus(String nome, String status) {
-        if (StatusColaborador.valueOf(status.toUpperCase()) == StatusColaborador.INATIVO) {
-            service.desativar(nome);
+        StatusColaborador alvo = StatusColaborador.fromLabel(status);
+        if (alvo != StatusColaborador.ATIVO) {
+            service.alterarStatus(nome, status);
         }
         ultimoColaborador = service.buscarPorNome(nome);
     }

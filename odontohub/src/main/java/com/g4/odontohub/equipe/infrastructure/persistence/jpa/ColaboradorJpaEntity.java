@@ -20,12 +20,17 @@ public class ColaboradorJpaEntity {
     private String nomeCompleto;
     private String cpf;
     private String telefone;
+    private String email;
+    private String login;
+    private String senha;
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
     private FuncaoColaborador funcao;
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
     private StatusColaborador status;
+    private int tentativasLoginInvalidas;
+    private boolean bloqueado;
 
     protected ColaboradorJpaEntity() {
     }
@@ -36,12 +41,18 @@ public class ColaboradorJpaEntity {
         e.nomeCompleto = c.getNomeCompleto();
         e.cpf = c.getCpf();
         e.telefone = c.getTelefone();
+        e.email = c.getEmail();
+        e.login = c.getLogin();
+        e.senha = c.getSenhaPersistencia();
         e.funcao = c.getFuncao();
         e.status = c.getStatus();
+        e.tentativasLoginInvalidas = c.getTentativasLoginInvalidas();
+        e.bloqueado = c.estaBloqueado();
         return e;
     }
 
     public Colaborador toDomain() {
-        return Colaborador.reconstituir(new ColaboradorId(id), nomeCompleto, cpf, telefone, funcao, status);
+        return Colaborador.reconstituir(new ColaboradorId(id), nomeCompleto, cpf, telefone,
+                email, login, senha, funcao, status, tentativasLoginInvalidas, bloqueado);
     }
 }

@@ -867,7 +867,7 @@ BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSu
 
 BoundedContext EquipeContext implements EquipeSubdomain {
     type = FEATURE
-    domainVisionStatement = "Cadastra e gerencia colaboradores (Auxiliares e Recepcionistas) com controle de status Ativo/Inativo e rastreabilidade de ações operacionais."
+    domainVisionStatement = "Cadastra e gerencia colaboradores com função, permissões automáticas por perfil, status operacional, validação de unicidade e segurança de login com bloqueio por tentativas."
 
     Aggregate Colaborador {
 
@@ -877,8 +877,13 @@ BoundedContext EquipeContext implements EquipeSubdomain {
             String nomeCompleto
             String cpf
             String telefone
+            String email
+            String login
+            String senha
             - FuncaoColaborador funcao
             - StatusColaborador status
+            int tentativasLoginInvalidas
+            boolean bloqueado
             String registroProfissional
         }
 
@@ -886,12 +891,15 @@ BoundedContext EquipeContext implements EquipeSubdomain {
             Long id
         }
 
+        /* Permissões derivadas automaticamente: Especialista valida procedimentos,
+           Administrador altera permissões, Auxiliar não acessa dados financeiros. */
         enum FuncaoColaborador {
-            AUXILIAR, RECEPCIONISTA;
+            AUXILIAR, RECEPCIONISTA, ESPECIALISTA, ADMINISTRADOR;
         }
 
+        /* Inativos e Suspensos não podem realizar login. */
         enum StatusColaborador {
-            ATIVO, INATIVO;
+            ATIVO, INATIVO, SUSPENSO, FERIAS, AFASTADO;
         }
 
         DomainEvent ColaboradorCadastrado {
@@ -909,8 +917,12 @@ BoundedContext EquipeContext implements EquipeSubdomain {
 
         Service ColaboradorService {
             void cadastrarColaborador(String nomeCompleto, String cpf, String telefone, String funcao);
+            void cadastrarCompleto(String nomeCompleto, String cpf, String telefone, String email, String login, String senha, String funcao);
             void desativarColaborador(@ColaboradorId colaboradorId);
             void reativarColaborador(@ColaboradorId colaboradorId);
+            void alterarStatus(String nome, String status);
+            boolean tentarLogin(String nome, String senha);
+            boolean estaBloqueado(String nome);
         }
     }
 }

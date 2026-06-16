@@ -25,6 +25,15 @@ public class ColaboradorRestController {
         return ResponseEntity.ok(c);
     }
 
+    /** Cadastro completo com credenciais (login/senha) e e-mail. */
+    @PostMapping("/completo")
+    public ResponseEntity<Colaborador> cadastrarCompleto(@RequestBody ColaboradorCompletoRequest request) {
+        Colaborador c = applicationService.cadastrarCompleto(
+                request.nomeCompleto(), request.cpf(), request.telefone(),
+                request.email(), request.login(), request.senha(), request.funcao());
+        return ResponseEntity.ok(c);
+    }
+
     @PostMapping("/{nome}/desativar")
     public ResponseEntity<Void> desativar(@PathVariable String nome) {
         applicationService.desativar(nome);
@@ -37,10 +46,30 @@ public class ColaboradorRestController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Altera o status operacional (Ativo, Inativo, Suspenso, Férias, Afastado). */
+    @PostMapping("/{nome}/status")
+    public ResponseEntity<Void> alterarStatus(@PathVariable String nome, @RequestBody StatusRequest request) {
+        applicationService.alterarStatus(nome, request.status());
+        return ResponseEntity.noContent().build();
+    }
+
+    /** Tenta autenticar; bloqueia a conta após tentativas inválidas. */
+    @PostMapping("/{nome}/login")
+    public ResponseEntity<Boolean> login(@PathVariable String nome, @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(applicationService.tentarLogin(nome, request.senha()));
+    }
+
     @GetMapping("/responsaveis-esterilizacao")
     public ResponseEntity<List<Colaborador>> responsaveisEsterilizacao() {
         return ResponseEntity.ok(applicationService.listarResponsaveisEsterilizacao());
     }
 
     public record ColaboradorRequest(String nomeCompleto, String cpf, String telefone, String funcao) {}
+
+    public record ColaboradorCompletoRequest(String nomeCompleto, String cpf, String telefone,
+                                             String email, String login, String senha, String funcao) {}
+
+    public record StatusRequest(String status) {}
+
+    public record LoginRequest(String senha) {}
 }

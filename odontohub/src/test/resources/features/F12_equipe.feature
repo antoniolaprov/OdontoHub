@@ -43,3 +43,35 @@ Funcionalidade: Gestão de Equipe e Colaboradores
     Quando o dentista reativa o colaborador "Juliana Mendes"
     Então o status deve ser alterado para "Ativo"
     E "Juliana Mendes" deve voltar a aparecer nas listas de seleção
+
+  Cenário: Permissões são atribuídas automaticamente conforme a função de Especialista
+    Quando o dentista cadastra o colaborador "Dra. Helena" com CPF "111.222.333-44", telefone "81988887777" e função "Especialista"
+    Então o colaborador "Dra. Helena" deve poder validar procedimentos
+    E o colaborador "Dra. Helena" deve poder acessar dados financeiros
+
+  Cenário: Auxiliar não acessa dados financeiros nem altera permissões
+    Quando o dentista cadastra o colaborador "Carlos Auxiliar" com CPF "222.333.444-55", telefone "81977776666" e função "Auxiliar"
+    Então o colaborador "Carlos Auxiliar" não deve poder acessar dados financeiros
+    E o colaborador "Carlos Auxiliar" não deve poder alterar permissões
+
+  Cenário: Apenas o Administrador pode alterar permissões
+    Quando o dentista cadastra o colaborador "Ana Admin" com CPF "333.444.555-66", telefone "81966665555" e função "Administrador"
+    Então o colaborador "Ana Admin" deve poder alterar permissões
+
+  Cenário: Colaborador suspenso não pode realizar login
+    Dado que existe o colaborador "Bruno Recepcao" com login "bruno" e senha "segredo123"
+    E que o colaborador "Bruno Recepcao" está com status "Suspenso"
+    Quando "Bruno Recepcao" tenta fazer login com a senha "segredo123"
+    Então o login deve ser negado
+
+  Cenário: Conta é bloqueada após múltiplas tentativas de login inválidas
+    Dado que existe o colaborador "Diego Sistema" com login "diego" e senha "segredo123"
+    Quando "Diego Sistema" erra a senha 3 vezes
+    Então a conta de "Diego Sistema" deve estar bloqueada
+    E "Diego Sistema" não deve conseguir login mesmo com a senha correta "segredo123"
+
+  Cenário: Rejeição de cadastro com CPF duplicado
+    Dado que existe o colaborador "Fernanda Lima" com CPF "999.888.777-66"
+    Quando o dentista tenta cadastrar outro colaborador com o CPF "999.888.777-66"
+    Então o sistema deve rejeitar o cadastro
+    E a mensagem de erro deve informar "Já existe um colaborador com este CPF"
