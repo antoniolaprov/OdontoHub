@@ -31,3 +31,25 @@ Funcionalidade: Automação e Fila de Recall
     Quando a recepcionista agenda "Ana Ferreira" diretamente da tela de Recall
     Então o novo agendamento deve ser marcado com a flag de conversão de recall
     E o status do recall deve ser atualizado para "Convertido"
+
+  Cenário: Priorização da fila de recall por risco clínico
+    Dado que foi disparado um recall de "Cirurgia" para "Bruno Lima"
+    E que foi disparado um recall de "Profilaxia" para "Carla Souza"
+    E que foi disparado um recall de "Ortodontia" para "Diego Alves"
+    Quando a recepcionista consulta a fila priorizada de recall
+    Então "Bruno Lima" deve aparecer antes de "Diego Alves" na fila priorizada
+    E "Diego Alves" deve aparecer antes de "Carla Souza" na fila priorizada
+    E o nível de prioridade de "Bruno Lima" deve ser "ALTA"
+    E o nível de prioridade de "Carla Souza" deve ser "BAIXA"
+
+  Cenário: Escalonamento por SLA após tentativas de contato sem sucesso
+    Dado que foi disparado um recall de "Implante" para "Bruno Lima"
+    Quando a recepcionista registra 3 tentativas de contato sem sucesso para "Bruno Lima"
+    Então o recall de "Bruno Lima" deve ser escalonado
+    E o escalonamento deve registrar 3 tentativas
+
+  Cenário: Métrica de taxa de conversão da fila de recall
+    Dado que foi disparado um recall de "Profilaxia" para "Carla Souza"
+    E que foi disparado um recall de "Profilaxia" para "Diego Alves"
+    Quando "Carla Souza" é convertida em agendamento a partir do recall
+    Então a taxa de conversão de recall deve ser 50%

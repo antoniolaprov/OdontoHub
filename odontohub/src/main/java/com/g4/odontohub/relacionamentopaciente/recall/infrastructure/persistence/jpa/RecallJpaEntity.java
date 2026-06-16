@@ -23,6 +23,7 @@ public class RecallJpaEntity {
     @Column(length = 30)
     private StatusRecall status;
     private boolean flagConversaoRecall;
+    private int tentativasContato;
 
     protected RecallJpaEntity() {
     }
@@ -35,11 +36,12 @@ public class RecallJpaEntity {
         e.diasParaRetorno = r.getDiasParaRetorno();
         e.status = r.getStatus();
         e.flagConversaoRecall = r.isFlagConversaoRecall();
+        e.tentativasContato = r.getTentativasContato();
         return e;
     }
 
     public Recall toDomain() {
         return Recall.reconstituir(new RecallId(id), paciente, procedimentoGatilho,
-                diasParaRetorno, status, flagConversaoRecall);
+                diasParaRetorno, status, flagConversaoRecall, tentativasContato);
     }
 }

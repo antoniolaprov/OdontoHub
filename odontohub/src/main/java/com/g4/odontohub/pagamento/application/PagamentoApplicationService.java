@@ -1,10 +1,13 @@
 package com.g4.odontohub.pagamento.application;
 
+import com.g4.odontohub.financeiro.application.FluxoCaixaApplicationService;
+import com.g4.odontohub.pagamento.domain.event.PagamentoRegistrado;
 import com.g4.odontohub.pagamento.domain.model.Pagamento;
 import com.g4.odontohub.pagamento.domain.model.ParcelaPagavel;
 import com.g4.odontohub.pagamento.domain.repository.PagamentoRepository;
 import com.g4.odontohub.pagamento.domain.service.PagamentoService;
 import com.g4.odontohub.pagamento.infrastructure.persistence.InMemoryPagamentoRepository;
+import com.g4.odontohub.shared.DomainEventPublisher;
 
 import java.time.LocalDate;
 
@@ -18,6 +21,21 @@ public class PagamentoApplicationService {
 
     public PagamentoApplicationService(PagamentoRepository repositorio) {
         this.service = new PagamentoService(repositorio);
+    }
+
+    /**
+     * Composition root de produção: além de persistir o pagamento, integra com o
+     * contexto Financeiro lançando uma entrada real no fluxo de caixa a cada
+     * {@link PagamentoRegistrado} (mesmo padrão de Estoque → Financeiro).
+     */
+    public PagamentoApplicationService(PagamentoRepository repositorio,
+                                       FluxoCaixaApplicationService fluxoCaixaService) {
+        this.service = new PagamentoService(repositorio);
+        DomainEventPublisher.subscribe(PagamentoRegistrado.class, evento ->
+                fluxoCaixaService.registrarEntradaAutomatica(
+                        evento.valorRecebido(),
+                        "Recebimento da parcela " + evento.parcelaReferencia(),
+                        LocalDate.now()));
     }
 
     public ParcelaPagavel criarParcela(String referencia, double valorDevido) {

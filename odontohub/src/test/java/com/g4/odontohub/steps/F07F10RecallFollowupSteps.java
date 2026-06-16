@@ -2,9 +2,12 @@ package com.g4.odontohub.steps;
 
 import com.g4.odontohub.relacionamentopaciente.followup.application.FollowupApplicationService;
 import com.g4.odontohub.relacionamentopaciente.recall.application.RecallApplicationService;
+import com.g4.odontohub.relacionamentopaciente.recall.domain.model.NivelPrioridade;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.model.Recall;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.model.StatusRecall;
 import io.cucumber.java.pt.*;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,6 +26,7 @@ public class F07F10RecallFollowupSteps {
     private String tipoProcedimento;
     private String dentistaResponsavel;
     private Recall ultimoRecall;
+    private List<Recall> filaPriorizada;
 
     // ----- Gatilhos compartilhados -----
 
@@ -106,6 +110,69 @@ public class F07F10RecallFollowupSteps {
     @Então("o status do recall deve ser atualizado para {string}")
     public void statusDoRecallAtualizadoPara(String status) {
         assertEquals(StatusRecall.fromLabel(status), ultimoRecall.getStatus());
+    }
+
+    // ----- F07 Recall: priorização, SLA e métricas -----
+
+    @Dado("que foi disparado um recall de {string} para {string}")
+    public void foiDisparadoRecall(String procedimento, String nome) {
+        recallService.processarGatilhoRecall(nome, procedimento);
+    }
+
+    @Quando("a recepcionista consulta a fila priorizada de recall")
+    public void consultaFilaPriorizada() {
+        filaPriorizada = recallService.filaPriorizada();
+    }
+
+    @Então("{string} deve aparecer antes de {string} na fila priorizada")
+    public void deveAparecerAntes(String primeiro, String segundo) {
+        int idxPrimeiro = indiceNaFila(primeiro);
+        int idxSegundo = indiceNaFila(segundo);
+        assertTrue(idxPrimeiro >= 0 && idxSegundo >= 0, "Pacientes não encontrados na fila priorizada");
+        assertTrue(idxPrimeiro < idxSegundo,
+                primeiro + " deveria aparecer antes de " + segundo + " na fila priorizada");
+    }
+
+    @Então("o nível de prioridade de {string} deve ser {string}")
+    public void nivelDePrioridade(String nome, String nivel) {
+        assertEquals(NivelPrioridade.valueOf(nivel.trim().toUpperCase()), recallService.prioridadeDe(nome));
+    }
+
+    @Quando("a recepcionista registra {int} tentativas de contato sem sucesso para {string}")
+    public void registraTentativasContato(int tentativas, String nome) {
+        for (int i = 0; i < tentativas; i++) {
+            recallService.registrarTentativaContato(nome);
+        }
+    }
+
+    @Então("o recall de {string} deve ser escalonado")
+    public void recallDeveSerEscalonado(String nome) {
+        assertNotNull(recallService.getUltimoEscalonamento(), "O recall deveria ter sido escalonado");
+        assertEquals(nome, recallService.getUltimoEscalonamento().paciente());
+    }
+
+    @Então("o escalonamento deve registrar {int} tentativas")
+    public void escalonamentoRegistraTentativas(int tentativas) {
+        assertEquals(tentativas, recallService.getUltimoEscalonamento().tentativas());
+    }
+
+    @Quando("{string} é convertida em agendamento a partir do recall")
+    public void convertidaEmAgendamento(String nome) {
+        recallService.registrarConversao(nome, 999L);
+    }
+
+    @Então("a taxa de conversão de recall deve ser {int}%")
+    public void taxaDeConversao(int percentual) {
+        assertEquals(percentual / 100.0, recallService.taxaConversao(), 0.001);
+    }
+
+    private int indiceNaFila(String nome) {
+        for (int i = 0; i < filaPriorizada.size(); i++) {
+            if (filaPriorizada.get(i).getPaciente().equals(nome)) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     // ----- F10 Follow-up -----

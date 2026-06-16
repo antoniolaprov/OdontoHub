@@ -3,13 +3,17 @@ package com.g4.odontohub.relacionamentopaciente.recall.domain.service;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.event.RecallCanceladoPorAgendamentoExistente;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.event.RecallConvertido;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.event.RecallDisparado;
+import com.g4.odontohub.relacionamentopaciente.recall.domain.event.RecallEscalonado;
+import com.g4.odontohub.relacionamentopaciente.recall.domain.model.NivelPrioridade;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.model.Recall;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.model.RecallId;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.model.StatusRecall;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.repository.RecallRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -18,6 +22,7 @@ public class RecallService {
     private final RecallRepository repositorio;
     private final Map<String, Long> agendamentoFuturoPorPaciente = new HashMap<>();
     private RecallCanceladoPorAgendamentoExistente ultimoCancelamento;
+    private RecallEscalonado ultimoEscalonamento;
 
     public RecallService(RecallRepository repositorio) {
         this.repositorio = repositorio;
@@ -86,6 +91,51 @@ public class RecallService {
 
     public RecallCanceladoPorAgendamentoExistente getUltimoCancelamento() {
         return ultimoCancelamento;
+    }
+
+    /** Fila de recall ordenada por prioridade clínica (maior risco primeiro). */
+    public List<Recall> filaPriorizada() {
+        return repositorio.todos().stream()
+                .filter(r -> r.getStatus() == StatusRecall.NA_FILA)
+                .sorted(Comparator.comparingInt((Recall r) -> r.getPrioridade().peso()).reversed()
+                        .thenComparingInt(Recall::getDiasParaRetorno))
+                .toList();
+    }
+
+    public NivelPrioridade prioridadeDe(String paciente) {
+        return buscarPorPaciente(paciente).getPrioridade();
+    }
+
+    /**
+     * Registra uma tentativa de contato (SLA). Ao atingir o limite, escalona o caso
+     * e publica {@link RecallEscalonado}.
+     */
+    public boolean registrarTentativaContato(String paciente) {
+        Recall recall = recallNaFila(paciente)
+                .orElseThrow(() -> new IllegalStateException("Paciente não está na fila de recall: " + paciente));
+        boolean escalonar = recall.registrarTentativaContato();
+        repositorio.salvar(recall);
+        if (escalonar) {
+            ultimoEscalonamento = new RecallEscalonado(recall.getId(), paciente, recall.getTentativasContato());
+            DomainEventPublisher.publish(ultimoEscalonamento);
+        }
+        return escalonar;
+    }
+
+    public RecallEscalonado getUltimoEscalonamento() {
+        return ultimoEscalonamento;
+    }
+
+    /** Taxa de conversão = recalls convertidos / total de recalls disparados (métrica F07). */
+    public double taxaConversao() {
+        long total = repositorio.todos().size();
+        if (total == 0) {
+            return 0.0;
+        }
+        long convertidos = repositorio.todos().stream()
+                .filter(r -> r.getStatus() == StatusRecall.CONVERTIDO)
+                .count();
+        return (double) convertidos / total;
     }
 
     private Optional<Recall> recallNaFila(String paciente) {
