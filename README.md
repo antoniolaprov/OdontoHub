@@ -47,7 +47,8 @@ cd odontohub
 
 ## 📌 Status do Projeto
 
-🚧 Em desenvolvimento
+✅ Backend completo — 15 funcionalidades (F1–F12, F15–F17) com domínio, infraestrutura (JPA),
+aplicação e apresentação (REST), automatizadas por **108 cenários BDD** (todos verdes).
 
 ---
 
@@ -117,36 +118,40 @@ https://www.figma.com/make/qvOk0BQkaCuL9nJy93onZA/Low-Fidelity-Wireframes-for-Od
 
 ## 🧩 Modelagem de Domínio (Context Mapper)
 
-O sistema está sendo modelado com foco em **Domain-Driven Design (DDD)**.
+O sistema é modelado com **Domain-Driven Design (DDD)**.
 
 ### Subdomínios identificados:
 
-* **Core Domain:** Gestão Clínica
-* **Supporting Domain:** Agendamento
-* **Supporting Domain:** Financeiro
-* **Generic Domain:** Autenticação e Usuários
+* **Core Domain:** Agendamento, Prontuário Clínico, Cadastro de Paciente
+* **Supporting Domain:** Financeiro, Estoque, Relacionamento com Paciente, Medicamento, Pagamento
+* **Generic Subdomain:** Equipe
 
 ### Bounded Contexts:
 
-* Atendimento
-* Agenda
-* Financeiro
-* Usuários
+* **AgendamentoContext** — Agendamento de Consultas e Retornos (F1)
+* **ProntuarioClinicoContext** — Anamnese (F2), Plano de Tratamento (F3), Prescrição (F8)
+* **FinanceiroContext** — Fluxo de Caixa (F4), Inadimplência e Acordos (F9)
+* **EstoqueContext** — Materiais Consumíveis (F5), Esterilização (F6), Instrumentos (F16)
+* **RelacionamentoPacienteContext** — Recall (F7), Follow-up (F10), Churn (F11)
+* **EquipeContext** — Gestão de Colaboradores (F12)
+* **CadastroPacienteContext** — Cadastro de Pacientes (F15)
+* **MedicamentoContext** — Catálogo de Medicamentos (F8)
+* **PagamentoContext** — Pagamentos e Quitação de Débitos (F17)
 
-📄 O arquivo **CML** encontra-se em:
+📄 O arquivo **CML** encontra-se na raiz do repositório:
 
 ```text id="w6f4yx"
-OdontoHub\odontohub\docs\domain
+OdontoHub.cml
 ```
 
 ---
 
 ## 🧪 Cenários de Teste BDD
 
-Os cenários BDD foram escritos em **Gherkin** e estão disponíveis em:
+Os cenários BDD foram escritos em **Gherkin** (um arquivo `.feature` por funcionalidade) e estão disponíveis em:
 
 ```text id="g7j2da"
-OdontoHub\odontohub\docs\bdd
+odontohub/src/test/resources/features
 ```
 
 ---
@@ -168,16 +173,18 @@ Executados via Maven Wrapper.
 
 ### Backend
 
-* Spring Boot
+* Spring Boot (Spring Web, Spring Data JPA)
+* Java 21+
 
-### Banco de Dados
+### Persistência
 
-* MySQL
+* JPA / Hibernate
+* H2 (banco em arquivo, durável)
 
 ### Testes
 
-* JUnit
-* Cucumber
+* JUnit (Platform Suite)
+* Cucumber (BDD em Gherkin, `# language: pt`)
 
 ### Protótipos
 

@@ -697,10 +697,12 @@ BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSu
             - RecallPacienteId pacienteId
             String procedimentoGatilho
             int diasParaRetorno
+            - NivelPrioridade prioridade
             Date dataGatilho
             Date dataRecallPrevisto
             - StatusRecall status
             boolean flagConversaoRecall
+            int tentativasContato
         }
         ValueObject RecallPacienteId {
             Long pacienteId
@@ -712,6 +714,11 @@ BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSu
 
         enum StatusRecall {
             NA_FILA, AGENDADO, CONVERTIDO, CANCELADO;
+        }
+
+        /* Priorização por risco clínico do procedimento gatilho (motor de priorização da F07). */
+        enum NivelPrioridade {
+            ALTA, MEDIA, BAIXA;
         }
 
         DomainEvent RecallDisparado {
@@ -731,10 +738,20 @@ BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSu
             Long agendamentoExistenteId
         }
 
+        /* Escalonamento automático por SLA após tentativas de contato sem sucesso. */
+        DomainEvent RecallEscalonado {
+            - RecallId recallId
+            Long pacienteId
+            int tentativas
+        }
+
         Service RecallService {
             void dispararRecall(Long pacienteId, String procedimentoGatilho, int diasParaRetorno);
             void verificarECancelarSeJaAgendado(Long pacienteId);
             void registrarConversao(@RecallId recallId, Long agendamentoId);
+            List filaPriorizada();
+            boolean registrarTentativaContato(Long pacienteId);
+            double taxaConversao();
         }
     }
 
