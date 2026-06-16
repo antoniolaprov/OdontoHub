@@ -49,6 +49,11 @@ Domain OdontoHub {
         type = SUPPORTING_DOMAIN
         domainVisionStatement = "Registra pagamentos presenciais e remotos, baixa parcelas, gera comprovantes e declarações de quitação e alimenta automaticamente o fluxo de caixa."
     }
+
+    Subdomain ConfirmacaoSubdomain {
+        type = SUPPORTING_DOMAIN
+        domainVisionStatement = "Gerencia lembretes e confirmação de consultas e o registro de não comparecimento (no-show), reduzindo faltas e alimentando a análise de absenteísmo e churn."
+    }
 }
 
 /* ============================================================
@@ -1124,6 +1129,98 @@ BoundedContext PagamentoContext implements PagamentoSubdomain {
 }
 
 /* ============================================================
+   BOUNDED CONTEXT: Confirmação e Comparecimento
+   Funcionalidade 13 — Confirmação e Lembretes de Consulta
+   Funcionalidade 14 — Registro de Não Comparecimento
+   ============================================================ */
+
+BoundedContext ConfirmacaoContext implements ConfirmacaoSubdomain {
+    type = FEATURE
+    domainVisionStatement = "Envia lembretes de consulta, registra a confirmação do paciente e o não comparecimento, classificando pacientes reincidentes em faltas injustificadas."
+
+    Aggregate Lembrete {
+
+        Entity Lembrete {
+            aggregateRoot
+            - LembreteId id
+            Long agendamentoId
+            String paciente
+            - CanalLembrete canal
+            - StatusLembrete status
+            Date dataEnvio
+            String motivoRecusa
+        }
+
+        ValueObject LembreteId {
+            Long id
+        }
+
+        enum CanalLembrete {
+            SMS, WHATSAPP, EMAIL;
+        }
+
+        enum StatusLembrete {
+            PENDENTE, ENVIADO, CONFIRMADO, RECUSADO, SEM_RESPOSTA;
+        }
+
+        DomainEvent LembreteEnviado {
+            - LembreteId lembreteId
+            Long agendamentoId
+            String canal
+        }
+
+        DomainEvent ConsultaConfirmadaPeloPaciente {
+            - LembreteId lembreteId
+            Long agendamentoId
+            String paciente
+        }
+
+        Service LembreteService {
+            void gerarLembrete(Long agendamentoId, String paciente, String canal);
+            void enviar(Long agendamentoId);
+            void confirmar(Long agendamentoId);
+            void recusar(Long agendamentoId, String motivo);
+        }
+    }
+
+    Aggregate NaoComparecimento {
+
+        Entity NaoComparecimento {
+            aggregateRoot
+            - NaoComparecimentoId id
+            Long agendamentoId
+            String paciente
+            Date dataConsulta
+            boolean justificada
+            String justificativa
+            Date dataRegistro
+        }
+
+        ValueObject NaoComparecimentoId {
+            Long id
+        }
+
+        DomainEvent FaltaRegistrada {
+            - NaoComparecimentoId id
+            Long agendamentoId
+            String paciente
+            boolean justificada
+        }
+
+        DomainEvent PacienteReincidente {
+            String paciente
+            int faltasInjustificadas
+        }
+
+        Service NaoComparecimentoService {
+            void registrarFalta(Long agendamentoId, String paciente, Date dataConsulta, boolean justificada, String justificativa);
+            int faltasInjustificadasDe(String paciente);
+            boolean pacienteReincidente(String paciente);
+        }
+    }
+}
+
+/* ============================================================
    Context Map — Relacionamentos entre Bounded Contexts
    (definido por último pois referencia os BCs acima)
    ============================================================ */
@@ -1138,6 +1235,7 @@ ContextMap OdontoHubContextMap {
     contains CadastroPacienteContext
     contains MedicamentoContext
     contains PagamentoContext
+    contains ConfirmacaoContext
 
     /*
      * Agendamento [D] consulta Prontuário [U] para verificar se o paciente
@@ -1274,5 +1372,23 @@ ContextMap OdontoHubContextMap {
     PagamentoContext [U, OHS, PL] -> [D, CF] FinanceiroContext {
         implementationTechnology = "Java"
         exposedAggregates = Pagamento
+    }
+
+    /*
+     * Confirmação [U] publica a confirmação do paciente (via lembrete) para que o
+     * Agendamento [D] marque a consulta como confirmada.
+     */
+    ConfirmacaoContext [U, OHS, PL] -> [D, CF] AgendamentoContext {
+        implementationTechnology = "Java"
+        exposedAggregates = Lembrete
+    }
+
+    /*
+     * Confirmação [U] publica faltas (no-show) que alimentam a análise de churn e
+     * absenteísmo no contexto de RelacionamentoPaciente [D].
+     */
+    ConfirmacaoContext [U, OHS, PL] -> [D, CF] RelacionamentoPacienteContext {
+        implementationTechnology = "Java"
+        exposedAggregates = NaoComparecimento
     }
 }

@@ -86,8 +86,8 @@ curl http://localhost:8080/api/recalls/fila-priorizada
 
 ## 📌 Status do Projeto
 
-✅ Backend completo — 15 funcionalidades (F1–F12, F15–F17) com domínio, infraestrutura (JPA),
-aplicação e apresentação (REST), automatizadas por **108 cenários BDD** (todos verdes).
+✅ Backend completo — 17 funcionalidades (F1–F17) com domínio, infraestrutura (JPA),
+aplicação e apresentação (REST), automatizadas por **125 cenários BDD** (todos verdes).
 
 ---
 
@@ -176,6 +176,7 @@ O sistema é modelado com **Domain-Driven Design (DDD)**.
 * **CadastroPacienteContext** — Cadastro de Pacientes (F15)
 * **MedicamentoContext** — Catálogo de Medicamentos (F8)
 * **PagamentoContext** — Pagamentos e Quitação de Débitos (F17)
+* **ConfirmacaoContext** — Lembretes e Confirmação (F13), Não Comparecimento (F14)
 
 📄 O arquivo **CML** encontra-se na raiz do repositório:
 
@@ -303,10 +304,9 @@ Executados via Maven Wrapper.
 | **Antônio Augusto** | F4 – Fluxo de Caixa do Consultório · F5 – Controle de Estoque de Materiais Consumíveis |
 | **Gabriel Belo** | F13 – Confirmação e Lembretes de Consulta · F14 – Registro de Não Comparecimento |
 
-> **Nota:** as funcionalidades **F13** e **F14** estão atribuídas e planejadas, mas
-> ainda **não foram implementadas** neste repositório (sem `.feature` nem código
-> correspondente). As demais (F1–F12, F15, F16, F17) estão implementadas com BDD
-> automatizado, persistência JPA e API REST.
+> **Nota:** todas as funcionalidades (F1–F17) estão implementadas com BDD
+> automatizado, persistência JPA e API REST. F13 e F14 vivem no bounded context
+> `ConfirmacaoContext` (`com.g4.odontohub.confirmacao`).
 
 ---
 

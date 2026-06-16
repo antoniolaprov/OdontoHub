@@ -23,6 +23,8 @@ import static io.cucumber.junit.platform.engine.Constants.PLUGIN_PROPERTY_NAME;
 @SelectClasspathResource("features/F10_followup.feature")
 @SelectClasspathResource("features/F11_churn.feature")
 @SelectClasspathResource("features/F12_equipe.feature")
+@SelectClasspathResource("features/F13_lembretes.feature")
+@SelectClasspathResource("features/F14_nao_comparecimento.feature")
 @SelectClasspathResource("features/F15_cadastro_pacientes.feature")
 @SelectClasspathResource("features/F16_cadastro_instrumentos.feature")
 @SelectClasspathResource("features/F17_pagamentos.feature")
