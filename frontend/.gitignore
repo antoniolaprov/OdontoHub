@@ -1,0 +1,17 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+dist-ssr/
+
+# Logs e temporários
+*.log
+vite.log
+.vite/
+
+# Editores / SO
+.DS_Store
+*.local
+.idea/
+.vscode/

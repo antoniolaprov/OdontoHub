@@ -71,6 +71,10 @@ public class RecallApplicationService {
         return service.getUltimoCancelamento();
     }
 
+    public List<Recall> todos() {
+        return service.todos();
+    }
+
     public List<Recall> filaPriorizada() {
         return service.filaPriorizada();
     }

@@ -81,6 +81,11 @@ public class RecallService {
         return recallNaFila(paciente).isPresent();
     }
 
+    /** Lista todos os recalls (camada de leitura para o frontend). */
+    public List<Recall> todos() {
+        return repositorio.todos();
+    }
+
     public Recall buscarPorPaciente(String paciente) {
         return repositorio.todos().stream()
                 .filter(r -> r.getPaciente().equals(paciente))

@@ -32,6 +32,12 @@ public class RecallRestController {
                 applicationService.processarGatilhoRecall(request.paciente(), request.procedimento()));
     }
 
+    /** Lista todos os recalls (leitura para o frontend). */
+    @GetMapping
+    public ResponseEntity<List<Recall>> listar() {
+        return ResponseEntity.ok(applicationService.todos());
+    }
+
     @GetMapping("/paciente/{paciente}")
     public ResponseEntity<Recall> consultar(@PathVariable String paciente) {
         return ResponseEntity.ok(applicationService.buscarPorPaciente(paciente));
