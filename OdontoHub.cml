@@ -464,6 +464,7 @@ BoundedContext FinanceiroContext implements FinanceiroSubdomain {
             String categoria
             String descricao
             boolean geradoAutomaticamente
+            boolean previsto
         }
 
         ValueObject LancamentoId {
@@ -495,6 +496,9 @@ BoundedContext FinanceiroContext implements FinanceiroSubdomain {
         Service FluxoCaixaService {
             void registrarEntradaAutomatica(double valor, String descricao, Date data);
             void registrarSaidaManual(double valor, String categoria, String descricao);
+            void registrarEntradaPrevista(double valor, String descricao, Date vencimento);
+            void registrarSaidaPrevista(double valor, String categoria, String descricao, Date data);
+            double calcularSaldoAtual();
             double calcularSaldoProjetado();
             double calcularPontoDeEquilibrio(double custoFixoMensal, double valorMedioProcedimento);
         }

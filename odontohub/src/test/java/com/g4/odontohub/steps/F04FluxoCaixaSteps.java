@@ -15,6 +15,7 @@ public class F04FluxoCaixaSteps {
     private Parcela parcelaAtual;
     private LancamentoFinanceiro lancamentoAtual;
     private double saldoProjetado;
+    private double saldoAtual;
     private int pontoDeEquilibrio;
     private double custoFixo;
     private double valorMedio;
@@ -78,7 +79,7 @@ public class F04FluxoCaixaSteps {
 
     @E("que as saídas previstas do mês somam {dinheiro}")
     public void queAsSaidasPrevistasDoMesSomam(double valor) {
-        fluxoCaixaService.registrarSaidaManual(valor, "Saídas previstas", "Saídas do mês");
+        fluxoCaixaService.registrarSaidaPrevista(valor, "Saídas previstas", "Saídas do mês", LocalDate.now().plusDays(15));
     }
 
     @Quando("o saldo projetado é calculado")
@@ -94,6 +95,33 @@ public class F04FluxoCaixaSteps {
     @E("o saldo projetado deve ser de {dinheiro}")
     public void oSaldoProjetadoDeveSerDe(double valor) {
         assertEquals(valor, saldoProjetado, 0.001);
+    }
+
+    @Dado("que existe uma entrada confirmada de {dinheiro} no fluxo de caixa")
+    public void queExisteUmaEntradaConfirmada(double valor) {
+        fluxoCaixaService = SharedTestServices.getFluxoCaixaService();
+        fluxoCaixaService.registrarEntradaAutomatica(valor, "Entrada confirmada", LocalDate.now());
+    }
+
+    @E("que existe uma parcela a vencer de {dinheiro}")
+    public void queExisteUmaParcelaAVencer(double valor) {
+        fluxoCaixaService.registrarEntradaPrevista(valor, "Parcela a vencer", LocalDate.now().plusDays(30));
+    }
+
+    @E("que existe uma saída prevista de {dinheiro}")
+    public void queExisteUmaSaidaPrevista(double valor) {
+        fluxoCaixaService.registrarSaidaPrevista(valor, "Despesa planejada", "Saída prevista", LocalDate.now().plusDays(20));
+    }
+
+    @Quando("o saldo atual e o saldo projetado são comparados")
+    public void oSaldoAtualEProjetadoSaoComparados() {
+        saldoAtual = fluxoCaixaService.calcularSaldoAtual();
+        saldoProjetado = fluxoCaixaService.calcularSaldoProjetado();
+    }
+
+    @Então("o saldo atual deve ser de {dinheiro}")
+    public void oSaldoAtualDeveSerDe(double valor) {
+        assertEquals(valor, saldoAtual, 0.001);
     }
 
     @Dado("que os custos fixos mensais do consultório são de {dinheiro}")

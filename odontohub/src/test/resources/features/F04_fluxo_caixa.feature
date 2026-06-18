@@ -35,3 +35,11 @@ Funcionalidade: Fluxo de Caixa do Consultório
     Quando a reposição é registrada
     Então deve ser gerado automaticamente um lançamento de saída de R$75,00 na categoria "Insumos"
     E o lançamento deve ser marcado como gerado automaticamente
+
+  Cenário: Projeção de saldo considera parcelas a vencer e saídas previstas
+    Dado que existe uma entrada confirmada de R$1.000,00 no fluxo de caixa
+    E que existe uma parcela a vencer de R$800,00
+    E que existe uma saída prevista de R$300,00
+    Quando o saldo atual e o saldo projetado são comparados
+    Então o saldo atual deve ser de R$1.000,00
+    E o saldo projetado deve ser de R$1.500,00

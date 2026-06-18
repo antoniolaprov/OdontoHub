@@ -66,8 +66,31 @@ public class FluxoCaixaApplicationService {
         return l;
     }
 
+    /** Entrada futura prevista (parcela a vencer) que alimenta a projeção de saldo. */
+    public LancamentoFinanceiro registrarEntradaPrevista(double valor, String descricao, LocalDate vencimento) {
+        LancamentoFinanceiro l = fluxoCaixaService.registrarEntradaPrevista(valor, descricao, vencimento);
+        ultimoLancamento = l;
+        return l;
+    }
+
+    /** Saída futura prevista (despesa planejada) que alimenta a projeção de saldo. */
+    public LancamentoFinanceiro registrarSaidaPrevista(double valor, String categoria, String descricao, LocalDate data) {
+        LancamentoFinanceiro l = fluxoCaixaService.registrarSaidaPrevista(valor, categoria, descricao, data);
+        ultimoLancamento = l;
+        return l;
+    }
+
+    /** Saldo atual: apenas lançamentos confirmados. */
+    public double calcularSaldoAtual() {
+        return fluxoCaixaService.calcularSaldoAtual();
+    }
+
+    /**
+     * Saldo projetado (entradas confirmadas + parcelas a vencer − saídas previstas).
+     * Emite alerta de fluxo negativo quando a projeção fica negativa.
+     */
     public double calcularSaldoProjetado() {
-        double saldo = fluxoCaixaService.calcularSaldo();
+        double saldo = fluxoCaixaService.calcularSaldoProjetado();
         if (saldo < 0) {
             ultimoAlerta = new AlertaFluxoNegativo(saldo, LocalDate.now());
             DomainEventPublisher.publish(ultimoAlerta);

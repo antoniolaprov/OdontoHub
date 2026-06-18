@@ -32,12 +32,45 @@ public class FluxoCaixaService {
         return l;
     }
 
-    public double calcularSaldo() {
+    /** Entrada futura prevista (ex.: parcela com vencimento a vencer). */
+    public LancamentoFinanceiro registrarEntradaPrevista(double valor, String descricao, LocalDate vencimento) {
+        LancamentoFinanceiro l = new LancamentoFinanceiro(
+                new LancamentoId(repositorio.proximoId()), TipoLancamento.ENTRADA,
+                valor, vencimento, "Parcela a vencer", descricao, false, true);
+        repositorio.salvar(l);
+        return l;
+    }
+
+    /** Saída futura prevista (ex.: despesa planejada do mês). */
+    public LancamentoFinanceiro registrarSaidaPrevista(double valor, String categoria, String descricao, LocalDate data) {
+        LancamentoFinanceiro l = new LancamentoFinanceiro(
+                new LancamentoId(repositorio.proximoId()), TipoLancamento.SAIDA,
+                valor, data, categoria, descricao, false, true);
+        repositorio.salvar(l);
+        return l;
+    }
+
+    /** Saldo atual: apenas lançamentos confirmados (entradas confirmadas − saídas realizadas). */
+    public double calcularSaldoAtual() {
+        return saldo(false);
+    }
+
+    /**
+     * Saldo projetado: saldo atual + parcelas com vencimento futuro − saídas previstas
+     * (considera lançamentos confirmados e previstos).
+     */
+    public double calcularSaldoProjetado() {
+        return saldo(true);
+    }
+
+    private double saldo(boolean incluirPrevistos) {
         double entradas = repositorio.todos().stream()
                 .filter(l -> l.getTipo() == TipoLancamento.ENTRADA)
+                .filter(l -> incluirPrevistos || !l.isPrevisto())
                 .mapToDouble(LancamentoFinanceiro::getValor).sum();
         double saidas = repositorio.todos().stream()
                 .filter(l -> l.getTipo() == TipoLancamento.SAIDA)
+                .filter(l -> incluirPrevistos || !l.isPrevisto())
                 .mapToDouble(LancamentoFinanceiro::getValor).sum();
         return entradas - saidas;
     }
