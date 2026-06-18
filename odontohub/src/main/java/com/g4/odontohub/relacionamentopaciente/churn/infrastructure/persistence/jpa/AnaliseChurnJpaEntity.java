@@ -24,6 +24,8 @@ public class AnaliseChurnJpaEntity {
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
     private StatusChurn statusChurn;
+    @Column(length = 40)
+    private String tipoProcedimento;
 
     protected AnaliseChurnJpaEntity() {
     }
@@ -36,11 +38,12 @@ public class AnaliseChurnJpaEntity {
         e.mesesSemRetorno = a.getMesesSemRetorno();
         e.possuiPlanoAtivo = a.isPossuiPlanoAtivo();
         e.statusChurn = a.getStatusChurn();
+        e.tipoProcedimento = a.getTipoProcedimento();
         return e;
     }
 
     public AnaliseChurn toDomain() {
         return AnaliseChurn.reconstituir(new ChurnId(id), paciente, possuiAgendamentoFuturo,
-                mesesSemRetorno, possuiPlanoAtivo, statusChurn);
+                mesesSemRetorno, possuiPlanoAtivo, statusChurn, tipoProcedimento);
     }
 }

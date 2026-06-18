@@ -893,6 +893,7 @@ BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSu
             String motivoCancelamento
             boolean reativado
             Date dataReativacao
+            String tipoProcedimento
         }
         ValueObject AnaliseChurnPacienteId {
             Long pacienteId
@@ -900,6 +901,14 @@ BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSu
 
         ValueObject ChurnId {
             Long id
+        }
+
+        /* Item do gráfico de Pareto dos motivos de cancelamento. */
+        ValueObject ItemPareto {
+            String motivo
+            int quantidade
+            double percentual
+            double percentualAcumulado
         }
 
         enum StatusChurn {
@@ -925,7 +934,10 @@ BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSu
         Service ChurnService {
             void recalcularStatusChurn();
             double calcularReceitaPerdida(Long dentistaId, int horasDeAgendaOciosa, double valorMedioHora);
-            void registrarCancelamentoComMotivo(Long agendamentoId, String motivoCancelamento);
+            void cancelarAgendamento(String paciente, String categoriaMotivo);
+            List paretoMotivosCancelamento();
+            void definirTipoProcedimento(String paciente, String tipoProcedimento);
+            long contarChurnPorProcedimento(String tipoProcedimento);
         }
     }
 }

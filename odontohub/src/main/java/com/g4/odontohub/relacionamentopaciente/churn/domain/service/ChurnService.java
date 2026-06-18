@@ -3,13 +3,16 @@ package com.g4.odontohub.relacionamentopaciente.churn.domain.service;
 import com.g4.odontohub.relacionamentopaciente.churn.domain.event.PacienteClassificadoComoChurn;
 import com.g4.odontohub.relacionamentopaciente.churn.domain.event.PacienteEntrandoZonaDeRisco;
 import com.g4.odontohub.relacionamentopaciente.churn.domain.event.PacienteReativado;
-import com.g4.odontohub.relacionamentopaciente.churn.domain.model.AnaliseChurn;
-import com.g4.odontohub.relacionamentopaciente.churn.domain.model.ChurnId;
-import com.g4.odontohub.relacionamentopaciente.churn.domain.model.StatusChurn;
+import com.g4.odontohub.relacionamentopaciente.churn.domain.model.*;
 import com.g4.odontohub.relacionamentopaciente.churn.domain.repository.ChurnRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class ChurnService {
@@ -19,6 +22,8 @@ public class ChurnService {
 
     private final ChurnRepository repositorio;
     private final Set<String> alertasInatividade = new HashSet<>();
+    /** Contagem de cancelamentos por categoria de motivo, base do gráfico de Pareto. */
+    private final Map<String, Integer> motivosCancelamento = new LinkedHashMap<>();
 
     private double valorMedioHora;
     private String ultimoRegistroAgendamento;
@@ -115,6 +120,42 @@ public class ChurnService {
             throw new IllegalArgumentException("A categoria do motivo de cancelamento é obrigatória");
         }
         this.cancelamentoCount++;
+        motivosCancelamento.merge(categoriaMotivo, 1, Integer::sum);
+    }
+
+    /**
+     * Gráfico de Pareto dos motivos de cancelamento (F11): motivos ordenados do mais
+     * frequente ao menos frequente, com percentual individual e acumulado.
+     */
+    public List<ItemPareto> paretoMotivosCancelamento() {
+        int total = motivosCancelamento.values().stream().mapToInt(Integer::intValue).sum();
+        List<ItemPareto> pareto = new ArrayList<>();
+        if (total == 0) {
+            return pareto;
+        }
+        List<Map.Entry<String, Integer>> ordenados = new ArrayList<>(motivosCancelamento.entrySet());
+        ordenados.sort(Comparator.comparingInt(Map.Entry<String, Integer>::getValue).reversed());
+        double acumulado = 0.0;
+        for (Map.Entry<String, Integer> entrada : ordenados) {
+            double percentual = (double) entrada.getValue() / total;
+            acumulado += percentual;
+            pareto.add(new ItemPareto(entrada.getKey(), entrada.getValue(), percentual, acumulado));
+        }
+        return pareto;
+    }
+
+    public void definirTipoProcedimento(String paciente, String tipoProcedimento) {
+        AnaliseChurn a = obterOuCriar(paciente);
+        a.setTipoProcedimento(tipoProcedimento);
+        repositorio.salvar(a);
+    }
+
+    /** Filtro de churn por tipo de procedimento: quantos pacientes evadidos têm aquele tratamento. */
+    public long contarChurnPorProcedimento(String tipoProcedimento) {
+        return repositorio.todos().stream()
+                .filter(a -> a.getStatusChurn() == StatusChurn.EVADIDO)
+                .filter(a -> tipoProcedimento != null && tipoProcedimento.equalsIgnoreCase(a.getTipoProcedimento()))
+                .count();
     }
 
     public String getUltimoRegistroAgendamento() { return ultimoRegistroAgendamento; }

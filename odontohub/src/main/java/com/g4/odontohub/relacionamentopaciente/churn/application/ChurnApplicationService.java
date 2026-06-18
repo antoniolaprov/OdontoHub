@@ -1,9 +1,12 @@
 package com.g4.odontohub.relacionamentopaciente.churn.application;
 
+import com.g4.odontohub.relacionamentopaciente.churn.domain.model.ItemPareto;
 import com.g4.odontohub.relacionamentopaciente.churn.domain.model.StatusChurn;
 import com.g4.odontohub.relacionamentopaciente.churn.domain.repository.ChurnRepository;
 import com.g4.odontohub.relacionamentopaciente.churn.domain.service.ChurnService;
 import com.g4.odontohub.relacionamentopaciente.churn.infrastructure.persistence.InMemoryChurnRepository;
+
+import java.util.List;
 
 public class ChurnApplicationService {
 
@@ -63,6 +66,18 @@ public class ChurnApplicationService {
 
     public void cancelarAgendamento(String paciente, String categoriaMotivo) {
         service.cancelarAgendamento(paciente, categoriaMotivo);
+    }
+
+    public List<ItemPareto> paretoMotivosCancelamento() {
+        return service.paretoMotivosCancelamento();
+    }
+
+    public void definirTipoProcedimento(String paciente, String tipoProcedimento) {
+        service.definirTipoProcedimento(paciente, tipoProcedimento);
+    }
+
+    public long contarChurnPorProcedimento(String tipoProcedimento) {
+        return service.contarChurnPorProcedimento(tipoProcedimento);
     }
 
     public String getUltimoRegistroAgendamento() {

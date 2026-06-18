@@ -1,8 +1,11 @@
 package com.g4.odontohub.steps;
 
 import com.g4.odontohub.relacionamentopaciente.churn.application.ChurnApplicationService;
+import com.g4.odontohub.relacionamentopaciente.churn.domain.model.ItemPareto;
 import com.g4.odontohub.relacionamentopaciente.churn.domain.model.StatusChurn;
 import io.cucumber.java.pt.*;
+
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -12,6 +15,7 @@ public class F11ChurnSteps {
     private double receitaPerdida;
     private int horasCanceladas;
     private Exception excecaoCapturada;
+    private List<ItemPareto> pareto;
 
     @Dado("que o dentista possui valor médio por hora de {dinheiro}")
     public void valorMedioPorHora(double valor) {
@@ -129,6 +133,55 @@ public class F11ChurnSteps {
         assertNotNull(excecaoCapturada);
         assertEquals(mensagem, excecaoCapturada.getMessage());
     }
+
+    // ----- F11: Pareto de motivos de cancelamento e filtro por procedimento -----
+
+    @Dado("que foram registrados {int} cancelamentos com motivo {string}")
+    public void foramRegistradosCancelamentos(int quantidade, String motivo) {
+        for (int i = 0; i < quantidade; i++) {
+            churnService.cancelarAgendamento("Cancelamento", motivo);
+        }
+    }
+
+    @Quando("o dashboard gera o gráfico de Pareto dos motivos")
+    public void dashboardGeraPareto() {
+        pareto = churnService.paretoMotivosCancelamento();
+    }
+
+    @Então("o motivo mais frequente deve ser {string} com {int} cancelamentos")
+    public void motivoMaisFrequente(String motivo, int quantidade) {
+        assertEquals(motivo, pareto.get(0).motivo());
+        assertEquals(quantidade, pareto.get(0).quantidade());
+    }
+
+    @E("o percentual acumulado do motivo {string} deve ser {int}%")
+    public void percentualAcumuladoDoMotivo(String motivo, int percentual) {
+        ItemPareto item = pareto.stream().filter(p -> p.motivo().equals(motivo)).findFirst().orElseThrow();
+        assertEquals(percentual / 100.0, item.percentualAcumulado(), 0.001);
+    }
+
+    @E("o percentual acumulado do segundo motivo deve ser {int}%")
+    public void percentualAcumuladoSegundoMotivo(int percentual) {
+        assertEquals(percentual / 100.0, pareto.get(1).percentualAcumulado(), 0.001);
+    }
+
+    @Dado("que o paciente {string} evadiu com tratamento de {string}")
+    public void pacienteEvadiuComTratamento(String nome, String procedimento) {
+        churnService.definirTipoProcedimento(nome, procedimento);
+        churnService.classificarManualmente(nome, "EVADIDO");
+    }
+
+    @Quando("o dashboard filtra o churn pelo procedimento {string}")
+    public void dashboardFiltraChurnPorProcedimento(String procedimento) {
+        this.procedimentoFiltrado = procedimento;
+    }
+
+    @Então("a quantidade de pacientes evadidos em {string} deve ser {int}")
+    public void quantidadeEvadidosEm(String procedimento, int quantidade) {
+        assertEquals(quantidade, churnService.contarChurnPorProcedimento(procedimento));
+    }
+
+    private String procedimentoFiltrado;
 
     private boolean planoEstaAtivo(String status) {
         String s = status.trim().toUpperCase();

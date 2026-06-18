@@ -8,6 +8,8 @@ public class AnaliseChurn {
     private int mesesSemRetorno;
     private boolean possuiPlanoAtivo;
     private StatusChurn statusChurn;
+    /** Tipo de procedimento do tratamento do paciente (usado no filtro de churn por categoria). */
+    private String tipoProcedimento;
 
     public AnaliseChurn(ChurnId id, String paciente) {
         this.id = id;
@@ -17,12 +19,14 @@ public class AnaliseChurn {
 
     /** Reconstitui o agregado a partir da persistência (camada de infraestrutura). */
     public static AnaliseChurn reconstituir(ChurnId id, String paciente, boolean possuiAgendamentoFuturo,
-                                            int mesesSemRetorno, boolean possuiPlanoAtivo, StatusChurn statusChurn) {
+                                            int mesesSemRetorno, boolean possuiPlanoAtivo, StatusChurn statusChurn,
+                                            String tipoProcedimento) {
         AnaliseChurn a = new AnaliseChurn(id, paciente);
         a.possuiAgendamentoFuturo = possuiAgendamentoFuturo;
         a.mesesSemRetorno = mesesSemRetorno;
         a.possuiPlanoAtivo = possuiPlanoAtivo;
         a.statusChurn = statusChurn;
+        a.tipoProcedimento = tipoProcedimento;
         return a;
     }
 
@@ -36,6 +40,11 @@ public class AnaliseChurn {
     public int getMesesSemRetorno() { return mesesSemRetorno; }
     public boolean isPossuiPlanoAtivo() { return possuiPlanoAtivo; }
     public StatusChurn getStatusChurn() { return statusChurn; }
+    public String getTipoProcedimento() { return tipoProcedimento; }
+
+    public void setTipoProcedimento(String tipoProcedimento) {
+        this.tipoProcedimento = tipoProcedimento;
+    }
 
     public void setPossuiAgendamentoFuturo(boolean possuiAgendamentoFuturo) {
         this.possuiAgendamentoFuturo = possuiAgendamentoFuturo;

@@ -43,3 +43,19 @@ Funcionalidade: Dashboard de Churn e Inteligência de Retenção
     Quando a recepcionista cancela o agendamento sem informar a categoria do motivo
     Então o sistema deve bloquear o cancelamento
     E a mensagem deve informar "A categoria do motivo de cancelamento é obrigatória"
+
+  Cenário: Dashboard exibe Pareto dos motivos de cancelamento
+    Dado que foram registrados 5 cancelamentos com motivo "Preço"
+    E que foram registrados 3 cancelamentos com motivo "Horário"
+    E que foram registrados 2 cancelamentos com motivo "Concorrente"
+    Quando o dashboard gera o gráfico de Pareto dos motivos
+    Então o motivo mais frequente deve ser "Preço" com 5 cancelamentos
+    E o percentual acumulado do motivo "Preço" deve ser 50%
+    E o percentual acumulado do segundo motivo deve ser 80%
+
+  Cenário: Filtro de churn por tipo de procedimento
+    Dado que o paciente "Otavio Pinto" evadiu com tratamento de "Ortodontia"
+    E que o paciente "Paula Nunes" evadiu com tratamento de "Ortodontia"
+    E que o paciente "Quintino Sa" evadiu com tratamento de "Implante"
+    Quando o dashboard filtra o churn pelo procedimento "Ortodontia"
+    Então a quantidade de pacientes evadidos em "Ortodontia" deve ser 2
