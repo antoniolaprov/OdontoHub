@@ -68,6 +68,12 @@ public class ColaboradorRestController {
         return ResponseEntity.ok(applicationService.tentarLogin(nome, request.senha()));
     }
 
+    /** Lista todos os colaboradores (leitura para o frontend). */
+    @GetMapping
+    public ResponseEntity<List<Colaborador>> listar() {
+        return ResponseEntity.ok(applicationService.todos());
+    }
+
     @GetMapping("/responsaveis-esterilizacao")
     public ResponseEntity<List<Colaborador>> responsaveisEsterilizacao() {
         return ResponseEntity.ok(applicationService.listarResponsaveisEsterilizacao());

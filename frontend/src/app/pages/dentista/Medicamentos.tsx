@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { api } from "../../api/client";
 import {
   Pill,
   Upload,
@@ -333,8 +334,44 @@ function emptyForm() {
 
 // ─── Componente Principal ─────────────────────────────────────────────────────
 
+// ─── Integração com o backend (GET /api/medicamentos) ─────────────────────────
+
+function adaptarMedicamento(b: any, i: number): Medicamento {
+  return {
+    id: b.id?.id ?? i + 1,
+    nomeComercial: b.nomeComercial ?? "—",
+    principioAtivo: b.principioAtivo ?? "—",
+    categoria: b.categoriaTerapeutica ?? "—",
+    classeFarmacologica: b.classeFarmacologica ?? "—",
+    viaAdministracao: "Oral",
+    status: (b.status as StatusMedicamento) ?? "ATIVO",
+    apresentacoes: [],
+    posologiasPadrao: b.posologiasPadrao ?? [],
+    contraindicacoes: Array.isArray(b.contraindicacoes) ? b.contraindicacoes.join("; ") : (b.contraindicacoes ?? ""),
+    interacoes: "",
+    totalPrescrito: 0,
+    ultimoUso: "—",
+    periodoMaiorUso: "—",
+    dentistas: 0,
+    pacientesAtendidos: 0,
+    dataCriacaoPrescricao: null,
+    logs: [],
+  };
+}
+
 export default function DentistaMedicamentos() {
   const [medicamentos, setMedicamentos] = useState<Medicamento[]>(MOCK_INICIAL);
+
+  // Carrega o catálogo real do backend; mantém o mock como fallback.
+  useEffect(() => {
+    api.get<any[]>("/medicamentos")
+      .then((lista) => {
+        if (Array.isArray(lista) && lista.length > 0) {
+          setMedicamentos(lista.map(adaptarMedicamento));
+        }
+      })
+      .catch((e) => console.warn("Falha ao carregar medicamentos:", e));
+  }, []);
 
   // Filtros
   const [busca, setBusca] = useState("");

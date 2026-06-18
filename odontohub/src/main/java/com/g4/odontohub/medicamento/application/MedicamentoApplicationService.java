@@ -34,6 +34,10 @@ public class MedicamentoApplicationService {
         service.adicionarPosologiaPadrao(nomeComercial, posologia);
     }
 
+    public List<Medicamento> todos() {
+        return service.todos();
+    }
+
     public List<Medicamento> listarParaSelecao() {
         return service.listarParaSelecao();
     }

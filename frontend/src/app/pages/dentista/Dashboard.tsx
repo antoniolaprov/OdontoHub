@@ -12,8 +12,11 @@ import {
   ComposedChart
 } from "recharts";
 import { Calendar } from "lucide-react";
+import { useEffect, useState } from "react";
+import { api } from "../../api/client";
 
 export default function DentistaDashboard() {
+  // Série mensal de churn: sem endpoint de série temporal no backend — mantida como mock.
   const churnData = [
     { mes: "Jan", taxa: 5.2 },
     { mes: "Fev", taxa: 4.8 },
@@ -23,13 +26,29 @@ export default function DentistaDashboard() {
     { mes: "Jun", taxa: 3.8 },
   ];
 
-  // Dados de pareto (simulando barras e linha cumulativa)
-  const motivosData = [
+  // Pareto dos motivos de cancelamento — ligado ao backend (GET /api/churn/pareto-cancelamentos).
+  const [motivosData, setMotivosData] = useState([
     { motivo: "Preço", qtd: 15, cumulativo: 37 },
     { motivo: "Mudança", qtd: 12, cumulativo: 67 },
     { motivo: "Insatisfação", qtd: 8, cumulativo: 87 },
     { motivo: "Agenda", qtd: 5, cumulativo: 100 },
-  ];
+  ]);
+
+  useEffect(() => {
+    api.get<any[]>("/churn/pareto-cancelamentos")
+      .then((pareto) => {
+        if (Array.isArray(pareto) && pareto.length > 0) {
+          setMotivosData(
+            pareto.map((it) => ({
+              motivo: it.motivo,
+              qtd: it.quantidade,
+              cumulativo: Math.round((it.percentualAcumulado ?? 0) * 100),
+            })),
+          );
+        }
+      })
+      .catch((e) => console.warn("Falha ao carregar Pareto de churn:", e));
+  }, []);
 
   return (
     <div className="p-6 h-full flex flex-col">

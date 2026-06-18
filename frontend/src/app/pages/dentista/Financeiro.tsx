@@ -1,19 +1,55 @@
 import { Lock, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { api } from "../../api/client";
+
+const brl = (v: number) => (v ?? 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const dataBR = (iso: string) => {
+  if (!iso) return "—";
+  const [ano, mes, dia] = iso.split("T")[0].split("-");
+  return `${dia}/${mes}/${ano}`;
+};
+
+interface LancamentoUI {
+  id: number; data: string; descricao: string; categoria: string;
+  tipo: "Entrada" | "Saída"; valor: string; automatico: boolean;
+}
 
 export default function DentistaFinanceiro() {
-  const kpis = [
-    { label: "Saldo Atual", value: "R$ 45.200,00", color: "text-green-600" },
-    { label: "Entradas Previstas", value: "R$ 18.500,00", color: "text-blue-600" },
-    { label: "Saídas Pendentes", value: "R$ 6.300,00", color: "text-red-600" },
-  ];
+  const [lancamentos, setLancamentos] = useState<LancamentoUI[]>([]);
+  const [kpis, setKpis] = useState([
+    { label: "Saldo Atual", value: "R$ 0,00", color: "text-green-600" },
+    { label: "Entradas Previstas", value: "R$ 0,00", color: "text-blue-600" },
+    { label: "Saídas Pendentes", value: "R$ 0,00", color: "text-red-600" },
+  ]);
 
-  const lancamentos = [
-    { id: 1, data: "29/04/2026", descricao: "Tratamento de Canal - João Silva", categoria: "Serviços", tipo: "Entrada", valor: "R$ 1.500,00", automatico: true },
-    { id: 2, data: "29/04/2026", descricao: "Compra de Resinas e Insumos", categoria: "Insumos", tipo: "Saída", valor: "R$ 850,00", automatico: false },
-    { id: 3, data: "30/04/2026", descricao: "Limpeza - Maria Santos", categoria: "Serviços", tipo: "Entrada", valor: "R$ 350,00", automatico: true },
-    { id: 4, data: "05/05/2026", descricao: "Salário Auxiliar", categoria: "Salário", tipo: "Saída", valor: "R$ 2.500,00", automatico: false },
-    { id: 5, data: "08/05/2026", descricao: "Manutenção Equipamentos", categoria: "Manutenção", tipo: "Saída", valor: "R$ 1.200,00", automatico: false },
-  ];
+  useEffect(() => {
+    Promise.all([
+      api.get<any[]>("/fluxo-caixa/lancamentos"),
+      api.get<number>("/fluxo-caixa/saldo-atual"),
+    ])
+      .then(([lista, saldo]) => {
+        const dados = Array.isArray(lista) ? lista : [];
+        setLancamentos(
+          dados.map((b, i) => ({
+            id: b.id?.id ?? i + 1,
+            data: dataBR(b.data),
+            descricao: b.descricao ?? "—",
+            categoria: b.categoria ?? "—",
+            tipo: b.tipo === "ENTRADA" ? "Entrada" : "Saída",
+            valor: brl(b.valor),
+            automatico: !!b.geradoAutomaticamente,
+          })),
+        );
+        const soma = (tipo: string) =>
+          dados.filter((b) => b.tipo === tipo && b.previsto).reduce((s, b) => s + (b.valor ?? 0), 0);
+        setKpis([
+          { label: "Saldo Atual", value: brl(saldo), color: "text-green-600" },
+          { label: "Entradas Previstas", value: brl(soma("ENTRADA")), color: "text-blue-600" },
+          { label: "Saídas Pendentes", value: brl(soma("SAIDA")), color: "text-red-600" },
+        ]);
+      })
+      .catch((e) => console.warn("Falha ao carregar fluxo de caixa:", e));
+  }, []);
 
   return (
     <div className="p-6 h-full flex flex-col">

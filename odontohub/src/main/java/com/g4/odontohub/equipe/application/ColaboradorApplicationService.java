@@ -51,6 +51,10 @@ public class ColaboradorApplicationService {
         return service.estaBloqueado(nome);
     }
 
+    public List<Colaborador> todos() {
+        return service.todos();
+    }
+
     public List<Colaborador> listarResponsaveisEsterilizacao() {
         return service.listarResponsaveisEsterilizacao();
     }

@@ -52,6 +52,11 @@ public class MedicamentoService {
         repositorio.salvar(medicamento);
     }
 
+    /** Lista todo o catálogo (ativos e inativos) — leitura para o frontend. */
+    public List<Medicamento> todos() {
+        return repositorio.todos();
+    }
+
     public List<Medicamento> listarParaSelecao() {
         return repositorio.todos().stream()
                 .filter(Medicamento::estaAtivo)

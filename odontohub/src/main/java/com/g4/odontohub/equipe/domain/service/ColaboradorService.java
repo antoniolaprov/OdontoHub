@@ -92,6 +92,11 @@ public class ColaboradorService {
         return buscarPorNome(nome).estaBloqueado();
     }
 
+    /** Lista todos os colaboradores (camada de leitura para o frontend). */
+    public List<Colaborador> todos() {
+        return repositorio.todos();
+    }
+
     public List<Colaborador> listarResponsaveisEsterilizacao() {
         return repositorio.todos().stream()
                 .filter(c -> c.getFuncao() == FuncaoColaborador.AUXILIAR)

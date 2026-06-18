@@ -53,7 +53,17 @@ useEffect(() => {
   Recall) → use um default (`"—"`) até existir endpoint que forneça.
 
 ## Status da integração (telas)
-- ✅ **Recepcionista / Recall** — ligado (`GET /api/recalls`).
-- ⬜ Demais telas — a ligar (Agenda, Pacientes, Pagamentos, Acordos, Financeiro,
-  Equipe, Medicamentos, Prontuários, Dashboard, Estoque, Esterilização, Instrumentos).
-  Várias precisarão de **novos endpoints de listagem** no backend (`GET /api/<contexto>`).
+- ✅ **Recepcionista / Recall** — `GET /api/recalls`
+- ✅ **Dentista / Financeiro** — `GET /api/fluxo-caixa/lancamentos` + `/saldo-atual`
+- ✅ **Dentista / Equipe** — `GET /api/colaboradores`
+- ✅ **Dentista / Dashboard** — Pareto via `GET /api/churn/pareto-cancelamentos`
+  (série mensal de churn e custo de cadeira vazia seguem mock — sem endpoint)
+- ✅ **Dentista / Medicamentos** — `GET /api/medicamentos`
+- ⬜ **Dentista / Prontuários** — precisa de **read model novo no backend**
+  (lista de pacientes/planos/procedimentos/prescrições/ficha clínica não existe).
+- ⬜ **Recepcionista** — Agenda, Pacientes, Pagamentos, Acordos
+- ⬜ **Auxiliar** — Estoque, Esterilização, Instrumentos
+
+> A maioria das telas pendentes precisa de **novos GETs de listagem** no backend
+> (`GET /api/<contexto>`). Padrão já provado em Recall/Financeiro/Equipe/Medicamentos:
+> adicione o endpoint, escreva o `adaptar<X>()` e o `useEffect`.

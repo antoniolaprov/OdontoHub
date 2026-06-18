@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { api } from "../../api/client";
 import {
   Plus, User, Phone, BadgeCheck, Search, FileText, BarChart2,
   History, ShieldAlert, Lock, AlertTriangle, Clock, Calendar,
@@ -267,8 +268,82 @@ const FORM_VAZIO = {
 };
 
 // ─── Componente Principal ────────────────────────────────────────────────────
+// ─── Integração com o backend (GET /api/colaboradores) ────────────────────────
+
+const FUNCAO_BACKEND: Record<string, FuncaoColaborador> = {
+  AUXILIAR: "Auxiliar", RECEPCIONISTA: "Recepcionista",
+  ESPECIALISTA: "Especialista", ADMINISTRADOR: "Administrador",
+};
+const STATUS_BACKEND: Record<string, StatusColaborador> = {
+  ATIVO: "Ativo", INATIVO: "Inativo", SUSPENSO: "Suspenso", FERIAS: "Férias", AFASTADO: "Afastado",
+};
+const DIA_BACKEND: Record<string, string> = {
+  SEGUNDA: "Seg", TERCA: "Ter", QUARTA: "Qua", QUINTA: "Qui", SEXTA: "Sex", SABADO: "Sáb", DOMINGO: "Dom",
+};
+
+function adaptarColaborador(b: any, i: number): Colaborador {
+  const disp = b.disponibilidade ?? {};
+  const ausencia = (disp.ausencias ?? [])[0] ?? null;
+  const auditoria: any[] = b.auditoria ?? [];
+  const contar = (modulo: string) => auditoria.filter((a) => a.modulo === modulo).length;
+  const atendimentos = b.atendimentos ?? 0;
+  const conversoes = b.conversoes ?? 0;
+  const hhmm = (h: number | null | undefined) => (h != null ? `${String(h).padStart(2, "0")}:00` : "");
+  return {
+    id: b.id?.id ?? i + 1,
+    nome: b.nomeCompleto ?? "—",
+    cpf: b.cpf ?? "—",
+    telefone: b.telefone ?? "—",
+    email: b.email ?? "—",
+    funcao: FUNCAO_BACKEND[b.funcao] ?? "Recepcionista",
+    nivelAcesso: FUNCAO_BACKEND[b.funcao] ?? "—",
+    status: STATUS_BACKEND[b.status] ?? "Ativo",
+    login: b.login ?? "—",
+    registro: "—",
+    tentativasLogin: b.tentativasLoginInvalidas ?? 0,
+    diasDisponiveis: (disp.diasDisponiveis ?? []).map((d: string) => DIA_BACKEND[d] ?? d),
+    horarioInicio: hhmm(disp.horaInicio),
+    horarioFim: hhmm(disp.horaFim),
+    periodoAusencia: ausencia
+      ? { inicio: ausencia.inicio ?? "", fim: ausencia.fim ?? "", motivo: ausencia.motivo ?? ausencia.tipo ?? "" }
+      : { inicio: "", fim: "", motivo: "" },
+    metricas: {
+      atendimentos,
+      faltas: b.faltas ?? 0,
+      taxaConversao: atendimentos > 0 ? Math.round((conversoes / atendimentos) * 100) : 0,
+      avaliacaoMedia: 0,
+      procedimentosRealizados: contar("PROCEDIMENTO"),
+      agendamentosCriados: contar("AGENDAMENTO"),
+      esterilizacoesRegistradas: contar("ESTERILIZACAO"),
+    },
+    logAuditoria: auditoria.map((a, j) => {
+      const [data = "", hora = ""] = (a.dataHora ?? "").split("T");
+      return { id: j + 1, data, hora: hora.slice(0, 5), acao: a.acao ?? "", modulo: a.modulo ?? "", ip: "—" };
+    }),
+    historicoAlteracoes: (b.historicoAlteracoes ?? []).map((h: any, j: number) => ({
+      id: j + 1,
+      campo: h.campo ?? "",
+      valorAnterior: h.valorAnterior ?? "",
+      valorAtualizado: h.valorAtualizado ?? "",
+      responsavel: h.responsavel ?? "",
+      data: (h.data ?? "").split("T")[0],
+    })),
+  };
+}
+
 export default function DentistaEquipe() {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>(COLABORADORES_INICIAIS);
+
+  // Carrega os colaboradores reais do backend; mantém o mock como fallback.
+  useEffect(() => {
+    api.get<any[]>("/colaboradores")
+      .then((lista) => {
+        if (Array.isArray(lista) && lista.length > 0) {
+          setColaboradores(lista.map(adaptarColaborador));
+        }
+      })
+      .catch((e) => console.warn("Falha ao carregar colaboradores:", e));
+  }, []);
   const [busca, setBusca] = useState("");
   const [filtroFuncao, setFiltroFuncao] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
