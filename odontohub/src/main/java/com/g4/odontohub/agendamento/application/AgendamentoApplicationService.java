@@ -64,9 +64,33 @@ public class AgendamentoApplicationService {
         return ag;
     }
 
+    /** Leitura de um agendamento pelo identificador; retorna {@code null} se inexistente. */
+    public Agendamento buscarPorId(AgendamentoId id) {
+        return agendamentoService.buscarPorId(id);
+    }
+
     public void confirmarAgendamento(AgendamentoId id, String responsavel) {
         agendamentoService.confirmarAgendamento(id, responsavel);
         DomainEventPublisher.publish(new AgendamentoConfirmado(id, responsavel));
+    }
+
+    /**
+     * Integração F16 → F1: confirma o agendamento a partir da confirmação do paciente
+     * (evento {@code ConsultaConfirmadaPeloPaciente}). É best-effort: se o agendamento
+     * não existir neste contexto ou já estiver em estado terminal, a integração é ignorada.
+     *
+     * @return {@code true} se o agendamento foi efetivamente confirmado
+     */
+    public boolean confirmarPorConfirmacaoDoPaciente(Long agendamentoId, String responsavel) {
+        if (agendamentoId == null) {
+            return false;
+        }
+        try {
+            confirmarAgendamento(new AgendamentoId(agendamentoId), responsavel);
+            return true;
+        } catch (RuntimeException e) {
+            return false;
+        }
     }
 
     public void cancelarAgendamento(AgendamentoId id, String motivo, String responsavel) {

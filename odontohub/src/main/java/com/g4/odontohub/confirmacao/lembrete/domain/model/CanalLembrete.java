@@ -1,6 +1,6 @@
 package com.g4.odontohub.confirmacao.lembrete.domain.model;
 
-/** Canal pelo qual o lembrete de consulta é enviado (F13). */
+/** Canal pelo qual o lembrete de consulta é enviado (F16). */
 public enum CanalLembrete {
     SMS,
     WHATSAPP,

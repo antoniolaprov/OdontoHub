@@ -1,6 +1,6 @@
 package com.g4.odontohub.confirmacao.lembrete.domain.model;
 
-/** Ciclo de vida do lembrete de consulta (F13). */
+/** Ciclo de vida do lembrete de consulta (F16). */
 public enum StatusLembrete {
     PENDENTE,
     ENVIADO,

@@ -6,7 +6,7 @@ import io.cucumber.java.pt.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class F13LembreteSteps {
+public class F16LembreteSteps {
 
     private final LembreteApplicationService service = new LembreteApplicationService();
     private Exception excecao;

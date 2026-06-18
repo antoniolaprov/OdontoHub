@@ -12,7 +12,7 @@ import com.g4.odontohub.shared.DomainEventPublisher;
 import java.time.LocalDate;
 
 /**
- * F13 — Confirmação e Lembretes de Consulta.
+ * F16 — Confirmação e Lembretes de Consulta.
  * Gera, envia e registra a resposta do paciente a lembretes de consulta.
  */
 public class LembreteService {

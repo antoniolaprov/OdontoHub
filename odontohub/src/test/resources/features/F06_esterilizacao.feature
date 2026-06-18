@@ -6,7 +6,7 @@ Funcionalidade: Status de Esterilização de Instrumentos
   Para garantir que apenas materiais dentro do prazo de validade sejam utilizados nos procedimentos
 
   Contexto:
-    Dado que o instrumento "Fórceps 101" está cadastrado na F16 com prazo de validade de 7 dias e status ativo
+    Dado que o instrumento "Fórceps 101" está cadastrado na F14 com prazo de validade de 7 dias e status ativo
 
   Cenário: Marcação de instrumento como Estéril registra data e responsável
     Dado que "Fórceps 101" está com status "CONTAMINADO"
@@ -23,15 +23,15 @@ Funcionalidade: Status de Esterilização de Instrumentos
 
   Cenário: Listagem de instrumentos prontos para uso filtra apenas Estéreis no prazo
     Dado que "Fórceps 101" está com status "ESTERIL" e dentro do prazo
-    E que o instrumento "Espelho Bucal" está cadastrado na F16 com status ativo e status de esterilização "VENCIDO"
-    E que o instrumento "Seringa Carpule" está cadastrado na F16 com status ativo e status de esterilização "CONTAMINADO"
+    E que o instrumento "Espelho Bucal" está cadastrado na F14 com status ativo e status de esterilização "VENCIDO"
+    E que o instrumento "Seringa Carpule" está cadastrado na F14 com status ativo e status de esterilização "CONTAMINADO"
     Quando o auxiliar solicita a lista de instrumentos prontos para uso
     Então a lista deve conter "Fórceps 101"
     E a lista não deve conter "Espelho Bucal"
     E a lista não deve conter "Seringa Carpule"
 
   Cenário: Instrumento inativo não aparece na lista de esterilização
-    Dado que o instrumento "Bisturi Cabo 4" está cadastrado na F16 com status inativo
+    Dado que o instrumento "Bisturi Cabo 4" está cadastrado na F14 com status inativo
     Quando o auxiliar solicita a lista de instrumentos prontos para uso
     Então a lista não deve conter "Bisturi Cabo 4"
 

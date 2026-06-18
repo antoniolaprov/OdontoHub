@@ -62,6 +62,11 @@ public class AgendamentoService {
                 .anyMatch(a -> a.getDataHora().equals(dataHora));
     }
 
+    /** Leitura de um agendamento pelo identificador; retorna {@code null} se inexistente. */
+    public Agendamento buscarPorId(AgendamentoId id) {
+        return repositorio.buscarPorId(id);
+    }
+
     private Agendamento buscar(AgendamentoId id) {
         Agendamento a = repositorio.buscarPorId(id);
         if (a == null) {

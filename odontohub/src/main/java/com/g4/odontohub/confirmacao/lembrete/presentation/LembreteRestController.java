@@ -5,7 +5,7 @@ import com.g4.odontohub.confirmacao.lembrete.domain.model.Lembrete;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/** Camada de apresentação (REST) do contexto de Lembrete — F13. */
+/** Camada de apresentação (REST) do contexto de Lembrete — F16. */
 @RestController
 @RequestMapping("/api/lembretes")
 public class LembreteRestController {

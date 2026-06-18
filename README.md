@@ -170,13 +170,13 @@ O sistema é modelado com **Domain-Driven Design (DDD)**.
 * **AgendamentoContext** — Agendamento de Consultas e Retornos (F1)
 * **ProntuarioClinicoContext** — Anamnese (F2), Plano de Tratamento (F3), Prescrição (F8)
 * **FinanceiroContext** — Fluxo de Caixa (F4), Inadimplência e Acordos (F9)
-* **EstoqueContext** — Materiais Consumíveis (F5), Esterilização (F6), Instrumentos (F16)
+* **EstoqueContext** — Materiais Consumíveis (F5), Esterilização (F6), Instrumentos (F14)
 * **RelacionamentoPacienteContext** — Recall (F7), Follow-up (F10), Churn (F11)
 * **EquipeContext** — Gestão de Colaboradores (F12)
-* **CadastroPacienteContext** — Cadastro de Pacientes (F15)
+* **CadastroPacienteContext** — Cadastro de Pacientes (F13)
 * **MedicamentoContext** — Catálogo de Medicamentos (F8)
-* **PagamentoContext** — Pagamentos e Quitação de Débitos (F17)
-* **ConfirmacaoContext** — Lembretes e Confirmação (F13), Não Comparecimento (F14)
+* **PagamentoContext** — Pagamentos e Quitação de Débitos (F15)
+* **ConfirmacaoContext** — Lembretes e Confirmação (F16), Não Comparecimento (F17)
 
 📄 O arquivo **CML** encontra-se na raiz do repositório:
 
@@ -296,17 +296,19 @@ Executados via Maven Wrapper.
 
 | Membro | Funcionalidades |
 |---|---|
-| **João Patriota** | F1 – Agendamento de Consultas e Retornos · F6 – Status de Esterilização · F15 – Cadastro de Pacientes · F16 – Cadastro de Instrumentos |
-| **Mateus Dornellas** | F8 – Cadastro e Gestão de Medicamentos · F9 – Gestão Ativa de Inadimplência e Acordos · F17 – Gestão de Pagamentos e Quitação de Débitos |
+| **João Patriota** | F1 – Agendamento de Consultas e Retornos · F6 – Status de Esterilização · F13 – Cadastro de Pacientes · F14 – Cadastro de Instrumentos |
+| **Mateus Dornellas** | F8 – Cadastro e Gestão de Medicamentos · F9 – Gestão Ativa de Inadimplência e Acordos · F15 – Gestão de Pagamentos e Quitação de Débitos |
 | **Jarbas Esteves** | F11 – Dashboard de Churn e Inteligência de Retenção · F10 – Execução de Protocolos de Pós-Operatório Ativo |
 | **Daniel Andrade** | F7 – Automação e Fila de Recall · F12 – Gestão de Equipe e Colaboradores |
 | **Felipe Andrade** | F2 – Registro de Anamnese · F3 – Gestão e Execução do Plano de Tratamento |
 | **Antônio Augusto** | F4 – Fluxo de Caixa do Consultório · F5 – Controle de Estoque de Materiais Consumíveis |
-| **Gabriel Belo** | F13 – Confirmação e Lembretes de Consulta · F14 – Registro de Não Comparecimento |
+| **Gabriel Belo** | F16 – Confirmação e Lembretes de Consulta · F17 – Registro de Não Comparecimento |
 
-> **Nota:** todas as funcionalidades (F1–F17) estão implementadas com BDD
-> automatizado, persistência JPA e API REST. F13 e F14 vivem no bounded context
-> `ConfirmacaoContext` (`com.g4.odontohub.confirmacao`).
+> **Nota:** as funcionalidades **F1–F15** correspondem ao documento de descrição do
+> domínio (numeração contínua). **F16 (Lembretes/Confirmação)** e **F17 (Não
+> Comparecimento)** são extensões da equipe, fora do documento, e vivem no bounded
+> context `ConfirmacaoContext` (`com.g4.odontohub.confirmacao`). Todas as 17
+> funcionalidades estão implementadas com BDD automatizado, persistência JPA e API REST.
 
 ---
 

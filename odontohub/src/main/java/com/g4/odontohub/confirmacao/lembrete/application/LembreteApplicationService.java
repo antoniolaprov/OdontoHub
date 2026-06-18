@@ -1,10 +1,13 @@
 package com.g4.odontohub.confirmacao.lembrete.application;
 
+import com.g4.odontohub.agendamento.application.AgendamentoApplicationService;
+import com.g4.odontohub.confirmacao.lembrete.domain.event.ConsultaConfirmadaPeloPaciente;
 import com.g4.odontohub.confirmacao.lembrete.domain.model.Lembrete;
 import com.g4.odontohub.confirmacao.lembrete.domain.model.StatusLembrete;
 import com.g4.odontohub.confirmacao.lembrete.domain.repository.LembreteRepository;
 import com.g4.odontohub.confirmacao.lembrete.domain.service.LembreteService;
 import com.g4.odontohub.confirmacao.lembrete.infrastructure.persistence.InMemoryLembreteRepository;
+import com.g4.odontohub.shared.DomainEventPublisher;
 
 public class LembreteApplicationService {
 
@@ -16,6 +19,19 @@ public class LembreteApplicationService {
 
     public LembreteApplicationService(LembreteRepository repositorio) {
         this.service = new LembreteService(repositorio);
+    }
+
+    /**
+     * Composition root de produção: integra a confirmação do paciente (F16) com o
+     * contexto de Agendamento (F1), marcando o agendamento como confirmado a cada
+     * {@link ConsultaConfirmadaPeloPaciente}.
+     */
+    public LembreteApplicationService(LembreteRepository repositorio,
+                                      AgendamentoApplicationService agendamentoService) {
+        this.service = new LembreteService(repositorio);
+        DomainEventPublisher.subscribe(ConsultaConfirmadaPeloPaciente.class, evento ->
+                agendamentoService.confirmarPorConfirmacaoDoPaciente(
+                        evento.agendamentoId(), "Confirmação do paciente (lembrete)"));
     }
 
     public Lembrete gerarLembrete(Long agendamentoId, String paciente, String canal) {

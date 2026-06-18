@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 
-/** Camada de apresentação (REST) do contexto de Não Comparecimento — F14. */
+/** Camada de apresentação (REST) do contexto de Não Comparecimento — F17. */
 @RestController
 @RequestMapping("/api/nao-comparecimentos")
 public class NaoComparecimentoRestController {

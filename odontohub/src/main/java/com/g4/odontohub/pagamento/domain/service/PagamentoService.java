@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * F17 — Gestão de Pagamentos e Quitação de Débitos.
+ * F15 — Gestão de Pagamentos e Quitação de Débitos.
  * Registra pagamentos presenciais e remotos, baixa parcelas e alimenta o fluxo de caixa.
  * A persistência é delegada à porta {@link PagamentoRepository} (camada de infraestrutura).
  */

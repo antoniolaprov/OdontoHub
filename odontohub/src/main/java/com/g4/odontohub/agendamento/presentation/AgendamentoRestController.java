@@ -2,6 +2,7 @@ package com.g4.odontohub.agendamento.presentation;
 
 import com.g4.odontohub.agendamento.application.AgendamentoApplicationService;
 import com.g4.odontohub.agendamento.domain.model.Agendamento;
+import com.g4.odontohub.agendamento.domain.model.AgendamentoId;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +26,12 @@ public class AgendamentoRestController {
         applicationService.cadastrarDentista(r.dentista());
         Agendamento ag = applicationService.registrarAgendamento(r.paciente(), r.dentista(), r.dataHora());
         return ResponseEntity.ok(ag);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Agendamento> consultar(@PathVariable Long id) {
+        Agendamento ag = applicationService.buscarPorId(new AgendamentoId(id));
+        return ag == null ? ResponseEntity.notFound().build() : ResponseEntity.ok(ag);
     }
 
     public record AgendamentoRequest(String paciente, String dentista,

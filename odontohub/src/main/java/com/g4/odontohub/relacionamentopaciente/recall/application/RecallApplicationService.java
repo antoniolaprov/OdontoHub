@@ -7,10 +7,15 @@ import com.g4.odontohub.relacionamentopaciente.recall.domain.model.Recall;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.repository.RecallRepository;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.service.RecallService;
 import com.g4.odontohub.relacionamentopaciente.recall.infrastructure.persistence.InMemoryRecallRepository;
+import com.g4.odontohub.relacionamentopaciente.followup.application.FollowupApplicationService;
+import com.g4.odontohub.shared.DomainEventPublisher;
 
 import java.util.List;
 
 public class RecallApplicationService {
+
+    /** Tipo de tarefa de follow-up criada quando um recall é escalonado (F07 → F10). */
+    private static final String TIPO_TAREFA_ESCALONAMENTO = "ESCALONAMENTO_RECALL";
 
     private final RecallService service;
 
@@ -20,6 +25,18 @@ public class RecallApplicationService {
 
     public RecallApplicationService(RecallRepository repositorio) {
         this.service = new RecallService(repositorio);
+    }
+
+    /**
+     * Composition root de produção: integra o escalonamento de recall (F07) com o
+     * follow-up (F10). Cada {@link RecallEscalonado} gera uma tarefa para que um
+     * responsável retome o contato com o paciente.
+     */
+    public RecallApplicationService(RecallRepository repositorio,
+                                    FollowupApplicationService followupService) {
+        this.service = new RecallService(repositorio);
+        DomainEventPublisher.subscribe(RecallEscalonado.class, evento ->
+                followupService.criarTarefa(evento.paciente(), TIPO_TAREFA_ESCALONAMENTO));
     }
 
     public Recall processarGatilhoRecall(String paciente, String procedimento) {

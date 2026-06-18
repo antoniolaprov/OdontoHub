@@ -8,7 +8,7 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class F17PagamentosSteps {
+public class F15PagamentosSteps {
 
     private final PagamentoApplicationService service = new PagamentoApplicationService();
     private Exception excecaoCapturada;

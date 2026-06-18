@@ -22,19 +22,19 @@ public class F06EsterilizacaoSteps {
         ultimoInstrumentoCompartilhado = instrumento;
     }
 
-    @Dado("que o instrumento {string} está cadastrado na F16 com prazo de validade de {int} dias e status ativo")
-    public void instrumentoCadastradoNaF16ComPrazoEAtivo(String nome, int prazo) {
+    @Dado("que o instrumento {string} está cadastrado na F14 com prazo de validade de {int} dias e status ativo")
+    public void instrumentoCadastradoNaF14ComPrazoEAtivo(String nome, int prazo) {
         ultimoInstrumento = cadastrarSeNecessario(nome, prazo);
     }
 
-    @Dado("que o instrumento {string} está cadastrado na F16 com status ativo e status de esterilização {string}")
-    public void instrumentoCadastradoNaF16ComStatusEsterilizacao(String nome, String statusStr) {
+    @Dado("que o instrumento {string} está cadastrado na F14 com status ativo e status de esterilização {string}")
+    public void instrumentoCadastradoNaF14ComStatusEsterilizacao(String nome, String statusStr) {
         ultimoInstrumento = cadastrarSeNecessario(nome, 7);
         definirStatus(nome, mapearStatus(statusStr));
     }
 
-    @Dado("que o instrumento {string} está cadastrado na F16 com status inativo")
-    public void instrumentoCadastradoNaF16ComStatusInativo(String nome) {
+    @Dado("que o instrumento {string} está cadastrado na F14 com status inativo")
+    public void instrumentoCadastradoNaF14ComStatusInativo(String nome) {
         ultimoInstrumento = cadastrarSeNecessario(nome, 7);
         service.desativarInstrumento(nome);
         ultimoInstrumento = service.buscarPorNome(nome);

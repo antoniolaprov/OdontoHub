@@ -5,7 +5,7 @@ import com.g4.odontohub.cadastropaciente.domain.model.Paciente;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-/** Camada de apresentação (REST) do contexto de Cadastro de Paciente — F15. */
+/** Camada de apresentação (REST) do contexto de Cadastro de Paciente — F13. */
 @RestController
 @RequestMapping("/api/pacientes")
 public class PacienteRestController {

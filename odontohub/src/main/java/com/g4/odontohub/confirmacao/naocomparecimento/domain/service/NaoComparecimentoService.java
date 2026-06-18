@@ -10,7 +10,7 @@ import com.g4.odontohub.shared.DomainEventPublisher;
 import java.time.LocalDate;
 
 /**
- * F14 — Registro de Não Comparecimento (No-Show).
+ * F17 — Registro de Não Comparecimento (No-Show).
  * Registra ausências, impede registros para consultas futuras ou duplicados,
  * e classifica pacientes reincidentes a partir de faltas injustificadas.
  */

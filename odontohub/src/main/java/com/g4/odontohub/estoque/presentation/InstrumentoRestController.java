@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 
-/** Camada de apresentação (REST) de instrumentos e esterilização — F06/F16. */
+/** Camada de apresentação (REST) de instrumentos e esterilização — F06/F14. */
 @RestController
 @RequestMapping("/api/instrumentos")
 public class InstrumentoRestController {

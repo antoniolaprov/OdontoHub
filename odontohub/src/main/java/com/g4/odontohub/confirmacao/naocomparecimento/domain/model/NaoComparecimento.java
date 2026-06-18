@@ -3,7 +3,7 @@ package com.g4.odontohub.confirmacao.naocomparecimento.domain.model;
 import java.time.LocalDate;
 
 /**
- * F14 — Registro de Não Comparecimento (No-Show).
+ * F17 — Registro de Não Comparecimento (No-Show).
  * Registra a ausência do paciente em um agendamento, diferenciando faltas
  * justificadas de injustificadas (estas alimentam a análise de churn — F11).
  */

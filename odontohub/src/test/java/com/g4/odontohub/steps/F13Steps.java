@@ -10,7 +10,7 @@ import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class F15Steps {
+public class F13Steps {
 
     private final PacienteApplicationService service = new PacienteApplicationService();
     private Paciente ultimoPaciente;

@@ -8,7 +8,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class F16Steps {
+public class F14Steps {
 
     private final InstrumentoApplicationService service = new InstrumentoApplicationService();
     private Instrumento ultimoInstrumento;

@@ -3,7 +3,7 @@ package com.g4.odontohub.confirmacao.lembrete.domain.model;
 import java.time.LocalDate;
 
 /**
- * F13 — Confirmação e Lembretes de Consulta.
+ * F16 — Confirmação e Lembretes de Consulta.
  * Representa um lembrete vinculado a um agendamento, com ciclo de vida
  * Pendente → Enviado → Confirmado/Recusado/Sem Resposta.
  */
