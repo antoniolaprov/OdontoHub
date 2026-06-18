@@ -4,13 +4,12 @@ import com.g4.odontohub.relacionamentopaciente.recall.domain.event.RecallCancela
 import com.g4.odontohub.relacionamentopaciente.recall.domain.event.RecallConvertido;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.event.RecallDisparado;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.event.RecallEscalonado;
-import com.g4.odontohub.relacionamentopaciente.recall.domain.model.NivelPrioridade;
-import com.g4.odontohub.relacionamentopaciente.recall.domain.model.Recall;
-import com.g4.odontohub.relacionamentopaciente.recall.domain.model.RecallId;
-import com.g4.odontohub.relacionamentopaciente.recall.domain.model.StatusRecall;
+import com.g4.odontohub.relacionamentopaciente.recall.domain.model.*;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.repository.RecallRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -93,13 +92,86 @@ public class RecallService {
         return ultimoCancelamento;
     }
 
-    /** Fila de recall ordenada por prioridade clínica (maior risco primeiro). */
+    /**
+     * Fila de recall ordenada pela pontuação do motor de priorização inteligente
+     * (maior pontuação primeiro; desempate pelo menor prazo de retorno).
+     */
     public List<Recall> filaPriorizada() {
         return repositorio.todos().stream()
                 .filter(r -> r.getStatus() == StatusRecall.NA_FILA)
-                .sorted(Comparator.comparingInt((Recall r) -> r.getPrioridade().peso()).reversed()
+                .sorted(Comparator.comparingInt(Recall::pontuacaoPrioridade).reversed()
                         .thenComparingInt(Recall::getDiasParaRetorno))
                 .toList();
+    }
+
+    /** Define os fatores de priorização do recall na fila e reclassifica a categoria. */
+    public Recall definirFatores(String paciente, FatoresPriorizacao fatores) {
+        Recall recall = recallNaFila(paciente)
+                .orElseThrow(() -> new IllegalStateException("Paciente não está na fila de recall: " + paciente));
+        recall.definirFatores(fatores);
+        repositorio.salvar(recall);
+        return recall;
+    }
+
+    /** Registra uma tentativa de contato detalhada; escalona o caso ao atingir o limite. */
+    public boolean registrarTentativaDetalhada(String paciente, CanalContato canal, ResultadoContato resultado,
+                                                String responsavel, int duracaoMinutos, String observacoes) {
+        Recall recall = recallNaFila(paciente)
+                .orElseThrow(() -> new IllegalStateException("Paciente não está na fila de recall: " + paciente));
+        TentativaContato tentativa = new TentativaContato(
+                responsavel, LocalDateTime.now(), canal, duracaoMinutos, resultado, observacoes);
+        boolean escalonar = recall.registrarTentativa(tentativa);
+        repositorio.salvar(recall);
+        if (escalonar) {
+            ultimoEscalonamento = new RecallEscalonado(recall.getId(), paciente, recall.getTentativasContato());
+            DomainEventPublisher.publish(ultimoEscalonamento);
+        }
+        return escalonar;
+    }
+
+    /** Exclui o paciente do recall automaticamente (falecido, transferido, alta, judicial). */
+    public Recall excluirAutomaticamente(String paciente, MotivoExclusao motivo) {
+        Recall recall = repositorio.todos().stream()
+                .filter(r -> r.getPaciente().equals(paciente))
+                .filter(r -> r.getStatus() == StatusRecall.NA_FILA || r.getStatus() == StatusRecall.AGENDADO)
+                .reduce((a, b) -> b)
+                .orElseThrow(() -> new IllegalStateException("Sem recall ativo para: " + paciente));
+        recall.excluir(motivo);
+        repositorio.salvar(recall);
+        return recall;
+    }
+
+    /** Casos críticos na fila cujo SLA de contato foi ultrapassado (F07). */
+    public List<Recall> filaComSlaVencido(LocalDate hoje) {
+        return repositorio.todos().stream()
+                .filter(r -> r.slaVencido(hoje))
+                .toList();
+    }
+
+    public CategoriaRecall categoriaDe(String paciente) {
+        return buscarPorPaciente(paciente).getCategoria();
+    }
+
+    public IndicadorVisual indicadorDe(String paciente) {
+        return buscarPorPaciente(paciente).indicadorVisual();
+    }
+
+    public int pontuacaoDe(String paciente) {
+        return buscarPorPaciente(paciente).pontuacaoPrioridade();
+    }
+
+    /** Pacientes recuperados = recalls convertidos em agendamento (métrica F07). */
+    public long pacientesRecuperados() {
+        return repositorio.todos().stream()
+                .filter(r -> r.getStatus() == StatusRecall.CONVERTIDO)
+                .count();
+    }
+
+    /** Pacientes perdidos = recalls excluídos automaticamente (métrica F07). */
+    public long pacientesPerdidos() {
+        return repositorio.todos().stream()
+                .filter(r -> r.getStatus() == StatusRecall.EXCLUIDO)
+                .count();
     }
 
     public NivelPrioridade prioridadeDe(String paciente) {

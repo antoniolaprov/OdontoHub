@@ -4,7 +4,8 @@ public enum StatusRecall {
     NA_FILA,
     AGENDADO,
     CONVERTIDO,
-    CANCELADO;
+    CANCELADO,
+    EXCLUIDO;
 
     public static StatusRecall fromLabel(String label) {
         return StatusRecall.valueOf(label.trim().toUpperCase().replace(" ", "_"));

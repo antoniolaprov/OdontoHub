@@ -703,11 +703,16 @@ BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSu
             String procedimentoGatilho
             int diasParaRetorno
             - NivelPrioridade prioridade
+            - CategoriaRecall categoria
             Date dataGatilho
             Date dataRecallPrevisto
+            Date dataCriacao
             - StatusRecall status
             boolean flagConversaoRecall
             int tentativasContato
+            - FatoresPriorizacao fatores
+            - MotivoExclusao motivoExclusao
+            List historicoTentativas
         }
         ValueObject RecallPacienteId {
             Long pacienteId
@@ -717,13 +722,60 @@ BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSu
             Long id
         }
 
-        enum StatusRecall {
-            NA_FILA, AGENDADO, CONVERTIDO, CANCELADO;
+        /* Fatores de entrada do motor de priorização inteligente (8+ fatores). */
+        ValueObject FatoresPriorizacao {
+            int mesesSemRetorno
+            int tratamentosPendentes
+            boolean procedimentoCritico
+            boolean inadimplente
+            int historicoFaltas
+            int cancelamentosRecorrentes
+            boolean riscoClinicoAlto
+            double potencialFinanceiro
+            boolean tratamentoInterrompido
+            boolean pacienteEvadido
         }
 
-        /* Priorização por risco clínico do procedimento gatilho (motor de priorização da F07). */
+        /* Registro completo de uma tentativa de contato (canal, duração, resultado). */
+        ValueObject TentativaContato {
+            String responsavel
+            Date dataHora
+            - CanalContato canal
+            int duracaoMinutos
+            - ResultadoContato resultado
+            String observacoes
+        }
+
+        enum StatusRecall {
+            NA_FILA, AGENDADO, CONVERTIDO, CANCELADO, EXCLUIDO;
+        }
+
+        /* Priorização por risco clínico do procedimento gatilho (base do motor de priorização da F07). */
         enum NivelPrioridade {
             ALTA, MEDIA, BAIXA;
+        }
+
+        /* Segmentação automática da fila de recall. */
+        enum CategoriaRecall {
+            PREVENTIVO, POS_OPERATORIO, TRATAMENTO_INTERROMPIDO, FINANCEIRO, REATIVACAO;
+        }
+
+        /* Indicador visual automático do paciente na fila. */
+        enum IndicadorVisual {
+            VERDE, AMARELO, VERMELHO, ROXO, AZUL;
+        }
+
+        enum CanalContato {
+            TELEFONE, SMS, WHATSAPP, EMAIL;
+        }
+
+        enum ResultadoContato {
+            CONTATO_REALIZADO, SEM_RESPOSTA, NUMERO_INVALIDO, RETORNO_AGENDADO, PACIENTE_RECUSOU, SOLICITAR_NOVO_CONTATO;
+        }
+
+        /* Pacientes excluídos automaticamente dos processos de recall. */
+        enum MotivoExclusao {
+            FALECIDO, TRANSFERIDO, ALTA_DEFINITIVA, BLOQUEIO_JUDICIAL;
         }
 
         DomainEvent RecallDisparado {
@@ -754,9 +806,18 @@ BoundedContext RelacionamentoPacienteContext implements RelacionamentoPacienteSu
             void dispararRecall(Long pacienteId, String procedimentoGatilho, int diasParaRetorno);
             void verificarECancelarSeJaAgendado(Long pacienteId);
             void registrarConversao(@RecallId recallId, Long agendamentoId);
+            void definirFatores(String paciente, FatoresPriorizacao fatores);
+            int pontuacaoDe(String paciente);
+            CategoriaRecall categoriaDe(String paciente);
+            IndicadorVisual indicadorDe(String paciente);
             List filaPriorizada();
             boolean registrarTentativaContato(Long pacienteId);
+            boolean registrarTentativaDetalhada(String paciente, CanalContato canal, ResultadoContato resultado, String responsavel, int duracaoMinutos, String observacoes);
+            List filaComSlaVencido(Date hoje);
+            void excluirAutomaticamente(String paciente, MotivoExclusao motivo);
             double taxaConversao();
+            long pacientesRecuperados();
+            long pacientesPerdidos();
         }
     }
 
@@ -934,7 +995,7 @@ BoundedContext EquipeContext implements EquipeSubdomain {
 
 /* ============================================================
    BOUNDED CONTEXT: Cadastro de Paciente
-   Funcionalidade 15 — Cadastro de Pacientes
+   Funcionalidade 13 — Cadastro de Pacientes
    ============================================================ */
 
 BoundedContext CadastroPacienteContext implements CadastroPacienteSubdomain {
@@ -1057,7 +1118,7 @@ BoundedContext MedicamentoContext implements MedicamentoSubdomain {
 
 /* ============================================================
    BOUNDED CONTEXT: Pagamento
-   Funcionalidade 17 — Gestão de Pagamentos e Quitação de Débitos
+   Funcionalidade 15 — Gestão de Pagamentos e Quitação de Débitos
    ============================================================ */
 
 BoundedContext PagamentoContext implements PagamentoSubdomain {
@@ -1130,8 +1191,8 @@ BoundedContext PagamentoContext implements PagamentoSubdomain {
 
 /* ============================================================
    BOUNDED CONTEXT: Confirmação e Comparecimento
-   Funcionalidade 13 — Confirmação e Lembretes de Consulta
-   Funcionalidade 14 — Registro de Não Comparecimento
+   Funcionalidade 16 — Confirmação e Lembretes de Consulta
+   Funcionalidade 17 — Registro de Não Comparecimento
    ============================================================ */
 
 BoundedContext ConfirmacaoContext implements ConfirmacaoSubdomain {

@@ -2,11 +2,10 @@ package com.g4.odontohub.steps;
 
 import com.g4.odontohub.relacionamentopaciente.followup.application.FollowupApplicationService;
 import com.g4.odontohub.relacionamentopaciente.recall.application.RecallApplicationService;
-import com.g4.odontohub.relacionamentopaciente.recall.domain.model.NivelPrioridade;
-import com.g4.odontohub.relacionamentopaciente.recall.domain.model.Recall;
-import com.g4.odontohub.relacionamentopaciente.recall.domain.model.StatusRecall;
+import com.g4.odontohub.relacionamentopaciente.recall.domain.model.*;
 import io.cucumber.java.pt.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,6 +26,7 @@ public class F07F10RecallFollowupSteps {
     private String dentistaResponsavel;
     private Recall ultimoRecall;
     private List<Recall> filaPriorizada;
+    private List<Recall> slaVencido;
 
     // ----- Gatilhos compartilhados -----
 
@@ -164,6 +164,90 @@ public class F07F10RecallFollowupSteps {
     @Então("a taxa de conversão de recall deve ser {int}%")
     public void taxaDeConversao(int percentual) {
         assertEquals(percentual / 100.0, recallService.taxaConversao(), 0.001);
+    }
+
+    // ----- F07 Recall: priorização multifator, segmentação, contato detalhado, exclusão -----
+
+    @Dado("que o recall de {string} possui fatores de risco com {int} meses sem retorno, inadimplente e risco clínico alto")
+    public void recallComFatoresDeRisco(String nome, int mesesSemRetorno) {
+        recallService.definirFatores(nome, new FatoresPriorizacao(
+                mesesSemRetorno, 0, false, true, 0, 0, true, 0.0, false, false));
+    }
+
+    @Dado("que o recall de {string} possui fatores de inadimplência")
+    public void recallComInadimplencia(String nome) {
+        recallService.definirFatores(nome, new FatoresPriorizacao(
+                0, 0, false, true, 0, 0, false, 0.0, false, false));
+    }
+
+    @Então("a pontuação de prioridade de {string} deve ser maior que a de {string}")
+    public void pontuacaoMaiorQue(String maior, String menor) {
+        assertTrue(recallService.pontuacaoDe(maior) > recallService.pontuacaoDe(menor),
+                maior + " deveria ter pontuação maior que " + menor);
+    }
+
+    @Então("a categoria do recall de {string} deve ser {string}")
+    public void categoriaDoRecall(String nome, String categoria) {
+        assertEquals(CategoriaRecall.fromLabel(categoria), recallService.categoriaDe(nome));
+    }
+
+    @Então("o indicador visual de {string} deve ser {string}")
+    public void indicadorVisualDe(String nome, String indicador) {
+        assertEquals(IndicadorVisual.valueOf(indicador.trim().toUpperCase()), recallService.indicadorDe(nome));
+    }
+
+    @Quando("a recepcionista registra para {string} uma tentativa de contato por {string} com resultado {string} pela responsável {string}")
+    public void registraTentativaDetalhada(String nome, String canal, String resultado, String responsavel) {
+        recallService.registrarTentativaDetalhada(nome,
+                CanalContato.fromLabel(canal), ResultadoContato.fromLabel(resultado), responsavel, 5, "contato de recall");
+    }
+
+    @Então("o histórico de contato de {string} deve conter {int} tentativa de contato")
+    public void historicoDeContatoDeveConter(String nome, int quantidade) {
+        assertEquals(quantidade, recallService.buscarPorPaciente(nome).getHistoricoTentativas().size());
+    }
+
+    @Então("o status do recall de {string} deve ser {string}")
+    public void statusDoRecallDe(String nome, String status) {
+        assertEquals(StatusRecall.fromLabel(status), recallService.buscarPorPaciente(nome).getStatus());
+    }
+
+    @Quando("a recepcionista consulta os recalls com SLA vencido daqui a {int} dias")
+    public void consultaSlaVencido(int dias) {
+        slaVencido = recallService.filaComSlaVencido(LocalDate.now().plusDays(dias));
+    }
+
+    @Então("{string} deve estar na lista de SLA vencido")
+    public void deveEstarNoSlaVencido(String nome) {
+        assertTrue(slaVencido.stream().anyMatch(r -> r.getPaciente().equals(nome)),
+                nome + " deveria estar na lista de SLA vencido");
+    }
+
+    @Então("{string} não deve estar na lista de SLA vencido")
+    public void naoDeveEstarNoSlaVencido(String nome) {
+        assertTrue(slaVencido.stream().noneMatch(r -> r.getPaciente().equals(nome)),
+                nome + " não deveria estar na lista de SLA vencido");
+    }
+
+    @Quando("o sistema exclui {string} do recall por motivo {string}")
+    public void sistemaExcluiRecall(String nome, String motivo) {
+        recallService.excluirAutomaticamente(nome, MotivoExclusao.fromLabel(motivo));
+    }
+
+    @Então("{string} não deve estar na fila priorizada")
+    public void naoDeveEstarNaFilaPriorizada(String nome) {
+        assertTrue(recallService.filaPriorizada().stream().noneMatch(r -> r.getPaciente().equals(nome)),
+                nome + " não deveria estar na fila priorizada");
+    }
+
+    @Então("a métrica de pacientes recuperados deve ser {int}")
+    public void metricaPacientesRecuperados(int esperado) {
+        assertEquals(esperado, recallService.pacientesRecuperados());
+    }
+
+    @Então("a métrica de pacientes perdidos deve ser {int}")
+    public void metricaPacientesPerdidos(int esperado) {
+        assertEquals(esperado, recallService.pacientesPerdidos());
     }
 
     private int indiceNaFila(String nome) {

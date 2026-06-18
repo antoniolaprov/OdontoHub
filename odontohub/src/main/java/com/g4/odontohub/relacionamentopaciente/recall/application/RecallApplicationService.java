@@ -2,14 +2,14 @@ package com.g4.odontohub.relacionamentopaciente.recall.application;
 
 import com.g4.odontohub.relacionamentopaciente.recall.domain.event.RecallCanceladoPorAgendamentoExistente;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.event.RecallEscalonado;
-import com.g4.odontohub.relacionamentopaciente.recall.domain.model.NivelPrioridade;
-import com.g4.odontohub.relacionamentopaciente.recall.domain.model.Recall;
+import com.g4.odontohub.relacionamentopaciente.recall.domain.model.*;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.repository.RecallRepository;
 import com.g4.odontohub.relacionamentopaciente.recall.domain.service.RecallService;
 import com.g4.odontohub.relacionamentopaciente.recall.infrastructure.persistence.InMemoryRecallRepository;
 import com.g4.odontohub.relacionamentopaciente.followup.application.FollowupApplicationService;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class RecallApplicationService {
@@ -89,5 +89,42 @@ public class RecallApplicationService {
 
     public double taxaConversao() {
         return service.taxaConversao();
+    }
+
+    public Recall definirFatores(String paciente, FatoresPriorizacao fatores) {
+        return service.definirFatores(paciente, fatores);
+    }
+
+    public boolean registrarTentativaDetalhada(String paciente, CanalContato canal, ResultadoContato resultado,
+                                               String responsavel, int duracaoMinutos, String observacoes) {
+        return service.registrarTentativaDetalhada(paciente, canal, resultado, responsavel, duracaoMinutos, observacoes);
+    }
+
+    public Recall excluirAutomaticamente(String paciente, MotivoExclusao motivo) {
+        return service.excluirAutomaticamente(paciente, motivo);
+    }
+
+    public List<Recall> filaComSlaVencido(LocalDate hoje) {
+        return service.filaComSlaVencido(hoje);
+    }
+
+    public CategoriaRecall categoriaDe(String paciente) {
+        return service.categoriaDe(paciente);
+    }
+
+    public IndicadorVisual indicadorDe(String paciente) {
+        return service.indicadorDe(paciente);
+    }
+
+    public int pontuacaoDe(String paciente) {
+        return service.pontuacaoDe(paciente);
+    }
+
+    public long pacientesRecuperados() {
+        return service.pacientesRecuperados();
+    }
+
+    public long pacientesPerdidos() {
+        return service.pacientesPerdidos();
     }
 }
