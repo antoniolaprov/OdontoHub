@@ -87,7 +87,7 @@ curl http://localhost:8080/api/recalls/fila-priorizada
 ## 📌 Status do Projeto
 
 ✅ Backend completo — 17 funcionalidades (F1–F17) com domínio, infraestrutura (JPA),
-aplicação e apresentação (REST), automatizadas por **125 cenários BDD** (todos verdes).
+aplicação e apresentação (REST), automatizadas por **137 cenários BDD** (todos verdes).
 
 ---
 

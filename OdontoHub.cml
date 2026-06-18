@@ -951,10 +951,66 @@ BoundedContext EquipeContext implements EquipeSubdomain {
             int tentativasLoginInvalidas
             boolean bloqueado
             String registroProfissional
+            - Disponibilidade disponibilidade
+            List historicoAlteracoes
+            List auditoria
+            int atendimentos
+            int faltas
+            int conversoes
         }
 
         ValueObject ColaboradorId {
             Long id
+        }
+
+        /* Disponibilidade de trabalho: dias, horário e períodos de ausência. */
+        ValueObject Disponibilidade {
+            int horaInicio
+            int horaFim
+            List diasDisponiveis
+            List ausencias
+        }
+
+        ValueObject PeriodoAusencia {
+            Date inicio
+            Date fim
+            - TipoAusencia tipo
+            String motivo
+        }
+
+        /* Registro de auditoria de uma ação executada pelo colaborador. */
+        ValueObject RegistroAuditoria {
+            Date dataHora
+            - ModuloSistema modulo
+            String acao
+        }
+
+        /* Histórico de uma alteração cadastral. */
+        ValueObject AlteracaoCadastral {
+            String campo
+            String valorAnterior
+            String valorAtualizado
+            String responsavel
+            Date data
+        }
+
+        /* Indicadores de desempenho operacional do colaborador. */
+        ValueObject IndicadoresDesempenho {
+            int atendimentos
+            int faltas
+            int conversoes
+        }
+
+        enum DiaSemana {
+            SEGUNDA, TERCA, QUARTA, QUINTA, SEXTA, SABADO, DOMINGO;
+        }
+
+        enum TipoAusencia {
+            FERIAS, AFASTAMENTO, BLOQUEIO_TEMPORARIO;
+        }
+
+        enum ModuloSistema {
+            PROCEDIMENTO, ESTERILIZACAO, AGENDAMENTO, PAGAMENTO, CADASTRO, EQUIPE;
         }
 
         /* Permissões derivadas automaticamente: Especialista valida procedimentos,
@@ -989,6 +1045,14 @@ BoundedContext EquipeContext implements EquipeSubdomain {
             void alterarStatus(String nome, String status);
             boolean tentarLogin(String nome, String senha);
             boolean estaBloqueado(String nome);
+            void definirDisponibilidade(String nome, Set dias, int horaInicio, int horaFim);
+            void registrarAusencia(String nome, Date inicio, Date fim, String tipo, String motivo);
+            boolean estaDisponivelEm(String nome, Date momento);
+            void registrarAcao(String nome, String modulo, String acao);
+            List rastrearAcoes(String nome, String modulo);
+            void alterarDado(String nome, String campo, String novoValor, String responsavel);
+            List historicoAlteracoesDe(String nome);
+            IndicadoresDesempenho indicadoresDe(String nome);
         }
     }
 }

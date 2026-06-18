@@ -75,3 +75,35 @@ Funcionalidade: Gestão de Equipe e Colaboradores
     Quando o dentista tenta cadastrar outro colaborador com o CPF "999.888.777-66"
     Então o sistema deve rejeitar o cadastro
     E a mensagem de erro deve informar "Já existe um colaborador com este CPF"
+
+  Cenário: Controle de disponibilidade por dia e horário de trabalho
+    Dado que o colaborador "Sandra Recepcao" está cadastrado com função "Recepcionista"
+    E que "Sandra Recepcao" tem disponibilidade de "SEGUNDA,TERCA,QUARTA,QUINTA,SEXTA" das 8h às 18h
+    Então "Sandra Recepcao" deve estar disponível em "2026-06-15T10:00"
+    E "Sandra Recepcao" não deve estar disponível em "2026-06-20T10:00"
+    E "Sandra Recepcao" não deve estar disponível em "2026-06-15T20:00"
+
+  Cenário: Período de férias torna o colaborador indisponível
+    Dado que o colaborador "Sandra Recepcao" está cadastrado com função "Recepcionista"
+    E que "Sandra Recepcao" tem disponibilidade de "SEGUNDA,TERCA,QUARTA,QUINTA,SEXTA" das 8h às 18h
+    E que "Sandra Recepcao" registra ausência do tipo "FERIAS" de "2026-06-15" a "2026-06-19"
+    Então "Sandra Recepcao" não deve estar disponível em "2026-06-15T10:00"
+
+  Cenário: Auditoria registra ações e permite rastreabilidade por módulo
+    Dado que o colaborador "Tiago Aux" está cadastrado com função "Auxiliar"
+    Quando "Tiago Aux" registra a ação "Esterilizou kit cirúrgico" no módulo "ESTERILIZACAO"
+    E "Tiago Aux" registra a ação "Criou agendamento" no módulo "AGENDAMENTO"
+    Então a auditoria de "Tiago Aux" deve conter 2 registros
+    E a rastreabilidade de "Tiago Aux" no módulo "ESTERILIZACAO" deve conter 1 registro
+
+  Cenário: Alteração de telefone preserva o histórico cadastral
+    Dado que o colaborador "Vera Lima" está cadastrado com função "Recepcionista"
+    Quando o administrador altera o campo "telefone" de "Vera Lima" para "81911112222" como "Ana Admin"
+    Então o histórico de alterações de "Vera Lima" deve conter 1 registro de alteração
+    E o telefone de "Vera Lima" deve ser "81911112222"
+
+  Cenário: Indicadores de desempenho do colaborador
+    Dado que o colaborador "Will Dentista" está cadastrado com função "Especialista"
+    Quando "Will Dentista" registra 4 atendimentos, 1 falta e 2 conversões
+    Então a produtividade de "Will Dentista" deve ser 3
+    E a taxa de conversão do colaborador "Will Dentista" deve ser 50%

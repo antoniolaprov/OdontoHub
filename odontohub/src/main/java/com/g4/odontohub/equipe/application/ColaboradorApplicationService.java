@@ -1,11 +1,14 @@
 package com.g4.odontohub.equipe.application;
 
-import com.g4.odontohub.equipe.domain.model.Colaborador;
+import com.g4.odontohub.equipe.domain.model.*;
 import com.g4.odontohub.equipe.domain.repository.ColaboradorRepository;
 import com.g4.odontohub.equipe.domain.service.ColaboradorService;
 import com.g4.odontohub.equipe.infrastructure.persistence.InMemoryColaboradorRepository;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 public class ColaboradorApplicationService {
 
@@ -58,5 +61,61 @@ public class ColaboradorApplicationService {
 
     public boolean existe(String nome) {
         return service.existe(nome);
+    }
+
+    // ----- Disponibilidade -----
+
+    public void definirDisponibilidade(String nome, Set<DiaSemana> dias, int horaInicio, int horaFim) {
+        service.definirDisponibilidade(nome, dias, horaInicio, horaFim);
+    }
+
+    public void registrarAusencia(String nome, LocalDate inicio, LocalDate fim, String tipo, String motivo) {
+        service.registrarAusencia(nome, inicio, fim, tipo, motivo);
+    }
+
+    public boolean estaDisponivelEm(String nome, LocalDateTime momento) {
+        return service.estaDisponivelEm(nome, momento);
+    }
+
+    // ----- Auditoria e rastreabilidade -----
+
+    public void registrarAcao(String nome, String modulo, String acao) {
+        service.registrarAcao(nome, modulo, acao);
+    }
+
+    public List<RegistroAuditoria> auditoriaDe(String nome) {
+        return service.auditoriaDe(nome);
+    }
+
+    public List<RegistroAuditoria> rastrearAcoes(String nome, String modulo) {
+        return service.rastrearAcoes(nome, modulo);
+    }
+
+    // ----- Histórico de alterações -----
+
+    public void alterarDado(String nome, String campo, String novoValor, String responsavel) {
+        service.alterarDado(nome, campo, novoValor, responsavel);
+    }
+
+    public List<AlteracaoCadastral> historicoAlteracoesDe(String nome) {
+        return service.historicoAlteracoesDe(nome);
+    }
+
+    // ----- Indicadores de desempenho -----
+
+    public void registrarAtendimento(String nome) {
+        service.registrarAtendimento(nome);
+    }
+
+    public void registrarFalta(String nome) {
+        service.registrarFalta(nome);
+    }
+
+    public void registrarConversao(String nome) {
+        service.registrarConversao(nome);
+    }
+
+    public IndicadoresDesempenho indicadoresDe(String nome) {
+        return service.indicadoresDe(nome);
     }
 }

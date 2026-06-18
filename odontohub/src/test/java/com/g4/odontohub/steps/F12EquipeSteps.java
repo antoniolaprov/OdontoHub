@@ -1,11 +1,14 @@
 package com.g4.odontohub.steps;
 
 import com.g4.odontohub.equipe.application.ColaboradorApplicationService;
-import com.g4.odontohub.equipe.domain.model.Colaborador;
-import com.g4.odontohub.equipe.domain.model.StatusColaborador;
+import com.g4.odontohub.equipe.domain.model.*;
 import io.cucumber.java.pt.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -202,6 +205,86 @@ public class F12EquipeSteps {
     public void naoDeveLogarMesmoComSenhaCorreta(String nome, String senhaCorreta) {
         assertFalse(service.tentarLogin(nome, senhaCorreta),
                 nome + " não deveria conseguir login com a conta bloqueada");
+    }
+
+    // ----- Disponibilidade, auditoria, alterações e indicadores (F12) -----
+
+    @Dado("que o colaborador {string} está cadastrado com função {string}")
+    public void colaboradorCadastradoComFuncao(String nome, String funcao) {
+        garantirCadastrado(nome, funcao);
+    }
+
+    @Dado("que {string} tem disponibilidade de {string} das {int}h às {int}h")
+    public void temDisponibilidade(String nome, String diasCsv, int horaInicio, int horaFim) {
+        Set<DiaSemana> dias = new LinkedHashSet<>();
+        for (String dia : diasCsv.split(",")) {
+            dias.add(DiaSemana.fromLabel(dia));
+        }
+        service.definirDisponibilidade(nome, dias, horaInicio, horaFim);
+    }
+
+    @Dado("que {string} registra ausência do tipo {string} de {string} a {string}")
+    public void registraAusencia(String nome, String tipo, String inicio, String fim) {
+        service.registrarAusencia(nome, LocalDate.parse(inicio), LocalDate.parse(fim), tipo, "ausência");
+    }
+
+    @Então("{string} deve estar disponível em {string}")
+    public void deveEstarDisponivel(String nome, String momento) {
+        assertTrue(service.estaDisponivelEm(nome, LocalDateTime.parse(momento)),
+                nome + " deveria estar disponível em " + momento);
+    }
+
+    @Então("{string} não deve estar disponível em {string}")
+    public void naoDeveEstarDisponivel(String nome, String momento) {
+        assertFalse(service.estaDisponivelEm(nome, LocalDateTime.parse(momento)),
+                nome + " não deveria estar disponível em " + momento);
+    }
+
+    @Quando("{string} registra a ação {string} no módulo {string}")
+    public void registraAcao(String nome, String acao, String modulo) {
+        service.registrarAcao(nome, modulo, acao);
+    }
+
+    @Então("a auditoria de {string} deve conter {int} registros")
+    public void auditoriaDeveConter(String nome, int quantidade) {
+        assertEquals(quantidade, service.auditoriaDe(nome).size());
+    }
+
+    @Então("a rastreabilidade de {string} no módulo {string} deve conter {int} registro")
+    public void rastreabilidadeDeveConter(String nome, String modulo, int quantidade) {
+        assertEquals(quantidade, service.rastrearAcoes(nome, modulo).size());
+    }
+
+    @Quando("o administrador altera o campo {string} de {string} para {string} como {string}")
+    public void administradorAlteraCampo(String campo, String nome, String novoValor, String responsavel) {
+        service.alterarDado(nome, campo, novoValor, responsavel);
+    }
+
+    @Então("o histórico de alterações de {string} deve conter {int} registro de alteração")
+    public void historicoAlteracoesDeveConter(String nome, int quantidade) {
+        assertEquals(quantidade, service.historicoAlteracoesDe(nome).size());
+    }
+
+    @Então("o telefone de {string} deve ser {string}")
+    public void telefoneDeveSer(String nome, String telefone) {
+        assertEquals(telefone, service.buscarPorNome(nome).getTelefone());
+    }
+
+    @Quando("{string} registra {int} atendimentos, {int} falta e {int} conversões")
+    public void registraDesempenho(String nome, int atendimentos, int faltas, int conversoes) {
+        for (int i = 0; i < atendimentos; i++) service.registrarAtendimento(nome);
+        for (int i = 0; i < faltas; i++) service.registrarFalta(nome);
+        for (int i = 0; i < conversoes; i++) service.registrarConversao(nome);
+    }
+
+    @Então("a produtividade de {string} deve ser {int}")
+    public void produtividadeDeveSer(String nome, int esperado) {
+        assertEquals(esperado, service.indicadoresDe(nome).produtividade());
+    }
+
+    @Então("a taxa de conversão do colaborador {string} deve ser {int}%")
+    public void taxaConversaoColaborador(String nome, int percentual) {
+        assertEquals(percentual / 100.0, service.indicadoresDe(nome).taxaConversao(), 0.001);
     }
 
     private void aplicarStatus(String nome, String status) {

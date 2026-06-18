@@ -3,14 +3,14 @@ package com.g4.odontohub.equipe.domain.service;
 import com.g4.odontohub.equipe.domain.event.ColaboradorCadastrado;
 import com.g4.odontohub.equipe.domain.event.ColaboradorDesativado;
 import com.g4.odontohub.equipe.domain.event.ColaboradorReativado;
-import com.g4.odontohub.equipe.domain.model.Colaborador;
-import com.g4.odontohub.equipe.domain.model.ColaboradorId;
-import com.g4.odontohub.equipe.domain.model.FuncaoColaborador;
-import com.g4.odontohub.equipe.domain.model.StatusColaborador;
+import com.g4.odontohub.equipe.domain.model.*;
 import com.g4.odontohub.equipe.domain.repository.ColaboradorRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class ColaboradorService {
@@ -97,6 +97,76 @@ public class ColaboradorService {
                 .filter(c -> c.getFuncao() == FuncaoColaborador.AUXILIAR)
                 .filter(Colaborador::estaAtivo)
                 .collect(Collectors.toList());
+    }
+
+    // ----- Disponibilidade (F12) -----
+
+    public void definirDisponibilidade(String nome, Set<DiaSemana> dias, int horaInicio, int horaFim) {
+        Colaborador colaborador = buscarPorNome(nome);
+        colaborador.definirDisponibilidade(new Disponibilidade(dias, horaInicio, horaFim));
+        repositorio.salvar(colaborador);
+    }
+
+    public void registrarAusencia(String nome, LocalDate inicio, LocalDate fim, String tipoLabel, String motivo) {
+        Colaborador colaborador = buscarPorNome(nome);
+        colaborador.registrarAusencia(new PeriodoAusencia(inicio, fim, TipoAusencia.fromLabel(tipoLabel), motivo));
+        repositorio.salvar(colaborador);
+    }
+
+    public boolean estaDisponivelEm(String nome, LocalDateTime momento) {
+        return buscarPorNome(nome).estaDisponivelEm(momento);
+    }
+
+    // ----- Auditoria e rastreabilidade (F12) -----
+
+    public void registrarAcao(String nome, String moduloLabel, String acao) {
+        Colaborador colaborador = buscarPorNome(nome);
+        colaborador.registrarAcao(ModuloSistema.fromLabel(moduloLabel), acao);
+        repositorio.salvar(colaborador);
+    }
+
+    public List<RegistroAuditoria> auditoriaDe(String nome) {
+        return buscarPorNome(nome).getAuditoria();
+    }
+
+    public List<RegistroAuditoria> rastrearAcoes(String nome, String moduloLabel) {
+        return buscarPorNome(nome).acoesDoModulo(ModuloSistema.fromLabel(moduloLabel));
+    }
+
+    // ----- Histórico de alterações cadastrais (F12) -----
+
+    public void alterarDado(String nome, String campo, String novoValor, String responsavel) {
+        Colaborador colaborador = buscarPorNome(nome);
+        colaborador.alterarDado(campo, novoValor, responsavel);
+        repositorio.salvar(colaborador);
+    }
+
+    public List<AlteracaoCadastral> historicoAlteracoesDe(String nome) {
+        return buscarPorNome(nome).getHistoricoAlteracoes();
+    }
+
+    // ----- Indicadores de desempenho (F12) -----
+
+    public void registrarAtendimento(String nome) {
+        Colaborador colaborador = buscarPorNome(nome);
+        colaborador.registrarAtendimento();
+        repositorio.salvar(colaborador);
+    }
+
+    public void registrarFalta(String nome) {
+        Colaborador colaborador = buscarPorNome(nome);
+        colaborador.registrarFalta();
+        repositorio.salvar(colaborador);
+    }
+
+    public void registrarConversao(String nome) {
+        Colaborador colaborador = buscarPorNome(nome);
+        colaborador.registrarConversao();
+        repositorio.salvar(colaborador);
+    }
+
+    public IndicadoresDesempenho indicadoresDe(String nome) {
+        return buscarPorNome(nome).indicadores();
     }
 
     public Colaborador buscarPorNome(String nome) {
