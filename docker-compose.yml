@@ -1,0 +1,32 @@
+# ============================================================
+#  OdontoHub — execução local completa com Docker Compose
+#  Sobe o backend (Spring Boot) e o frontend (React/Nginx) juntos.
+#
+#    docker compose up --build      # sobe tudo
+#    docker compose down            # para e remove
+#
+#  Acesse:
+#    Frontend (app):  http://localhost:8090
+#    API (direta):    http://localhost:8080/api/...
+# ============================================================
+services:
+  backend:
+    build: ./odontohub
+    image: odontohub-backend:latest
+    container_name: odontohub-backend
+    ports:
+      - "8080:8080"          # opcional — acesso direto à API
+    volumes:
+      - odontohub-data:/app/data   # persiste o banco H2 entre reinícios
+
+  frontend:
+    build: ./frontend
+    image: odontohub-frontend:latest
+    container_name: odontohub-frontend
+    ports:
+      - "8090:80"            # abra http://localhost:8090
+    depends_on:
+      - backend
+
+volumes:
+  odontohub-data:

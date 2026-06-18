@@ -47,30 +47,40 @@ cd odontohub
 
 ## 🐳 Executar com Docker
 
-A aplicação pode ser executada localmente em um container, sem instalar Java ou Maven na máquina (apenas o Docker é necessário). Os arquivos estão em `odontohub/`.
+Tudo roda localmente em containers, sem instalar Java, Maven ou Node na máquina
+(apenas o Docker é necessário).
 
-### Opção A — Docker Compose (recomendado)
+### Opção A — Tudo junto: backend + frontend (recomendado)
+
+Na **raiz do repositório**:
 
 ```bash
-cd odontohub
 docker compose up --build
 ```
 
-A API sobe em **http://localhost:8080**. Para parar: `docker compose down`.
+Sobe os dois serviços de uma vez:
 
-### Opção B — Docker puro
+| Serviço | Acesso |
+|---|---|
+| **Frontend (app web)** | **http://localhost:8090** |
+| API (REST, acesso direto) | http://localhost:8080/api/... |
+
+O frontend (Nginx) encaminha internamente as chamadas `/api` para o backend, então
+basta abrir **http://localhost:8090**. Para parar: `docker compose down`
+(use `docker compose down -v` para apagar também o banco).
+
+### Opção B — Apenas o backend
 
 ```bash
 cd odontohub
-docker build -t odontohub:latest .
-docker run -d --name odontohub -p 8080:8080 odontohub:latest
+docker compose up --build      # API em http://localhost:8080
 ```
 
-Parar e remover: `docker rm -f odontohub`.
-
-> O build é multi-stage: o estágio 1 (Maven + JDK 21) empacota o JAR com o frontend
-> Vaadin já embutido; o estágio 2 (apenas JRE 21) executa o JAR. O banco H2 fica em
-> arquivo dentro do volume `/app/data`, persistindo entre reinícios do container.
+> Builds multi-stage: o backend (Maven + JDK 21 → JRE 21) empacota o JAR; o frontend
+> (Node 22 → Nginx) compila a SPA React/Vite e a serve como estático. O banco H2 fica
+> no volume `odontohub-data`, persistindo entre reinícios. Ao subir pela primeira vez
+> o banco está vazio — as telas usam dados de exemplo (mock) como fallback até que
+> registros reais sejam criados via API.
 
 ### Endpoints de exemplo (REST)
 
