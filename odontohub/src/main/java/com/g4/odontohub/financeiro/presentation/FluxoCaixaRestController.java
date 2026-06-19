@@ -19,6 +19,11 @@ public class FluxoCaixaRestController {
         this.applicationService = applicationService;
     }
 
+    @PostMapping("/entradas")
+    public ResponseEntity<LancamentoFinanceiro> registrarEntrada(@RequestBody EntradaRequest r) {
+        return ResponseEntity.ok(applicationService.registrarEntradaManual(r.valor(), r.descricao()));
+    }
+
     @PostMapping("/saidas")
     public ResponseEntity<LancamentoFinanceiro> registrarSaida(@RequestBody SaidaRequest r) {
         return ResponseEntity.ok(applicationService.registrarSaidaManual(r.valor(), r.categoria(), r.descricao()));
@@ -54,6 +59,8 @@ public class FluxoCaixaRestController {
     public ResponseEntity<Double> saldoProjetado() {
         return ResponseEntity.ok(applicationService.calcularSaldoProjetado());
     }
+
+    public record EntradaRequest(double valor, String descricao) {}
 
     public record SaidaRequest(double valor, String categoria, String descricao) {}
 

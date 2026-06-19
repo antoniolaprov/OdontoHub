@@ -39,6 +39,10 @@ public class MaterialApplicationService {
         return materialService.buscarPorNome(nome);
     }
 
+    public List<MaterialConsumivel> todos() {
+        return materialService.todos();
+    }
+
     public void registrarReposicao(String materialNome, String fornecedor,
                                    int quantidade, double custoUnitario) {
         List<Object> eventos = materialService.registrarReposicao(

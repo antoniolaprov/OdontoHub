@@ -28,6 +28,11 @@ public class MaterialRestController {
         return ResponseEntity.ok(applicationService.buscarPorNome(nome));
     }
 
+    @GetMapping
+    public ResponseEntity<java.util.List<MaterialConsumivel>> listar() {
+        return ResponseEntity.ok(applicationService.todos());
+    }
+
     @GetMapping("/{nome}")
     public ResponseEntity<MaterialConsumivel> consultar(@PathVariable String nome) {
         return ResponseEntity.ok(applicationService.buscarPorNome(nome));

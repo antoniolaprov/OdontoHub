@@ -16,13 +16,14 @@ interface LancamentoUI {
 
 export default function DentistaFinanceiro() {
   const [lancamentos, setLancamentos] = useState<LancamentoUI[]>([]);
+  const [modalAberto, setModalAberto] = useState(false);
   const [kpis, setKpis] = useState([
     { label: "Saldo Atual", value: "R$ 0,00", color: "text-green-600" },
     { label: "Entradas Previstas", value: "R$ 0,00", color: "text-blue-600" },
     { label: "Saídas Pendentes", value: "R$ 0,00", color: "text-red-600" },
   ]);
 
-  useEffect(() => {
+  function carregar() {
     Promise.all([
       api.get<any[]>("/fluxo-caixa/lancamentos"),
       api.get<number>("/fluxo-caixa/saldo-atual"),
@@ -49,13 +50,18 @@ export default function DentistaFinanceiro() {
         ]);
       })
       .catch((e) => console.warn("Falha ao carregar fluxo de caixa:", e));
-  }, []);
+  }
+
+  useEffect(carregar, []);
 
   return (
     <div className="p-6 h-full flex flex-col">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-xl font-bold text-gray-700">Fluxo de Caixa</h1>
-        <button className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white font-bold rounded hover:bg-blue-600">
+        <button
+          onClick={() => setModalAberto(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white font-bold rounded hover:bg-blue-600"
+        >
           <Plus size={18} /> Novo Lançamento Manual
         </button>
       </div>
@@ -137,6 +143,119 @@ export default function DentistaFinanceiro() {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {modalAberto && (
+        <ModalLancamento
+          onFechar={() => setModalAberto(false)}
+          onSalvo={() => {
+            setModalAberto(false);
+            carregar();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function ModalLancamento(props: { onFechar: () => void; onSalvo: () => void }) {
+  const [tipo, setTipo] = useState<"Entrada" | "Saída">("Entrada");
+  const [valor, setValor] = useState("");
+  const [descricao, setDescricao] = useState("");
+  const [categoria, setCategoria] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault();
+    setErro(null);
+    const v = Number(valor);
+    if (v <= 0 || !descricao.trim()) {
+      setErro("Informe um valor positivo e uma descrição.");
+      return;
+    }
+    setSalvando(true);
+    try {
+      if (tipo === "Entrada") {
+        // POST real: /api/fluxo-caixa/entradas (EntradaRequest).
+        await api.post("/fluxo-caixa/entradas", { valor: v, descricao });
+      } else {
+        // POST real: /api/fluxo-caixa/saidas (SaidaRequest).
+        await api.post("/fluxo-caixa/saidas", { valor: v, categoria: categoria || "Geral", descricao });
+      }
+      props.onSalvo();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Falha ao registrar lançamento.");
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+      <div className="bg-white border border-gray-300 rounded-lg shadow-lg w-full max-w-md">
+        <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center rounded-t-lg">
+          <h2 className="font-bold text-gray-700">Novo Lançamento Manual</h2>
+          <button onClick={props.onFechar} className="text-gray-500 hover:text-gray-700 font-bold">✕</button>
+        </div>
+        <form onSubmit={salvar} className="p-6 space-y-4">
+          {erro && (
+            <div className="border border-red-300 bg-red-50 text-red-700 text-sm p-3 rounded">{erro}</div>
+          )}
+          <div className="flex gap-2">
+            {(["Entrada", "Saída"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTipo(t)}
+                className={`flex-1 py-2 font-bold rounded border ${
+                  tipo === t
+                    ? t === "Entrada"
+                      ? "bg-green-500 text-white border-green-500"
+                      : "bg-red-500 text-white border-red-500"
+                    : "bg-white text-gray-600 border-gray-300"
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+          <label className="block">
+            <span className="block text-sm font-bold text-gray-700 mb-1">Valor (R$)</span>
+            <input
+              type="number" min="0" step="0.01" value={valor}
+              onChange={(e) => setValor(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-500 outline-none"
+            />
+          </label>
+          <label className="block">
+            <span className="block text-sm font-bold text-gray-700 mb-1">Descrição</span>
+            <input
+              value={descricao}
+              onChange={(e) => setDescricao(e.target.value)}
+              placeholder="ex.: Consulta - Maria Silva"
+              className="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-500 outline-none"
+            />
+          </label>
+          {tipo === "Saída" && (
+            <label className="block">
+              <span className="block text-sm font-bold text-gray-700 mb-1">Categoria</span>
+              <input
+                value={categoria}
+                onChange={(e) => setCategoria(e.target.value)}
+                placeholder="ex.: Insumos, Aluguel"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:border-blue-500 outline-none"
+              />
+            </label>
+          )}
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={props.onFechar} className="px-4 py-2 border border-gray-300 rounded font-bold text-gray-600">
+              Cancelar
+            </button>
+            <button type="submit" disabled={salvando} className="px-4 py-2 bg-blue-500 text-white font-bold rounded disabled:opacity-50">
+              {salvando ? "Salvando..." : "Lançar"}
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

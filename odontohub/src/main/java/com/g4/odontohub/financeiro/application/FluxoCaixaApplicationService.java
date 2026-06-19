@@ -53,6 +53,13 @@ public class FluxoCaixaApplicationService {
         return l;
     }
 
+    /** Entrada manual confirmada (lançamento avulso lançado pelo usuário). */
+    public LancamentoFinanceiro registrarEntradaManual(double valor, String descricao) {
+        LancamentoFinanceiro l = fluxoCaixaService.registrarEntrada(valor, descricao, LocalDate.now(), false);
+        ultimoLancamento = l;
+        return l;
+    }
+
     public LancamentoFinanceiro registrarSaidaManual(double valor, String categoria, String descricao) {
         LancamentoFinanceiro l = fluxoCaixaService.registrarSaida(valor, categoria, descricao, false);
         ultimoLancamento = l;

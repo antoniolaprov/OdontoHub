@@ -28,6 +28,10 @@ public class MaterialService {
         return repositorio.buscarPorNome(nome);
     }
 
+    public List<MaterialConsumivel> todos() {
+        return repositorio.todos();
+    }
+
     public List<Object> registrarReposicao(String materialNome, String fornecedor,
                                            int quantidade, double custoUnitario) {
         if (quantidade <= 0 || custoUnitario <= 0) {
