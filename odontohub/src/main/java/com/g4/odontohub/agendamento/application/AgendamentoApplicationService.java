@@ -9,6 +9,7 @@ import com.g4.odontohub.shared.DomainEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class AgendamentoApplicationService {
@@ -101,5 +102,9 @@ public class AgendamentoApplicationService {
     public void remarcarAgendamento(AgendamentoId id, LocalDateTime novaDataHora, String responsavel) {
         agendamentoService.remarcarAgendamento(id, novaDataHora, responsavel);
         DomainEventPublisher.publish(new AgendamentoRemarcado(id, novaDataHora, responsavel));
+    }
+
+    public List<Agendamento> listarTodos() {
+        return agendamentoService.listarTodos();
     }
 }

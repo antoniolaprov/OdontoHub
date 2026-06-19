@@ -39,6 +39,46 @@ public class InstrumentoRestController {
         return ResponseEntity.ok(applicationService.listarEstereisDentroDoPrazo());
     }
 
+    @GetMapping
+    public ResponseEntity<List<Instrumento>> listarAtivos() {
+        return ResponseEntity.ok(applicationService.listarInstrumentosAtivos());
+    }
+
+    @PostMapping("/{nome}/contaminar")
+    public ResponseEntity<Void> contaminar(@PathVariable String nome) {
+        applicationService.marcarComoContaminado(nome);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/{nome}/desativar")
+    public ResponseEntity<Void> desativar(@PathVariable String nome) {
+        applicationService.desativarInstrumento(nome);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/prazo-global")
+    public ResponseEntity<Void> configurarPrazoGlobal(@RequestBody PrazoRequest r) {
+        applicationService.configurarPrazoGlobal(r.novoPrazoDias());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/prazo-categoria/{categoria}")
+    public ResponseEntity<Void> configurarPrazoPorCategoria(@PathVariable String categoria, @RequestBody PrazoRequest r) {
+        applicationService.configurarPrazoPorCategoria(categoria, r.novoPrazoDias());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/kit")
+    public ResponseEntity<Instrumento> cadastrarKit(@RequestBody KitRequest r) {
+        return ResponseEntity.ok(applicationService.cadastrarKit(
+                r.nome(), r.categoria(), r.codigoIdentificador(), r.prazoValidadeDias(), r.codigosComponentes()));
+    }
+
     public record InstrumentoRequest(String nome, String categoria,
                                      String codigoIdentificador, int prazoValidadeDias) {}
+
+    public record PrazoRequest(int novoPrazoDias) {}
+
+    public record KitRequest(String nome, String categoria, String codigoIdentificador,
+                             int prazoValidadeDias, List<String> codigosComponentes) {}
 }

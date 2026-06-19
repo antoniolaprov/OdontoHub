@@ -12,6 +12,8 @@ import com.g4.odontohub.cadastropaciente.domain.service.PacienteService;
 import com.g4.odontohub.cadastropaciente.infrastructure.persistence.InMemoryPacienteRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
+import java.util.List;
+
 public class PacienteApplicationService {
 
     private final PacienteService service;
@@ -67,5 +69,9 @@ public class PacienteApplicationService {
 
     public Paciente buscarPorNome(String nomeCompleto) {
         return service.buscarPorNome(nomeCompleto);
+    }
+
+    public List<Paciente> listarTodos() {
+        return service.listarTodos();
     }
 }

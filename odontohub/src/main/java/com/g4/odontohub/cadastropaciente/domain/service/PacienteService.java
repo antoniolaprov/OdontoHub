@@ -5,6 +5,8 @@ import com.g4.odontohub.cadastropaciente.domain.model.PacienteRegistroId;
 import com.g4.odontohub.cadastropaciente.domain.model.StatusPaciente;
 import com.g4.odontohub.cadastropaciente.domain.repository.PacienteRepository;
 
+import java.util.List;
+
 public class PacienteService {
 
     private final PacienteRepository repositorio;
@@ -84,6 +86,10 @@ public class PacienteService {
 
     public Paciente getUltimoPaciente() {
         return ultimoPaciente;
+    }
+
+    public List<Paciente> listarTodos() {
+        return repositorio.todos();
     }
 
     private void validarNome(String nomeCompleto) {
