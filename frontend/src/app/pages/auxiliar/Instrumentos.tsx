@@ -1,4 +1,5 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
+import { api } from "../../api/client";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -39,129 +40,6 @@ const PRAZO_INICIAL_POR_CATEGORIA: Record<string, number> = {
   Bisturis: 30,
   Curetas: 30,
 };
-
-const MOCK_INICIAL: InstrumentoBase[] = [
-  {
-    id: 1,
-    nome: "Pinça Clínica Nº1",
-    categoria: "Pinças",
-    codigo: "PC-A01",
-    tipo: "INDIVIDUAL",
-    status: "ATIVO",
-    prazoValidadeDias: 30,
-    componentesIds: [],
-  },
-  {
-    id: 2,
-    nome: "Pinça Clínica Nº2",
-    categoria: "Pinças",
-    codigo: "PC-A02",
-    tipo: "INDIVIDUAL",
-    status: "ATIVO",
-    prazoValidadeDias: 30,
-    componentesIds: [],
-  },
-  {
-    id: 3,
-    nome: "Espelho Bucal",
-    categoria: "Espelhos e Sondas",
-    codigo: "ES-A01",
-    tipo: "INDIVIDUAL",
-    status: "ATIVO",
-    prazoValidadeDias: 30,
-    componentesIds: [],
-  },
-  {
-    id: 4,
-    nome: "Sonda Exploradora",
-    categoria: "Espelhos e Sondas",
-    codigo: "ES-A02",
-    tipo: "INDIVIDUAL",
-    status: "ATIVO",
-    prazoValidadeDias: 30,
-    componentesIds: [],
-  },
-  {
-    id: 5,
-    nome: "Afastador Labial P",
-    categoria: "Afastadores",
-    codigo: "AF-A01",
-    tipo: "INDIVIDUAL",
-    status: "ATIVO",
-    prazoValidadeDias: 45,
-    componentesIds: [],
-  },
-  {
-    id: 6,
-    nome: "Afastador Labial G",
-    categoria: "Afastadores",
-    codigo: "AF-A02",
-    tipo: "INDIVIDUAL",
-    status: "ATIVO",
-    prazoValidadeDias: 45,
-    componentesIds: [],
-  },
-  {
-    id: 7,
-    nome: "Bisturi Cabo Nº4",
-    categoria: "Bisturis",
-    codigo: "BI-A01",
-    tipo: "INDIVIDUAL",
-    status: "ATIVO",
-    prazoValidadeDias: 30,
-    componentesIds: [],
-  },
-  {
-    id: 8,
-    nome: "Cureta Gracey",
-    categoria: "Curetas",
-    codigo: "CU-A01",
-    tipo: "INDIVIDUAL",
-    status: "ATIVO",
-    prazoValidadeDias: 30,
-    componentesIds: [],
-  },
-  {
-    id: 9,
-    nome: "Cureta Universal",
-    categoria: "Curetas",
-    codigo: "CU-A02",
-    tipo: "INDIVIDUAL",
-    status: "INATIVO",
-    prazoValidadeDias: 30,
-    componentesIds: [],
-  },
-  {
-    id: 10,
-    nome: "Kit Exame Padrão",
-    categoria: "Kits de Exame",
-    codigo: "KE-A01",
-    tipo: "KIT",
-    status: "ATIVO",
-    prazoValidadeDias: 30,
-    componentesIds: [1, 3, 4],
-  },
-  {
-    id: 11,
-    nome: "Kit Exame Completo",
-    categoria: "Kits de Exame",
-    codigo: "KE-A02",
-    tipo: "KIT",
-    status: "ATIVO",
-    prazoValidadeDias: 30,
-    componentesIds: [1, 2, 3, 4],
-  },
-  {
-    id: 12,
-    nome: "Kit Cirúrgico Básico",
-    categoria: "Kits Cirúrgicos",
-    codigo: "KC-A01",
-    tipo: "KIT",
-    status: "ATIVO",
-    prazoValidadeDias: 60,
-    componentesIds: [5, 6, 7],
-  },
-];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -209,11 +87,49 @@ function emptyForm() {
   };
 }
 
+// ─── Integração com o backend (GET /api/instrumentos) ─────────────────────────
+// tipo (INDIVIDUAL/KIT) e status (ATIVO/INATIVO) do backend já batem com a UI.
+// componentesIds aqui referencia ids locais (desta lista); o backend guarda os
+// códigos dos componentes — resolve-se o código de volta para o id local.
+
+function adaptarInstrumentos(lista: any[]): InstrumentoBase[] {
+  const base = lista.map((b, i) => ({
+    id: b.id?.id ?? i + 1,
+    nome: b.nome ?? "—",
+    categoria: b.categoria ?? "—",
+    codigo: b.codigoIdentificador ?? "—",
+    tipo: (b.tipo as TipoInstrumento) ?? "INDIVIDUAL",
+    status: (b.statusInstrumento as StatusInstrumento) ?? "ATIVO",
+    prazoValidadeDias: b.prazoValidadeDias ?? null,
+    codigosComponentes: (b.codigosComponentes ?? []) as string[],
+  }));
+  const idPorCodigo = new Map(base.map((i) => [i.codigo, i.id]));
+  return base.map(({ codigosComponentes, ...resto }) => ({
+    ...resto,
+    componentesIds: codigosComponentes
+      .map((c) => idPorCodigo.get(c))
+      .filter((x): x is number => x !== undefined),
+  }));
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function AuxiliarInstrumentos() {
-  const [instrumentos, setInstrumentos] =
-    useState<InstrumentoBase[]>(MOCK_INICIAL);
+  const [instrumentos, setInstrumentos] = useState<InstrumentoBase[]>([]);
+  const [carregandoInstrumentos, setCarregandoInstrumentos] = useState(true);
+
+  // Carrega os instrumentos reais do backend — sem fallback: vazio/erro mostra a tela vazia.
+  const carregarInstrumentos = useCallback(() => {
+    return api.get<any[]>("/instrumentos")
+      .then((lista) => setInstrumentos(Array.isArray(lista) ? adaptarInstrumentos(lista) : []))
+      .catch((e) => {
+        console.warn("Falha ao carregar instrumentos do backend:", e);
+        setInstrumentos([]);
+      })
+      .finally(() => setCarregandoInstrumentos(false));
+  }, []);
+
+  useEffect(() => { carregarInstrumentos(); }, [carregarInstrumentos]);
 
   // Prazo por categoria (editável globalmente)
   const [prazosPorCategoria, setPrazosPorCategoria] = useState<
@@ -351,7 +267,9 @@ export default function AuxiliarInstrumentos() {
     }));
   }
 
-  function handleSalvar() {
+  const [salvandoInstrumento, setSalvandoInstrumento] = useState(false);
+
+  async function handleSalvar() {
     if (!form.nome.trim()) {
       setErroCodigo("Nome é obrigatório.");
       return;
@@ -383,6 +301,9 @@ export default function AuxiliarInstrumentos() {
       : null;
 
     if (modalForm.instrumento) {
+      // O backend não suporta editar nome/categoria/código/tipo de um instrumento já
+      // cadastrado (só esterilizar/contaminar/desativar e configurar prazo) —
+      // mantido como atualização local, igual ao padrão de campos sem endpoint no Recall.
       setInstrumentos((prev) =>
         prev.map((i) =>
           i.id === modalForm.instrumento!.id
@@ -406,38 +327,48 @@ export default function AuxiliarInstrumentos() {
         "Instrumento atualizado com sucesso.",
         "sucesso",
       );
-    } else {
-      const novo: InstrumentoBase = {
-        id: Math.max(...instrumentos.map((i) => i.id), 0) + 1,
+      setModalForm({ aberto: false });
+      return;
+    }
+
+    setSalvandoInstrumento(true);
+    setErroCodigo("");
+    try {
+      const codigosComponentes = form.componentesIds
+        .map((id) => instrumentos.find((i) => i.id === id)?.codigo)
+        .filter((c): c is string => !!c);
+      await api.post("/instrumentos", {
         nome: form.nome.trim(),
         categoria: form.categoria,
-        codigo: form.codigo.trim().toUpperCase(),
+        codigoIdentificador: form.codigo.trim().toUpperCase(),
+        prazoValidadeDias: prazo ?? 30,
         tipo: form.tipo,
-        status: form.status,
-        prazoValidadeDias: prazo,
-        componentesIds:
-          form.tipo === "KIT" ? form.componentesIds : [],
-      };
-      setInstrumentos((prev) => [...prev, novo]);
+        codigosComponentes,
+      });
+      await carregarInstrumentos();
       showToast(
         "Instrumento cadastrado com sucesso.",
         "sucesso",
       );
+      setModalForm({ aberto: false });
+    } catch (e: any) {
+      setErroCodigo(e.message ?? "Falha ao cadastrar instrumento.");
+    } finally {
+      setSalvandoInstrumento(false);
     }
-    setModalForm({ aberto: false });
   }
 
-  function handleDesativar() {
+  async function handleDesativar() {
     if (!modalDesativar.instrumento) return;
-    setInstrumentos((prev) =>
-      prev.map((i) =>
-        i.id === modalDesativar.instrumento!.id
-          ? { ...i, status: "INATIVO" }
-          : i,
-      ),
-    );
-    showToast("Instrumento desativado.", "sucesso");
-    setModalDesativar({ aberto: false });
+    try {
+      await api.post(`/instrumentos/${encodeURIComponent(modalDesativar.instrumento.nome)}/desativar`);
+      await carregarInstrumentos();
+      showToast("Instrumento desativado.", "sucesso");
+    } catch (e: any) {
+      showToast(e.message ?? "Falha ao desativar instrumento.", "erro");
+    } finally {
+      setModalDesativar({ aberto: false });
+    }
   }
 
   // ── Prazo global/por categoria ──────────────────────────────────────────
@@ -461,7 +392,7 @@ export default function AuxiliarInstrumentos() {
     setErroPrazo("");
   }
 
-  function handleSalvarPrazo() {
+  async function handleSalvarPrazo() {
     const valor = parseInt(prazoFormValor);
     if (isNaN(valor) || valor < 1) {
       setErroPrazo(
@@ -470,43 +401,41 @@ export default function AuxiliarInstrumentos() {
       return;
     }
 
-    if (prazoFormCategoria === "GLOBAL") {
-      // Aplica o novo prazo a TODOS os instrumentos e atualiza todos os registros de categoria
-      setPrazoGlobal(String(valor));
-      const novosPrazos: Record<string, number> = {};
-      CATEGORIAS.forEach((c) => {
-        novosPrazos[c] = valor;
-      });
-      setPrazosPorCategoria(novosPrazos);
-      setInstrumentos((prev) =>
-        prev.map((i) => ({ ...i, prazoValidadeDias: valor })),
-      );
-      showToast(
-        `Prazo global atualizado para ${valor} dias. Todos os instrumentos foram recalculados.`,
-        "sucesso",
-      );
-    } else {
-      // Aplica apenas à categoria selecionada
-      setPrazosPorCategoria((prev) => ({
-        ...prev,
-        [prazoFormCategoria]: valor,
-      }));
-      setInstrumentos((prev) =>
-        prev.map((i) =>
-          i.categoria === prazoFormCategoria
-            ? { ...i, prazoValidadeDias: valor }
-            : i,
-        ),
-      );
-      const afetados = instrumentos.filter(
-        (i) => i.categoria === prazoFormCategoria,
-      ).length;
-      showToast(
-        `Prazo da categoria "${prazoFormCategoria}" atualizado para ${valor} dias. ${afetados} instrumento(s) recalculado(s).`,
-        "sucesso",
-      );
+    try {
+      if (prazoFormCategoria === "GLOBAL") {
+        await api.post(`/instrumentos/prazo-global?dias=${valor}`);
+        setPrazoGlobal(String(valor));
+        const novosPrazos: Record<string, number> = {};
+        CATEGORIAS.forEach((c) => {
+          novosPrazos[c] = valor;
+        });
+        setPrazosPorCategoria(novosPrazos);
+        await carregarInstrumentos();
+        showToast(
+          `Prazo global atualizado para ${valor} dias. Todos os instrumentos foram recalculados.`,
+          "sucesso",
+        );
+      } else {
+        await api.post(
+          `/instrumentos/categorias/${encodeURIComponent(prazoFormCategoria)}/prazo?dias=${valor}`,
+        );
+        setPrazosPorCategoria((prev) => ({
+          ...prev,
+          [prazoFormCategoria]: valor,
+        }));
+        const afetados = instrumentos.filter(
+          (i) => i.categoria === prazoFormCategoria,
+        ).length;
+        await carregarInstrumentos();
+        showToast(
+          `Prazo da categoria "${prazoFormCategoria}" atualizado para ${valor} dias. ${afetados} instrumento(s) recalculado(s).`,
+          "sucesso",
+        );
+      }
+      setModalPrazo(false);
+    } catch (e: any) {
+      setErroPrazo(e.message ?? "Falha ao configurar prazo.");
     }
-    setModalPrazo(false);
   }
 
   // ─ Render ────────────────────────────────────────────────────────────────
@@ -694,7 +623,9 @@ export default function AuxiliarInstrumentos() {
                   colSpan={7}
                   className="p-8 text-center text-gray-500"
                 >
-                  Nenhum instrumento encontrado.
+                  {carregandoInstrumentos
+                    ? "Carregando instrumentos..."
+                    : "Nenhum instrumento encontrado."}
                 </td>
               </tr>
             )}
@@ -1080,9 +1011,10 @@ export default function AuxiliarInstrumentos() {
               </button>
               <button
                 onClick={handleSalvar}
-                className="px-4 py-2 border-2 border-blue-500 bg-blue-500 text-white font-bold hover:bg-blue-600"
+                disabled={salvandoInstrumento}
+                className="px-4 py-2 border-2 border-blue-500 bg-blue-500 text-white font-bold hover:bg-blue-600 disabled:opacity-50"
               >
-                Salvar
+                {salvandoInstrumento ? "Salvando..." : "Salvar"}
               </button>
             </div>
           </div>

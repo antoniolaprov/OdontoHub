@@ -9,6 +9,7 @@ import com.g4.odontohub.shared.DomainEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class AgendamentoApplicationService {
@@ -27,6 +28,7 @@ public class AgendamentoApplicationService {
     private final Map<String, Long> pacienteIds = new HashMap<>();
     private final Map<String, Long> dentistaIds = new HashMap<>();
     private final Map<Long, String> nomesDentistas = new HashMap<>();
+    private final Map<Long, String> nomesPacientes = new HashMap<>();
     private final Map<Long, Boolean> pacientesComPlanoAtivo = new HashMap<>();
     private final Map<Long, Boolean> pacientesInadimplentes = new HashMap<>();
 
@@ -40,7 +42,19 @@ public class AgendamentoApplicationService {
     }
 
     public void cadastrarPaciente(String nome) {
-        pacienteIds.put(nome, nextPacienteId++);
+        Long id = nextPacienteId++;
+        pacienteIds.put(nome, id);
+        nomesPacientes.put(id, nome);
+    }
+
+    /** Resolve o nome do paciente a partir do id (ACL local); usado para leitura/listagem. */
+    public String nomeDoPaciente(Long id) {
+        return nomesPacientes.getOrDefault(id, "Paciente #" + id);
+    }
+
+    /** Resolve o nome do dentista a partir do id (ACL local); usado para leitura/listagem. */
+    public String nomeDoDentista(Long id) {
+        return nomesDentistas.getOrDefault(id, "Dentista #" + id);
     }
 
     public void definirPlanoAtivo(String nomePaciente, boolean temPlanoAtivo) {
@@ -67,6 +81,11 @@ public class AgendamentoApplicationService {
     /** Leitura de um agendamento pelo identificador; retorna {@code null} se inexistente. */
     public Agendamento buscarPorId(AgendamentoId id) {
         return agendamentoService.buscarPorId(id);
+    }
+
+    /** Lista todos os agendamentos (leitura para o frontend). */
+    public List<Agendamento> listarTodos() {
+        return agendamentoService.listarTodos();
     }
 
     public void confirmarAgendamento(AgendamentoId id, String responsavel) {

@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router";
+import { api } from "../../api/client";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -25,170 +26,6 @@ interface Instrumento {
   }[];
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const MOCK_INICIAL: Instrumento[] = [
-  {
-    id: 1,
-    nome: "Kit Exame 01",
-    categoria: "Kits de Exame",
-    codigo: "KE-001",
-    prazoValidade: "28/05/2026",
-    statusEsterilizacao: "ESTERIL",
-    ativo: true,
-    dataUltimaEsterilizacao: "28/04/2026",
-    responsavelEsterilizacao: "Lucas",
-    historico: [
-      {
-        data: "28/04/2026",
-        acao: "Esterilizado",
-        responsavel: "Lucas",
-      },
-      { data: "20/04/2026", acao: "Contaminado" },
-    ],
-  },
-  {
-    id: 2,
-    nome: "Kit Exame 02",
-    categoria: "Kits de Exame",
-    codigo: "KE-002",
-    prazoValidade: "27/05/2026",
-    statusEsterilizacao: "ESTERIL",
-    ativo: true,
-    dataUltimaEsterilizacao: "27/04/2026",
-    responsavelEsterilizacao: "Maria",
-    historico: [
-      {
-        data: "27/04/2026",
-        acao: "Esterilizado",
-        responsavel: "Maria",
-      },
-    ],
-  },
-  {
-    id: 3,
-    nome: "Kit Cirúrgico A",
-    categoria: "Kits Cirúrgicos",
-    codigo: "KC-001",
-    prazoValidade: "-",
-    statusEsterilizacao: "CONTAMINADO",
-    ativo: true,
-    dataUltimaEsterilizacao: "-",
-    responsavelEsterilizacao: "",
-    historico: [
-      { data: "22/04/2026", acao: "Contaminado" },
-      {
-        data: "10/04/2026",
-        acao: "Esterilizado",
-        responsavel: "Lucas",
-      },
-    ],
-  },
-  {
-    id: 4,
-    nome: "Kit Cirúrgico B",
-    categoria: "Kits Cirúrgicos",
-    codigo: "KC-002",
-    prazoValidade: "15/05/2026",
-    statusEsterilizacao: "ESTERIL",
-    ativo: true,
-    dataUltimaEsterilizacao: "15/04/2026",
-    responsavelEsterilizacao: "Lucas",
-    historico: [
-      {
-        data: "15/04/2026",
-        acao: "Esterilizado",
-        responsavel: "Lucas",
-      },
-    ],
-  },
-  {
-    id: 5,
-    nome: "Pinças Clínicas (5un)",
-    categoria: "Pinças",
-    codigo: "PC-001",
-    prazoValidade: "25/05/2026",
-    statusEsterilizacao: "ESTERIL",
-    ativo: true,
-    dataUltimaEsterilizacao: "25/04/2026",
-    responsavelEsterilizacao: "Maria",
-    historico: [
-      {
-        data: "25/04/2026",
-        acao: "Esterilizado",
-        responsavel: "Maria",
-      },
-    ],
-  },
-  {
-    id: 6,
-    nome: "Espelho e Sonda",
-    categoria: "Espelhos e Sondas",
-    codigo: "ES-001",
-    prazoValidade: "20/04/2026",
-    statusEsterilizacao: "VENCIDO",
-    ativo: true,
-    dataUltimaEsterilizacao: "20/03/2026",
-    responsavelEsterilizacao: "Lucas",
-    historico: [
-      {
-        data: "20/03/2026",
-        acao: "Esterilizado",
-        responsavel: "Lucas",
-      },
-    ],
-  },
-  {
-    id: 7,
-    nome: "Afastadores (par)",
-    categoria: "Afastadores",
-    codigo: "AF-001",
-    prazoValidade: "-",
-    statusEsterilizacao: "CONTAMINADO",
-    ativo: true,
-    dataUltimaEsterilizacao: "-",
-    responsavelEsterilizacao: "",
-    historico: [{ data: "18/04/2026", acao: "Contaminado" }],
-  },
-  {
-    id: 8,
-    nome: "Bisturi Cabo Nº4",
-    categoria: "Bisturis",
-    codigo: "BI-001",
-    prazoValidade: "10/04/2026",
-    statusEsterilizacao: "VENCIDO",
-    ativo: false,
-    dataUltimaEsterilizacao: "10/03/2026",
-    responsavelEsterilizacao: "Lucas",
-    historico: [
-      { data: "01/03/2026", acao: "Desativado" },
-      {
-        data: "10/03/2026",
-        acao: "Esterilizado",
-        responsavel: "Lucas",
-      },
-    ],
-  },
-  {
-    id: 9,
-    nome: "Cureta Periodontal",
-    categoria: "Curetas",
-    codigo: "CU-001",
-    prazoValidade: "05/06/2026",
-    statusEsterilizacao: "ESTERIL",
-    ativo: true,
-    dataUltimaEsterilizacao: "05/05/2026",
-    responsavelEsterilizacao: "Maria",
-    historico: [
-      {
-        data: "05/05/2026",
-        acao: "Esterilizado",
-        responsavel: "Maria",
-      },
-    ],
-  },
-];
-
 const CATEGORIAS = [
   "Kits de Exame",
   "Kits Cirúrgicos",
@@ -200,16 +37,6 @@ const CATEGORIAS = [
 ];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function prazo30Dias(): string {
-  const d = new Date();
-  d.setDate(d.getDate() + 30);
-  return d.toLocaleDateString("pt-BR");
-}
-
-function hoje(): string {
-  return new Date().toLocaleDateString("pt-BR");
-}
 
 function statusEfetivo(item: Instrumento): StatusEsterilizacao {
   if (item.prazoValidade !== "-") {
@@ -258,11 +85,58 @@ function SummaryCard({ valor, label, cor }: SummaryCardProps) {
   );
 }
 
+// ─── Integração com o backend (GET /api/instrumentos) ─────────────────────────
+// statusEsterilizacao do backend (ESTERIL/CONTAMINADO/VENCIDO) já bate com a UI.
+// Backend não guarda um histórico de operações por instrumento — deriva-se um
+// registro a partir da última esterilização conhecida (igual ao default usado no Recall).
+
+function formatarDataISO(d: string | null | undefined): string {
+  if (!d) return "-";
+  const [y, m, dia] = d.split("-");
+  return `${dia}/${m}/${y}`;
+}
+
+function adaptarInstrumentoEsterilizacao(b: any, indice: number): Instrumento {
+  const historico: Instrumento["historico"] = [];
+  if (b.dataUltimaEsterilizacao) {
+    historico.push({
+      data: formatarDataISO(b.dataUltimaEsterilizacao),
+      acao: "Esterilizado",
+      responsavel: b.responsavelEsterilizacao || undefined,
+    });
+  }
+  return {
+    id: b.id?.id ?? indice + 1,
+    nome: b.nome ?? "—",
+    categoria: b.categoria ?? "—",
+    codigo: b.codigoIdentificador ?? "—",
+    prazoValidade: formatarDataISO(b.dataVencimento),
+    statusEsterilizacao: (b.status as StatusEsterilizacao) ?? "CONTAMINADO",
+    ativo: b.statusInstrumento !== "INATIVO",
+    dataUltimaEsterilizacao: formatarDataISO(b.dataUltimaEsterilizacao),
+    responsavelEsterilizacao: b.responsavelEsterilizacao ?? "",
+    historico,
+  };
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function AuxiliarEsterilizacao() {
-  const [instrumentos, setInstrumentos] =
-    useState<Instrumento[]>(MOCK_INICIAL);
+  const [instrumentos, setInstrumentos] = useState<Instrumento[]>([]);
+  const [carregandoInstrumentos, setCarregandoInstrumentos] = useState(true);
+
+  // Carrega os instrumentos reais do backend — sem fallback: vazio/erro mostra a tela vazia.
+  const carregarInstrumentos = useCallback(() => {
+    return api.get<any[]>("/instrumentos")
+      .then((lista) => setInstrumentos(Array.isArray(lista) ? lista.map(adaptarInstrumentoEsterilizacao) : []))
+      .catch((e) => {
+        console.warn("Falha ao carregar instrumentos do backend:", e);
+        setInstrumentos([]);
+      })
+      .finally(() => setCarregandoInstrumentos(false));
+  }, []);
+
+  useEffect(() => { carregarInstrumentos(); }, [carregarInstrumentos]);
 
   // Filters
   const [busca, setBusca] = useState("");
@@ -357,7 +231,9 @@ export default function AuxiliarEsterilizacao() {
     setModalEsteril({ aberto: true, item, acao });
   }
 
-  function handleMudarStatus(
+  const [salvandoStatus, setSalvandoStatus] = useState(false);
+
+  async function handleMudarStatus(
     id: number,
     novoStatus: "ESTERIL" | "CONTAMINADO",
   ) {
@@ -367,71 +243,49 @@ export default function AuxiliarEsterilizacao() {
       );
       return;
     }
-    const dataHoje = hoje();
+    const item = instrumentos.find((i) => i.id === id);
+    if (!item) return;
     const responsavel = responsavelInput.trim();
-    setInstrumentos((prev) =>
-      prev.map((i) =>
-        i.id === id
-          ? {
-              ...i,
-              statusEsterilizacao: novoStatus,
-              dataUltimaEsterilizacao:
-                novoStatus === "ESTERIL"
-                  ? dataHoje
-                  : i.dataUltimaEsterilizacao,
-              responsavelEsterilizacao:
-                novoStatus === "ESTERIL"
-                  ? responsavel
-                  : i.responsavelEsterilizacao,
-              prazoValidade:
-                novoStatus === "ESTERIL" ? prazo30Dias() : "-",
-              historico: [
-                {
-                  data: dataHoje,
-                  acao:
-                    novoStatus === "ESTERIL"
-                      ? "Esterilizado"
-                      : "Contaminado",
-                  responsavel:
-                    novoStatus === "ESTERIL"
-                      ? responsavel
-                      : undefined,
-                },
-                ...i.historico,
-              ],
-            }
-          : i,
-      ),
-    );
-    setModalEsteril({ aberto: false });
-    showToast(
-      novoStatus === "ESTERIL"
-        ? `Instrumento marcado como Estéril! Responsável: ${responsavel}`
-        : "Instrumento marcado como Contaminado.",
-      "sucesso",
-    );
+
+    setSalvandoStatus(true);
+    try {
+      if (novoStatus === "ESTERIL") {
+        await api.post(
+          `/instrumentos/${encodeURIComponent(item.nome)}/esterilizar?responsavel=${encodeURIComponent(responsavel)}`,
+        );
+      } else {
+        await api.post(`/instrumentos/${encodeURIComponent(item.nome)}/contaminar`);
+      }
+      await carregarInstrumentos();
+      setModalEsteril({ aberto: false });
+      showToast(
+        novoStatus === "ESTERIL"
+          ? `Instrumento marcado como Estéril! Responsável: ${responsavel}`
+          : "Instrumento marcado como Contaminado.",
+        "sucesso",
+      );
+    } catch (e: any) {
+      setErroResponsavel(e.message ?? "Falha ao atualizar status do instrumento.");
+    } finally {
+      setSalvandoStatus(false);
+    }
   }
 
-  function handleDesativar(id: number) {
-    setInstrumentos((prev) =>
-      prev.map((i) =>
-        i.id === id
-          ? {
-              ...i,
-              ativo: false,
-              historico: [
-                { data: hoje(), acao: "Desativado" },
-                ...i.historico,
-              ],
-            }
-          : i,
-      ),
-    );
-    setModalDesativar({ aberto: false });
-    showToast(
-      "Instrumento desativado. Mantido no histórico.",
-      "sucesso",
-    );
+  async function handleDesativar(id: number) {
+    const item = instrumentos.find((i) => i.id === id);
+    if (!item) return;
+    try {
+      await api.post(`/instrumentos/${encodeURIComponent(item.nome)}/desativar`);
+      await carregarInstrumentos();
+      showToast(
+        "Instrumento desativado. Mantido no histórico.",
+        "sucesso",
+      );
+    } catch (e: any) {
+      showToast(e.message ?? "Falha ao desativar instrumento.", "erro");
+    } finally {
+      setModalDesativar({ aberto: false });
+    }
   }
 
   function limparFiltros() {
@@ -591,8 +445,9 @@ export default function AuxiliarEsterilizacao() {
 
         {filtrados.length === 0 && (
           <div className="p-10 text-center text-gray-400">
-            Nenhum instrumento encontrado com os filtros
-            aplicados.
+            {carregandoInstrumentos
+              ? "Carregando instrumentos..."
+              : "Nenhum instrumento encontrado com os filtros aplicados."}
           </div>
         )}
 
@@ -798,13 +653,14 @@ export default function AuxiliarEsterilizacao() {
                     modalEsteril.acao!,
                   )
                 }
-                className={`px-4 py-2 border-2 text-white font-bold ${
+                disabled={salvandoStatus}
+                className={`px-4 py-2 border-2 text-white font-bold disabled:opacity-50 ${
                   modalEsteril.acao === "ESTERIL"
                     ? "border-green-500 bg-green-500 hover:bg-green-600"
                     : "border-yellow-500 bg-yellow-500 hover:bg-yellow-600"
                 }`}
               >
-                Confirmar
+                {salvandoStatus ? "Salvando..." : "Confirmar"}
               </button>
             </div>
           </div>

@@ -155,6 +155,10 @@ public class InstrumentoService {
                 .collect(Collectors.toList());
     }
 
+    public List<Instrumento> listarTodos() {
+        return repositorio.todos();
+    }
+
     public Instrumento buscarPorNome(String nome) {
         Instrumento i = repositorio.buscarPorNome(nome);
         if (i == null) {

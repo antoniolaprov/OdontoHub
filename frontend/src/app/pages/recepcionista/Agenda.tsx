@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router";
+import { api } from "../../api/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -36,71 +37,6 @@ interface Paciente {
   inadimplente: boolean;
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const PACIENTES_MOCK: Paciente[] = [
-  {
-    nome: "João Silva",
-    telefone: "8199999-0001",
-    temPlano: true,
-    inadimplente: false,
-  },
-  {
-    nome: "Maria Santos",
-    telefone: "8199999-0002",
-    temPlano: false,
-    inadimplente: true,
-  },
-  {
-    nome: "Pedro Costa",
-    telefone: "8199999-0003",
-    temPlano: false,
-    inadimplente: false,
-  },
-  {
-    nome: "Ana Lima",
-    telefone: "8199999-0004",
-    temPlano: true,
-    inadimplente: false,
-  },
-  {
-    nome: "Carlos Souza",
-    telefone: "8199999-0005",
-    temPlano: false,
-    inadimplente: false,
-  },
-  {
-    nome: "Lucia Oliveira",
-    telefone: "8199999-0006",
-    temPlano: true,
-    inadimplente: true,
-  },
-  {
-    nome: "Roberto Alves",
-    telefone: "8199999-0007",
-    temPlano: false,
-    inadimplente: false,
-  },
-  {
-    nome: "Fernanda Ramos",
-    telefone: "8199999-0008",
-    temPlano: true,
-    inadimplente: false,
-  },
-  {
-    nome: "Marcos Pereira",
-    telefone: "8199999-0009",
-    temPlano: false,
-    inadimplente: false,
-  },
-  {
-    nome: "Paula Mendes",
-    telefone: "8199999-0010",
-    temPlano: true,
-    inadimplente: false,
-  },
-];
-
 const DENTISTAS = [
   "Dra. Sofia Martins",
   "Dr. Ricardo Alves",
@@ -117,226 +53,6 @@ const HORARIOS = [
   "17:00",
 ];
 const DIAS_SEMANA_LABELS = ["SEG", "TER", "QUA", "QUI", "SEX"];
-
-const MOCK_INICIAL: Agendamento[] = [
-  {
-    id: 1,
-    paciente: "João Silva",
-    dentista: "Dra. Sofia Martins",
-    data: "01/06/2026",
-    hora: "08:00",
-    tipo: "RETORNO",
-    status: "CONFIRMADO",
-    responsavel: "Recepcionista",
-    ultimaAlteracao: "30/05/2026",
-    inadimplente: false,
-    historico: [
-      {
-        data: "30/05/2026",
-        acao: "Confirmado",
-        responsavel: "Recepcionista",
-      },
-      {
-        data: "28/05/2026",
-        acao: "Agendado",
-        responsavel: "Recepcionista",
-      },
-    ],
-  },
-  {
-    id: 2,
-    paciente: "Maria Santos",
-    dentista: "Dra. Sofia Martins",
-    data: "01/06/2026",
-    hora: "10:00",
-    tipo: "CONSULTA",
-    status: "AGENDADO",
-    responsavel: "Recepcionista",
-    ultimaAlteracao: "29/05/2026",
-    inadimplente: true,
-    historico: [
-      {
-        data: "29/05/2026",
-        acao: "Agendado",
-        responsavel: "Recepcionista",
-      },
-    ],
-  },
-  {
-    id: 3,
-    paciente: "Pedro Costa",
-    dentista: "Dr. Ricardo Alves",
-    data: "02/06/2026",
-    hora: "09:00",
-    tipo: "CONSULTA",
-    status: "AGENDADO",
-    responsavel: "Recepcionista",
-    ultimaAlteracao: "01/06/2026",
-    inadimplente: false,
-    historico: [
-      {
-        data: "01/06/2026",
-        acao: "Agendado",
-        responsavel: "Recepcionista",
-      },
-    ],
-  },
-  {
-    id: 4,
-    paciente: "Ana Lima",
-    dentista: "Dra. Camila Torres",
-    data: "03/06/2026",
-    hora: "11:00",
-    tipo: "RETORNO",
-    status: "CONFIRMADO",
-    responsavel: "Recepcionista",
-    ultimaAlteracao: "02/06/2026",
-    inadimplente: false,
-    historico: [
-      {
-        data: "02/06/2026",
-        acao: "Confirmado",
-        responsavel: "Recepcionista",
-      },
-      {
-        data: "28/05/2026",
-        acao: "Agendado",
-        responsavel: "Recepcionista",
-      },
-    ],
-  },
-  {
-    id: 5,
-    paciente: "Carlos Souza",
-    dentista: "Dra. Sofia Martins",
-    data: "04/06/2026",
-    hora: "08:00",
-    tipo: "CONSULTA",
-    status: "REMARCADO",
-    responsavel: "Recepcionista",
-    ultimaAlteracao: "03/06/2026",
-    inadimplente: false,
-    historico: [
-      {
-        data: "03/06/2026",
-        acao: "Remarcado para 04/06",
-        responsavel: "Recepcionista",
-      },
-      {
-        data: "26/05/2026",
-        acao: "Agendado",
-        responsavel: "Recepcionista",
-      },
-    ],
-  },
-  {
-    id: 6,
-    paciente: "Fernanda Ramos",
-    dentista: "Dr. Ricardo Alves",
-    data: "04/06/2026",
-    hora: "14:00",
-    tipo: "RETORNO",
-    status: "AGENDADO",
-    responsavel: "Recepcionista",
-    ultimaAlteracao: "02/06/2026",
-    inadimplente: false,
-    historico: [
-      {
-        data: "02/06/2026",
-        acao: "Agendado",
-        responsavel: "Recepcionista",
-      },
-    ],
-  },
-  {
-    id: 7,
-    paciente: "Roberto Alves",
-    dentista: "Dra. Camila Torres",
-    data: "05/06/2026",
-    hora: "15:00",
-    tipo: "CONSULTA",
-    status: "AGENDADO",
-    responsavel: "Recepcionista",
-    ultimaAlteracao: "01/06/2026",
-    inadimplente: false,
-    historico: [
-      {
-        data: "01/06/2026",
-        acao: "Agendado",
-        responsavel: "Recepcionista",
-      },
-    ],
-  },
-  {
-    id: 8,
-    paciente: "Ana Lima",
-    dentista: "Dr. Ricardo Alves",
-    data: "02/06/2026",
-    hora: "16:00",
-    tipo: "RETORNO",
-    status: "CANCELADO",
-    responsavel: "Recepcionista",
-    ultimaAlteracao: "01/06/2026",
-    inadimplente: false,
-    motivoCancelamento:
-      "Paciente solicitou cancelamento por motivo pessoal",
-    historico: [
-      {
-        data: "01/06/2026",
-        acao: "Cancelado: motivo pessoal",
-        responsavel: "Recepcionista",
-      },
-      {
-        data: "30/05/2026",
-        acao: "Agendado",
-        responsavel: "Recepcionista",
-      },
-    ],
-  },
-  {
-    id: 9,
-    paciente: "Marcos Pereira",
-    dentista: "Dra. Sofia Martins",
-    data: "03/06/2026",
-    hora: "09:00",
-    tipo: "CONSULTA",
-    status: "AGENDADO",
-    responsavel: "Recepcionista",
-    ultimaAlteracao: "02/06/2026",
-    inadimplente: false,
-    historico: [
-      {
-        data: "02/06/2026",
-        acao: "Agendado",
-        responsavel: "Recepcionista",
-      },
-    ],
-  },
-  {
-    id: 10,
-    paciente: "Paula Mendes",
-    dentista: "Dr. Ricardo Alves",
-    data: "05/06/2026",
-    hora: "10:00",
-    tipo: "RETORNO",
-    status: "CONFIRMADO",
-    responsavel: "Recepcionista",
-    ultimaAlteracao: "04/06/2026",
-    inadimplente: false,
-    historico: [
-      {
-        data: "04/06/2026",
-        acao: "Confirmado",
-        responsavel: "Recepcionista",
-      },
-      {
-        data: "02/06/2026",
-        acao: "Agendado",
-        responsavel: "Recepcionista",
-      },
-    ],
-  },
-];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -413,12 +129,79 @@ function TipoBadge({ tipo }: { tipo: TipoAgendamento }) {
   );
 }
 
+// ─── Integração com o backend (GET /api/agendamentos, GET /api/pacientes) ─────
+// tipo (CONSULTA/RETORNO) e status (AGENDADO/CONFIRMADO/CANCELADO/REMARCADO) do
+// backend já batem com a UI. paciente/dentista já vêm resolvidos pelo backend
+// (o agregado só guarda os ids; o controller resolve os nomes via ACL local).
+// inadimplente por agendamento não existe via API real — default false.
+
+function splitISODateTime(iso: string | null | undefined): { data: string; hora: string } {
+  if (!iso) return { data: "—", hora: "—" };
+  const [datePart, timePart = ""] = iso.split("T");
+  const [y, m, d] = datePart.split("-");
+  return { data: `${d}/${m}/${y}`, hora: timePart.slice(0, 5) };
+}
+
+function adaptarAgendamento(b: any, indice: number): Agendamento {
+  const { data, hora } = splitISODateTime(b.dataHora);
+  return {
+    id: b.id ?? indice + 1,
+    paciente: b.paciente ?? "—",
+    dentista: b.dentista ?? "—",
+    data,
+    hora,
+    tipo: (b.tipo as TipoAgendamento) ?? "CONSULTA",
+    status: (b.status as StatusAgendamento) ?? "AGENDADO",
+    responsavel: b.responsavelAlteracao ?? "Recepcionista",
+    ultimaAlteracao: b.dataUltimaAlteracao ? splitISODateTime(b.dataUltimaAlteracao).data : "—",
+    motivoCancelamento: b.motivoCancelamento ?? undefined,
+    inadimplente: false,
+    historico: (b.historico ?? []).map((h: any) => ({
+      data: h.dataRegistro ? splitISODateTime(h.dataRegistro).data : "—",
+      acao: h.acao ?? "",
+      responsavel: h.responsavel ?? "—",
+    })),
+  };
+}
+
+function adaptarPacienteParaAgenda(b: any): Paciente {
+  return {
+    nome: b.nomeCompleto ?? "—",
+    telefone: b.telefone ?? "—",
+    temPlano: false,
+    inadimplente: false,
+  };
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function RecepcionistaAgenda() {
-  const [agendamentos, setAgendamentos] =
-    useState<Agendamento[]>(MOCK_INICIAL);
-  const pacientes = PACIENTES_MOCK;
+  const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [carregandoAgendamentos, setCarregandoAgendamentos] = useState(true);
+
+  // Carrega os agendamentos reais do backend — sem fallback: vazio/erro mostra a tela vazia.
+  const carregarAgendamentos = useCallback(() => {
+    return api.get<any[]>("/agendamentos")
+      .then((lista) => setAgendamentos(Array.isArray(lista) ? lista.map(adaptarAgendamento) : []))
+      .catch((e) => {
+        console.warn("Falha ao carregar agendamentos do backend:", e);
+        setAgendamentos([]);
+      })
+      .finally(() => setCarregandoAgendamentos(false));
+  }, []);
+
+  useEffect(() => { carregarAgendamentos(); }, [carregarAgendamentos]);
+
+  useEffect(() => {
+    api.get<any[]>("/pacientes")
+      .then((lista) => setPacientes(Array.isArray(lista) ? lista.map(adaptarPacienteParaAgenda) : []))
+      .catch((e) => {
+        console.warn("Falha ao carregar pacientes do backend:", e);
+        setPacientes([]);
+      });
+  }, []);
+
   const [semanaBase, setSemanaBase] = useState<Date>(() =>
     getMondayOf(new Date(2026, 5, 3)),
   );
@@ -603,7 +386,12 @@ export default function RecepcionistaAgenda() {
 
   // ─ Action handlers ────────────────────────────────────────────────────────
 
-  function handleCriar() {
+  const [salvandoCriar, setSalvandoCriar] = useState(false);
+  const [salvandoConfirmar, setSalvandoConfirmar] = useState(false);
+  const [salvandoCancelar, setSalvandoCancelar] = useState(false);
+  const [salvandoRemarcar, setSalvandoRemarcar] = useState(false);
+
+  async function handleCriar() {
     if (!formCriar.paciente) {
       setErroCriar("Selecione um paciente cadastrado.");
       return;
@@ -648,87 +436,62 @@ export default function RecepcionistaAgenda() {
       );
       return;
     }
-    const novo: Agendamento = {
-      id: Math.max(...agendamentos.map((a) => a.id)) + 1,
-      paciente: formCriar.paciente,
-      dentista: formCriar.dentista,
-      data: dataStr,
-      hora: formCriar.hora,
-      tipo: tipoAutomatico,
-      status: "AGENDADO",
-      responsavel: "Recepcionista",
-      ultimaAlteracao: hoje(),
-      inadimplente: false,
-      historico: [
-        {
-          data: hoje(),
-          acao: "Agendado",
-          responsavel: "Recepcionista",
-        },
-      ],
-    };
 
-    setAgendamentos((prev) => [...prev, novo]);
-    setModalCriar(false);
-    showToast("Agendamento criado com sucesso!", "sucesso");
+    setSalvandoCriar(true);
+    setErroCriar("");
+    try {
+      await api.post("/agendamentos", {
+        paciente: formCriar.paciente,
+        dentista: formCriar.dentista,
+        dataHora: `${formCriar.data}T${formCriar.hora}:00`,
+      });
+      await carregarAgendamentos();
+      setModalCriar(false);
+      showToast("Agendamento criado com sucesso!", "sucesso");
+    } catch (e: any) {
+      setErroCriar(e.message ?? "Falha ao criar agendamento.");
+    } finally {
+      setSalvandoCriar(false);
+    }
   }
 
-  function handleConfirmar(id: number) {
-    setAgendamentos((prev) =>
-      prev.map((a) =>
-        a.id !== id
-          ? a
-          : {
-              ...a,
-              status: "CONFIRMADO",
-              ultimaAlteracao: hoje(),
-              historico: [
-                {
-                  data: hoje(),
-                  acao: "Confirmado",
-                  responsavel: "Recepcionista",
-                },
-                ...a.historico,
-              ],
-            },
-      ),
-    );
-    setModalConfirmar({ aberto: false });
-    showToast("Agendamento confirmado!", "sucesso");
+  async function handleConfirmar(id: number) {
+    setSalvandoConfirmar(true);
+    try {
+      await api.post(`/agendamentos/${id}/confirmar?responsavel=${encodeURIComponent("Recepcionista")}`);
+      await carregarAgendamentos();
+      setModalConfirmar({ aberto: false });
+      showToast("Agendamento confirmado!", "sucesso");
+    } catch (e: any) {
+      showToast(e.message ?? "Falha ao confirmar agendamento.", "erro");
+    } finally {
+      setSalvandoConfirmar(false);
+    }
   }
 
-  function handleCancelar(id: number) {
+  async function handleCancelar(id: number) {
     if (!motivoCancelar.trim()) {
       setErroCancelar("Informe o motivo do cancelamento.");
       return;
     }
-    setAgendamentos((prev) =>
-      prev.map((a) =>
-        a.id !== id
-          ? a
-          : {
-              ...a,
-              status: "CANCELADO",
-              motivoCancelamento: motivoCancelar.trim(),
-              ultimaAlteracao: hoje(),
-              historico: [
-                {
-                  data: hoje(),
-                  acao: `Cancelado: ${motivoCancelar.trim()}`,
-                  responsavel: "Recepcionista",
-                },
-                ...a.historico,
-              ],
-            },
-      ),
-    );
-    setModalCancelar({ aberto: false });
-    setMotivoCancelar("");
+    setSalvandoCancelar(true);
     setErroCancelar("");
-    showToast("Agendamento cancelado.", "sucesso");
+    try {
+      await api.post(
+        `/agendamentos/${id}/cancelar?motivo=${encodeURIComponent(motivoCancelar.trim())}&responsavel=${encodeURIComponent("Recepcionista")}`,
+      );
+      await carregarAgendamentos();
+      setModalCancelar({ aberto: false });
+      setMotivoCancelar("");
+      showToast("Agendamento cancelado.", "sucesso");
+    } catch (e: any) {
+      setErroCancelar(e.message ?? "Falha ao cancelar agendamento.");
+    } finally {
+      setSalvandoCancelar(false);
+    }
   }
 
-  function handleRemarcar(id: number) {
+  async function handleRemarcar(id: number) {
     if (!formRemarcar.data || !formRemarcar.hora) {
       setErroRemarcar("Informe nova data e horário.");
       return;
@@ -759,31 +522,22 @@ export default function RecepcionistaAgenda() {
       );
       return;
     }
-    setAgendamentos((prev) =>
-      prev.map((a) =>
-        a.id !== id
-          ? a
-          : {
-              ...a,
-              data: dataStr,
-              hora: formRemarcar.hora,
-              status: "REMARCADO",
-              ultimaAlteracao: hoje(),
-              historico: [
-                {
-                  data: hoje(),
-                  acao: `Remarcado para ${dataStr} às ${formRemarcar.hora}`,
-                  responsavel: "Recepcionista",
-                },
-                ...a.historico,
-              ],
-            },
-      ),
-    );
-    setModalRemarcar({ aberto: false });
-    setFormRemarcar({ data: "", hora: "" });
+
+    setSalvandoRemarcar(true);
     setErroRemarcar("");
-    showToast("Agendamento remarcado!", "sucesso");
+    try {
+      await api.post(
+        `/agendamentos/${id}/remarcar?novaDataHora=${encodeURIComponent(`${formRemarcar.data}T${formRemarcar.hora}:00`)}&responsavel=${encodeURIComponent("Recepcionista")}`,
+      );
+      await carregarAgendamentos();
+      setModalRemarcar({ aberto: false });
+      setFormRemarcar({ data: "", hora: "" });
+      showToast("Agendamento remarcado!", "sucesso");
+    } catch (e: any) {
+      setErroRemarcar(e.message ?? "Falha ao remarcar agendamento.");
+    } finally {
+      setSalvandoRemarcar(false);
+    }
   }
 
   // ─ Render ─────────────────────────────────────────────────────────────────
@@ -1088,8 +842,9 @@ export default function RecepcionistaAgenda() {
 
             {filtrados.length === 0 && (
               <div className="p-8 text-center text-gray-400">
-                Nenhum agendamento encontrado com os filtros
-                aplicados.
+                {carregandoAgendamentos
+                  ? "Carregando agendamentos..."
+                  : "Nenhum agendamento encontrado com os filtros aplicados."}
               </div>
             )}
 
@@ -1479,9 +1234,10 @@ export default function RecepcionistaAgenda() {
               </button>
               <button
                 onClick={handleCriar}
-                className="px-4 py-2 border-2 border-blue-500 bg-blue-500 text-white font-bold hover:bg-blue-600"
+                disabled={salvandoCriar}
+                className="px-4 py-2 border-2 border-blue-500 bg-blue-500 text-white font-bold hover:bg-blue-600 disabled:opacity-50"
               >
-                Salvar
+                {salvandoCriar ? "Salvando..." : "Salvar"}
               </button>
             </div>
           </div>
@@ -1683,9 +1439,10 @@ export default function RecepcionistaAgenda() {
                 onClick={() =>
                   handleConfirmar(modalConfirmar.item!.id)
                 }
-                className="px-4 py-2 border-2 border-green-500 bg-green-500 text-white font-bold hover:bg-green-600"
+                disabled={salvandoConfirmar}
+                className="px-4 py-2 border-2 border-green-500 bg-green-500 text-white font-bold hover:bg-green-600 disabled:opacity-50"
               >
-                Confirmar
+                {salvandoConfirmar ? "Confirmando..." : "Confirmar"}
               </button>
             </div>
           </div>
@@ -1753,9 +1510,10 @@ export default function RecepcionistaAgenda() {
                 onClick={() =>
                   handleCancelar(modalCancelar.item!.id)
                 }
-                className="px-4 py-2 border-2 border-red-500 bg-red-500 text-white font-bold hover:bg-red-600"
+                disabled={salvandoCancelar}
+                className="px-4 py-2 border-2 border-red-500 bg-red-500 text-white font-bold hover:bg-red-600 disabled:opacity-50"
               >
-                Cancelar Agendamento
+                {salvandoCancelar ? "Cancelando..." : "Cancelar Agendamento"}
               </button>
             </div>
           </div>
@@ -1852,9 +1610,10 @@ export default function RecepcionistaAgenda() {
                 onClick={() =>
                   handleRemarcar(modalRemarcar.item!.id)
                 }
-                className="px-4 py-2 border-2 border-yellow-500 bg-yellow-500 text-white font-bold hover:bg-yellow-600"
+                disabled={salvandoRemarcar}
+                className="px-4 py-2 border-2 border-yellow-500 bg-yellow-500 text-white font-bold hover:bg-yellow-600 disabled:opacity-50"
               >
-                Confirmar Remarcação
+                {salvandoRemarcar ? "Remarcando..." : "Confirmar Remarcação"}
               </button>
             </div>
           </div>

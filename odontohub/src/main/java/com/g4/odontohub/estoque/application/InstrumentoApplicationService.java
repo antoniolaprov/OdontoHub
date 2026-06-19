@@ -79,6 +79,11 @@ public class InstrumentoApplicationService {
         return service.listarInstrumentosAtivos();
     }
 
+    /** Lista todos os instrumentos, ativos e inativos (leitura para o frontend). */
+    public List<Instrumento> listarTodos() {
+        return service.listarTodos();
+    }
+
     public Instrumento buscarPorNome(String nome) {
         return service.buscarPorNome(nome);
     }

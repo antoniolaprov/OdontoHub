@@ -5,6 +5,7 @@ import com.g4.odontohub.agendamento.domain.repository.AgendamentoRepository;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 public class AgendamentoService {
 
@@ -65,6 +66,10 @@ public class AgendamentoService {
     /** Leitura de um agendamento pelo identificador; retorna {@code null} se inexistente. */
     public Agendamento buscarPorId(AgendamentoId id) {
         return repositorio.buscarPorId(id);
+    }
+
+    public List<Agendamento> listarTodos() {
+        return repositorio.todos();
     }
 
     private Agendamento buscar(AgendamentoId id) {

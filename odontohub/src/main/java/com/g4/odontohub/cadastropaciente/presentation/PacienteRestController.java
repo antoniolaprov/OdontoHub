@@ -2,6 +2,7 @@ package com.g4.odontohub.cadastropaciente.presentation;
 
 import com.g4.odontohub.cadastropaciente.application.PacienteApplicationService;
 import com.g4.odontohub.cadastropaciente.domain.model.Paciente;
+import com.g4.odontohub.cadastropaciente.domain.model.PacienteRegistroId;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -40,6 +41,20 @@ public class PacienteRestController {
         return ResponseEntity.ok(applicationService.listarTodos());
     }
 
+    /** Identifica o paciente pelo id (único) — nome não é único, ver {@link #listar()}. */
+    @PutMapping("/{id}/campo")
+    public ResponseEntity<Paciente> atualizarCampo(@PathVariable Long id, @RequestBody AtualizarCampoRequest r) {
+        return ResponseEntity.ok(applicationService.atualizarCadastro(
+                new PacienteRegistroId(id), r.campo(), r.novoValor(), "Recepcionista"));
+    }
+
+    @PostMapping("/{id}/restringir")
+    public ResponseEntity<Paciente> restringir(@PathVariable Long id) {
+        return ResponseEntity.ok(applicationService.restringirPaciente(new PacienteRegistroId(id)));
+    }
+
     public record PacienteRequest(String nomeCompleto, String cpf, String dataNascimento,
                                   String telefone, String email) {}
+
+    public record AtualizarCampoRequest(String campo, String novoValor) {}
 }

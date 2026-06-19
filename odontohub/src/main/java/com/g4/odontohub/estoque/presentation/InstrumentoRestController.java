@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 
 /** Camada de apresentação (REST) de instrumentos e esterilização — F06/F14. */
@@ -22,8 +23,24 @@ public class InstrumentoRestController {
 
     @PostMapping
     public ResponseEntity<Instrumento> cadastrar(@RequestBody InstrumentoRequest r) {
-        return ResponseEntity.ok(applicationService.cadastrarInstrumentoComPrazo(
-                r.nome(), r.categoria(), r.codigoIdentificador(), r.prazoValidadeDias()));
+        Instrumento instrumento = "KIT".equalsIgnoreCase(r.tipo())
+                ? applicationService.cadastrarKit(r.nome(), r.categoria(), r.codigoIdentificador(),
+                        r.prazoValidadeDias(), r.codigosComponentes() == null ? Collections.emptyList() : r.codigosComponentes())
+                : applicationService.cadastrarInstrumentoComPrazo(
+                        r.nome(), r.categoria(), r.codigoIdentificador(), r.prazoValidadeDias());
+        return ResponseEntity.ok(instrumento);
+    }
+
+    @PostMapping("/prazo-global")
+    public ResponseEntity<Void> configurarPrazoGlobal(@RequestParam int dias) {
+        applicationService.configurarPrazoGlobal(dias);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/categorias/{categoria}/prazo")
+    public ResponseEntity<Void> configurarPrazoPorCategoria(@PathVariable String categoria, @RequestParam int dias) {
+        applicationService.configurarPrazoPorCategoria(categoria, dias);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/{nome}/esterilizar")
@@ -39,6 +56,24 @@ public class InstrumentoRestController {
         return ResponseEntity.ok(applicationService.listarEstereisDentroDoPrazo());
     }
 
-    public record InstrumentoRequest(String nome, String categoria,
-                                     String codigoIdentificador, int prazoValidadeDias) {}
+    /** Lista todos os instrumentos (ativos e inativos) — leitura para o frontend (F06/F14). */
+    @GetMapping
+    public ResponseEntity<List<Instrumento>> listar() {
+        return ResponseEntity.ok(applicationService.listarTodos());
+    }
+
+    @PostMapping("/{nome}/contaminar")
+    public ResponseEntity<Instrumento> contaminar(@PathVariable String nome) {
+        applicationService.marcarComoContaminado(nome);
+        return ResponseEntity.ok(applicationService.buscarPorNome(nome));
+    }
+
+    @PostMapping("/{nome}/desativar")
+    public ResponseEntity<Instrumento> desativar(@PathVariable String nome) {
+        applicationService.desativarInstrumento(nome);
+        return ResponseEntity.ok(applicationService.buscarPorNome(nome));
+    }
+
+    public record InstrumentoRequest(String nome, String categoria, String codigoIdentificador,
+                                     int prazoValidadeDias, String tipo, List<String> codigosComponentes) {}
 }

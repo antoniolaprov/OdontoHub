@@ -1,5 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Link } from "react-router";
+import { api } from "../../api/client";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -30,144 +31,7 @@ interface Paciente {
   historicoAlteracoes: AlteracaoCadastral[];
 }
 
-// ─── Mock ────────────────────────────────────────────────────────────────────
-
-const PACIENTES_MOCK: Paciente[] = [
-  {
-    id: 1,
-    nome: "Ana Costa",
-    cpf: "123.456.789-00",
-    dataNascimento: "12/03/1988",
-    telefone: "81 9 9999-1111",
-    email: "ana.costa@email.com",
-    status: "ATIVO",
-    temPlano: true,
-    inadimplente: false,
-    historicoAlteracoes: [],
-  },
-  {
-    id: 2,
-    nome: "Bruno Ferreira",
-    cpf: "234.567.890-11",
-    dataNascimento: "05/07/1975",
-    telefone: "81 9 9888-2222",
-    email: "brunoferreira@email.com",
-    status: "ATIVO",
-    temPlano: false,
-    inadimplente: true,
-    historicoAlteracoes: [],
-  },
-  {
-    id: 3,
-    nome: "Carla Mendes",
-    cpf: "345.678.901-22",
-    dataNascimento: "22/11/1992",
-    telefone: "81 9 9777-3333",
-    email: "carla.m@email.com",
-    status: "ATIVO",
-    temPlano: true,
-    inadimplente: false,
-    historicoAlteracoes: [],
-  },
-  {
-    id: 4,
-    nome: "Diego Alves",
-    cpf: "456.789.012-33",
-    dataNascimento: "30/01/1983",
-    telefone: "81 9 9666-4444",
-    email: "diego.alves@email.com",
-    status: "RESTRITO",
-    temPlano: false,
-    inadimplente: true,
-    historicoAlteracoes: [],
-  },
-  {
-    id: 5,
-    nome: "Elena Rodrigues",
-    cpf: "567.890.123-44",
-    dataNascimento: "18/06/2000",
-    telefone: "81 9 9555-5555",
-    email: "elena.r@email.com",
-    status: "ATIVO",
-    temPlano: false,
-    inadimplente: false,
-    historicoAlteracoes: [],
-  },
-  {
-    id: 6,
-    nome: "Fábio Santos",
-    cpf: "678.901.234-55",
-    dataNascimento: "09/09/1969",
-    telefone: "81 9 9444-6666",
-    email: "",
-    status: "INCOMPLETO",
-    temPlano: false,
-    inadimplente: false,
-    historicoAlteracoes: [],
-  },
-  {
-    id: 7,
-    nome: "Gisele Pereira",
-    cpf: "789.012.345-66",
-    dataNascimento: "14/02/1995",
-    telefone: "81 9 9333-7777",
-    email: "gisele.p@email.com",
-    status: "ATIVO",
-    temPlano: true,
-    inadimplente: false,
-    historicoAlteracoes: [],
-  },
-  {
-    id: 8,
-    nome: "Henrique Lima",
-    cpf: "890.123.456-77",
-    dataNascimento: "27/12/1980",
-    telefone: "81 9 9222-8888",
-    email: "h.lima@email.com",
-    status: "INATIVO",
-    temPlano: false,
-    inadimplente: false,
-    historicoAlteracoes: [
-      {
-        campo: "status",
-        valorAnterior: "ATIVO",
-        valorAtualizado: "INATIVO",
-        responsavel: "Recepcionista",
-        dataAlteracao: "01/06/2026",
-      },
-    ],
-  },
-  {
-    id: 9,
-    nome: "Isabela Teixeira",
-    cpf: "",
-    dataNascimento: "",
-    telefone: "81 9 9111-9999",
-    email: "",
-    status: "INCOMPLETO",
-    temPlano: false,
-    inadimplente: false,
-    historicoAlteracoes: [],
-  },
-  {
-    id: 10,
-    nome: "Jorge Cavalcanti",
-    cpf: "012.345.678-99",
-    dataNascimento: "03/05/1972",
-    telefone: "81 9 9000-0000",
-    email: "jorge.cav@email.com",
-    status: "RESTRITO",
-    temPlano: false,
-    inadimplente: true,
-    historicoAlteracoes: [],
-  },
-];
-
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function hoje(): string {
-  return new Date().toLocaleDateString("pt-BR");
-}
 
 function StatusBadge({ status }: { status: StatusPaciente }) {
   const cls: Record<StatusPaciente, string> = {
@@ -202,11 +66,59 @@ function emptyForm(): Omit<
   };
 }
 
+// ─── Integração com o backend (GET /api/pacientes) ────────────────────────────
+// Sem fallback pra mock: lista vazia/erro mostra a tela vazia de verdade.
+// status do backend (ATIVO/INATIVO/INCOMPLETO/RESTRITO) já bate com a UI.
+// temPlano/inadimplente não existem no contexto de Cadastro de Paciente — default false.
+
+const CAMPO_PARA_BACKEND: Record<string, string> = {
+  nome: "nomeCompleto",
+  cpf: "cpf",
+  dataNascimento: "dataNascimento",
+  telefone: "telefone",
+  email: "email",
+};
+
+function adaptarPaciente(b: any, indice: number): Paciente {
+  return {
+    id: b.id?.id ?? indice + 1,
+    nome: b.nomeCompleto ?? "—",
+    cpf: b.cpf ?? "",
+    dataNascimento: b.dataNascimento ?? "",
+    telefone: b.telefone ?? "",
+    email: b.email ?? "",
+    status: (b.status as StatusPaciente) ?? "ATIVO",
+    temPlano: false,
+    inadimplente: false,
+    historicoAlteracoes: (b.historicoAlteracoes ?? []).map((h: any) => ({
+      campo: h.campo ?? "",
+      valorAnterior: h.valorAnterior ?? "",
+      valorAtualizado: h.valorAtualizado ?? "",
+      responsavel: h.responsavel ?? "—",
+      dataAlteracao: h.dataAlteracao ?? "—",
+    })),
+  };
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function RecepcionistaPacientes() {
-  const [pacientes, setPacientes] =
-    useState<Paciente[]>(PACIENTES_MOCK);
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [carregandoPacientes, setCarregandoPacientes] = useState(true);
+
+  // Carrega os pacientes reais do backend — sem fallback: vazio/erro mostra a tela vazia.
+  const carregarPacientes = useCallback(() => {
+    return api.get<any[]>("/pacientes")
+      .then((lista) => setPacientes(Array.isArray(lista) ? lista.map(adaptarPaciente) : []))
+      .catch((e) => {
+        console.warn("Falha ao carregar pacientes do backend:", e);
+        setPacientes([]);
+      })
+      .finally(() => setCarregandoPacientes(false));
+  }, []);
+
+  useEffect(() => { carregarPacientes(); }, [carregarPacientes]);
+
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("TODOS");
 
@@ -302,7 +214,9 @@ export default function RecepcionistaPacientes() {
     setModalForm({ aberto: true, paciente: p });
   }
 
-  function handleSalvar() {
+  const [salvando, setSalvando] = useState(false);
+
+  async function handleSalvar() {
     if (!form.nome.trim()) {
       setErroForm("Nome é obrigatório.");
       return;
@@ -316,87 +230,72 @@ export default function RecepcionistaPacientes() {
       return;
     }
 
-    if (modalForm.paciente) {
-      // editar — registrar alterações no histórico
-      const pacienteAtual = modalForm.paciente;
-      const novasAlteracoes: AlteracaoCadastral[] = [];
-      const campos: (keyof typeof form)[] = [
-        "nome",
-        "cpf",
-        "dataNascimento",
-        "telefone",
-        "email",
-        "status",
-      ];
-      campos.forEach((campo) => {
-        const anterior = String(
-          pacienteAtual[campo as keyof Paciente] ?? "",
-        );
-        const atualizado = String(form[campo] ?? "");
-        if (anterior !== atualizado) {
-          novasAlteracoes.push({
-            campo,
-            valorAnterior: anterior,
-            valorAtualizado: atualizado,
-            responsavel: "Recepcionista",
-            dataAlteracao: hoje(),
-          });
+    setSalvando(true);
+    setErroForm("");
+    try {
+      if (modalForm.paciente) {
+        // editar — um PUT por campo alterado (status só é suportado via Restringir)
+        const pacienteAtual = modalForm.paciente;
+        const campos: (keyof typeof form)[] = [
+          "nome",
+          "cpf",
+          "dataNascimento",
+          "telefone",
+          "email",
+        ];
+        for (const campo of campos) {
+          const anterior = String(pacienteAtual[campo as keyof Paciente] ?? "");
+          const atualizado = String(form[campo] ?? "");
+          if (anterior !== atualizado) {
+            // Identifica pelo id (único) — nome não é único, pode haver duplicatas.
+            await api.put(`/pacientes/${pacienteAtual.id}/campo`, {
+              campo: CAMPO_PARA_BACKEND[campo],
+              novoValor: atualizado,
+            });
+          }
         }
-      });
-      setPacientes((prev) =>
-        prev.map((p) =>
-          p.id === pacienteAtual.id
-            ? {
-                ...p,
-                ...form,
-                historicoAlteracoes: [
-                  ...novasAlteracoes,
-                  ...p.historicoAlteracoes,
-                ],
-              }
-            : p,
-        ),
-      );
-      showToast("Paciente atualizado com sucesso.", "sucesso");
-    } else {
-      // novo
-      const novo: Paciente = {
-        id: Math.max(...pacientes.map((p) => p.id), 0) + 1,
-        ...form,
-        status: cadastroRapido ? "INCOMPLETO" : form.status,
-        historicoAlteracoes: [],
-      };
-      setPacientes((prev) => [...prev, novo]);
-      showToast("Paciente cadastrado com sucesso.", "sucesso");
+        if (form.status === "RESTRITO" && pacienteAtual.status !== "RESTRITO") {
+          await api.post(`/pacientes/${pacienteAtual.id}/restringir`);
+        }
+        await carregarPacientes();
+        showToast("Paciente atualizado com sucesso.", "sucesso");
+      } else if (cadastroRapido) {
+        await api.post("/pacientes/rapido", {
+          nomeCompleto: form.nome.trim(),
+          telefone: form.telefone.trim(),
+        });
+        await carregarPacientes();
+        showToast("Paciente cadastrado com sucesso.", "sucesso");
+      } else {
+        await api.post("/pacientes", {
+          nomeCompleto: form.nome.trim(),
+          cpf: form.cpf.trim(),
+          dataNascimento: form.dataNascimento.trim(),
+          telefone: form.telefone.trim(),
+          email: form.email.trim(),
+        });
+        await carregarPacientes();
+        showToast("Paciente cadastrado com sucesso.", "sucesso");
+      }
+      setModalForm({ aberto: false });
+    } catch (e: any) {
+      setErroForm(e.message ?? "Falha ao salvar paciente.");
+    } finally {
+      setSalvando(false);
     }
-    setModalForm({ aberto: false });
   }
 
-  function handleDesativar() {
+  async function handleDesativar() {
     if (!modalDesativar.paciente) return;
-    const alteracao: AlteracaoCadastral = {
-      campo: "status",
-      valorAnterior: modalDesativar.paciente.status,
-      valorAtualizado: "RESTRITO",
-      responsavel: "Recepcionista",
-      dataAlteracao: hoje(),
-    };
-    setPacientes((prev) =>
-      prev.map((p) =>
-        p.id === modalDesativar.paciente!.id
-          ? {
-              ...p,
-              status: "RESTRITO",
-              historicoAlteracoes: [
-                alteracao,
-                ...p.historicoAlteracoes,
-              ],
-            }
-          : p,
-      ),
-    );
-    showToast("Paciente marcado como RESTRITO.", "sucesso");
-    setModalDesativar({ aberto: false });
+    try {
+      await api.post(`/pacientes/${modalDesativar.paciente.id}/restringir`);
+      await carregarPacientes();
+      showToast("Paciente marcado como RESTRITO.", "sucesso");
+    } catch (e: any) {
+      showToast(e.message ?? "Falha ao restringir paciente.", "erro");
+    } finally {
+      setModalDesativar({ aberto: false });
+    }
   }
 
   // ─ Render ────────────────────────────────────────────────────────────────
@@ -533,7 +432,9 @@ export default function RecepcionistaPacientes() {
                   colSpan={5}
                   className="p-8 text-center text-gray-500"
                 >
-                  Nenhum paciente encontrado.
+                  {carregandoPacientes
+                    ? "Carregando pacientes..."
+                    : "Nenhum paciente encontrado."}
                 </td>
               </tr>
             )}
@@ -842,9 +743,10 @@ export default function RecepcionistaPacientes() {
               </button>
               <button
                 onClick={handleSalvar}
-                className="px-4 py-2 border-2 border-blue-500 bg-blue-500 text-white font-bold hover:bg-blue-600"
+                disabled={salvando}
+                className="px-4 py-2 border-2 border-blue-500 bg-blue-500 text-white font-bold hover:bg-blue-600 disabled:opacity-50"
               >
-                Salvar
+                {salvando ? "Salvando..." : "Salvar"}
               </button>
             </div>
           </div>
