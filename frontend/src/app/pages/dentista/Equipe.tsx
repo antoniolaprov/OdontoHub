@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { api } from "../../api/client";
 import {
   Plus, User, Phone, BadgeCheck, Search, FileText, BarChart2,
@@ -17,7 +17,6 @@ interface LogAuditoria {
   hora: string;
   acao: string;
   modulo: string;
-  ip: string;
 }
 
 interface HistoricoAlteracao {
@@ -39,19 +38,17 @@ interface Colaborador {
   nivelAcesso: string;
   status: StatusColaborador;
   login: string;
-  registro: string;
   tentativasLogin: number;
   // Disponibilidade
   diasDisponiveis: string[];
   horarioInicio: string;
   horarioFim: string;
-  periodoAusencia: { inicio: string; fim: string; motivo: string };
+  periodoAusencia: { inicio: string; fim: string; tipo: string; motivo: string };
   // Métricas de desempenho
   metricas: {
     atendimentos: number;
     faltas: number;
     taxaConversao: number;
-    avaliacaoMedia: number;
     procedimentosRealizados: number;
     agendamentosCriados: number;
     esterilizacoesRegistradas: number;
@@ -118,17 +115,16 @@ const COLABORADORES_INICIAIS: Colaborador[] = [
     nivelAcesso: "Recepcionista",
     status: "Ativo",
     login: "ana.silva",
-    registro: "-",
     tentativasLogin: 0,
     diasDisponiveis: ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"],
     horarioInicio: "08:00",
     horarioFim: "17:00",
-    periodoAusencia: { inicio: "", fim: "", motivo: "" },
-    metricas: { atendimentos: 142, faltas: 2, taxaConversao: 78, avaliacaoMedia: 4.7, procedimentosRealizados: 0, agendamentosCriados: 142, esterilizacoesRegistradas: 0 },
+    periodoAusencia: { inicio: "", fim: "", tipo: "", motivo: "" },
+    metricas: { atendimentos: 142, faltas: 2, taxaConversao: 78, procedimentosRealizados: 0, agendamentosCriados: 142, esterilizacoesRegistradas: 0 },
     logAuditoria: [
-      { id: 1, data: "09/06/2026", hora: "08:15", acao: "Login realizado", modulo: "Sistema", ip: "192.168.1.10" },
-      { id: 2, data: "09/06/2026", hora: "08:22", acao: "Agendamento criado - João Silva", modulo: "Agenda", ip: "192.168.1.10" },
-      { id: 3, data: "08/06/2026", hora: "16:50", acao: "Logout realizado", modulo: "Sistema", ip: "192.168.1.10" },
+      { id: 1, data: "09/06/2026", hora: "08:15", acao: "Login realizado", modulo: "Sistema" },
+      { id: 2, data: "09/06/2026", hora: "08:22", acao: "Agendamento criado - João Silva", modulo: "Agenda" },
+      { id: 3, data: "08/06/2026", hora: "16:50", acao: "Logout realizado", modulo: "Sistema" },
     ],
     historicoAlteracoes: [
       { id: 1, campo: "Telefone", valorAnterior: "(11) 91111-2222", valorAtualizado: "(11) 98765-4321", responsavel: "Dr. Felipe", data: "01/03/2026" },
@@ -144,17 +140,16 @@ const COLABORADORES_INICIAIS: Colaborador[] = [
     nivelAcesso: "Auxiliar",
     status: "Ativo",
     login: "carlos.mendes",
-    registro: "ASB-SP 12345",
     tentativasLogin: 0,
     diasDisponiveis: ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"],
     horarioInicio: "07:30",
     horarioFim: "16:30",
-    periodoAusencia: { inicio: "", fim: "", motivo: "" },
-    metricas: { atendimentos: 0, faltas: 1, taxaConversao: 0, avaliacaoMedia: 4.5, procedimentosRealizados: 230, agendamentosCriados: 0, esterilizacoesRegistradas: 87 },
+    periodoAusencia: { inicio: "", fim: "", tipo: "", motivo: "" },
+    metricas: { atendimentos: 0, faltas: 1, taxaConversao: 0, procedimentosRealizados: 230, agendamentosCriados: 0, esterilizacoesRegistradas: 87 },
     logAuditoria: [
-      { id: 1, data: "09/06/2026", hora: "07:32", acao: "Login realizado", modulo: "Sistema", ip: "192.168.1.11" },
-      { id: 2, data: "09/06/2026", hora: "09:10", acao: "Esterilização registrada - Lote #032", modulo: "Esterilização", ip: "192.168.1.11" },
-      { id: 3, data: "09/06/2026", hora: "11:45", acao: "Entrada em estoque registrada", modulo: "Estoque", ip: "192.168.1.11" },
+      { id: 1, data: "09/06/2026", hora: "07:32", acao: "Login realizado", modulo: "Sistema" },
+      { id: 2, data: "09/06/2026", hora: "09:10", acao: "Esterilização registrada - Lote #032", modulo: "Esterilização" },
+      { id: 3, data: "09/06/2026", hora: "11:45", acao: "Entrada em estoque registrada", modulo: "Estoque" },
     ],
     historicoAlteracoes: [],
   },
@@ -168,15 +163,14 @@ const COLABORADORES_INICIAIS: Colaborador[] = [
     nivelAcesso: "Recepcionista",
     status: "Férias",
     login: "beatriz.costa",
-    registro: "-",
     tentativasLogin: 0,
     diasDisponiveis: ["Segunda", "Terça", "Quarta", "Quinta"],
     horarioInicio: "09:00",
     horarioFim: "18:00",
-    periodoAusencia: { inicio: "2026-06-02", fim: "2026-06-20", motivo: "Férias anuais" },
-    metricas: { atendimentos: 98, faltas: 5, taxaConversao: 65, avaliacaoMedia: 4.1, procedimentosRealizados: 0, agendamentosCriados: 98, esterilizacoesRegistradas: 0 },
+    periodoAusencia: { inicio: "2026-06-02", fim: "2026-06-20", tipo: "Férias", motivo: "Férias anuais" },
+    metricas: { atendimentos: 98, faltas: 5, taxaConversao: 65, procedimentosRealizados: 0, agendamentosCriados: 98, esterilizacoesRegistradas: 0 },
     logAuditoria: [
-      { id: 1, data: "01/06/2026", hora: "17:58", acao: "Logout realizado", modulo: "Sistema", ip: "192.168.1.12" },
+      { id: 1, data: "01/06/2026", hora: "17:58", acao: "Logout realizado", modulo: "Sistema" },
     ],
     historicoAlteracoes: [
       { id: 1, campo: "Status", valorAnterior: "Ativo", valorAtualizado: "Férias", responsavel: "Dr. Felipe", data: "01/06/2026" },
@@ -192,17 +186,16 @@ const COLABORADORES_INICIAIS: Colaborador[] = [
     nivelAcesso: "Especialista",
     status: "Ativo",
     login: "dr.roberto",
-    registro: "CRO-SP 54321",
     tentativasLogin: 0,
     diasDisponiveis: ["Terça", "Quarta", "Quinta"],
     horarioInicio: "13:00",
     horarioFim: "19:00",
-    periodoAusencia: { inicio: "", fim: "", motivo: "" },
-    metricas: { atendimentos: 314, faltas: 0, taxaConversao: 91, avaliacaoMedia: 4.9, procedimentosRealizados: 314, agendamentosCriados: 0, esterilizacoesRegistradas: 0 },
+    periodoAusencia: { inicio: "", fim: "", tipo: "", motivo: "" },
+    metricas: { atendimentos: 314, faltas: 0, taxaConversao: 91, procedimentosRealizados: 314, agendamentosCriados: 0, esterilizacoesRegistradas: 0 },
     logAuditoria: [
-      { id: 1, data: "09/06/2026", hora: "13:02", acao: "Login realizado", modulo: "Sistema", ip: "192.168.1.13" },
-      { id: 2, data: "09/06/2026", hora: "13:15", acao: "Prontuário acessado - Maria Santos", modulo: "Prontuários", ip: "192.168.1.13" },
-      { id: 3, data: "09/06/2026", hora: "14:30", acao: "Prescrição registrada - Amoxicilina", modulo: "Prescrições", ip: "192.168.1.13" },
+      { id: 1, data: "09/06/2026", hora: "13:02", acao: "Login realizado", modulo: "Sistema" },
+      { id: 2, data: "09/06/2026", hora: "13:15", acao: "Prontuário acessado - Maria Santos", modulo: "Prontuários" },
+      { id: 3, data: "09/06/2026", hora: "14:30", acao: "Prescrição registrada - Amoxicilina", modulo: "Prescrições" },
     ],
     historicoAlteracoes: [
       { id: 1, campo: "Horário de Trabalho", valorAnterior: "08:00–17:00", valorAtualizado: "13:00–19:00", responsavel: "Dr. Felipe", data: "15/01/2026" },
@@ -218,17 +211,16 @@ const COLABORADORES_INICIAIS: Colaborador[] = [
     nivelAcesso: "Auxiliar",
     status: "Suspenso",
     login: "fernanda.rocha",
-    registro: "ASB-SP 67890",
     tentativasLogin: 5,
     diasDisponiveis: ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"],
     horarioInicio: "08:00",
     horarioFim: "17:00",
-    periodoAusencia: { inicio: "", fim: "", motivo: "" },
-    metricas: { atendimentos: 0, faltas: 8, taxaConversao: 0, avaliacaoMedia: 3.2, procedimentosRealizados: 112, agendamentosCriados: 0, esterilizacoesRegistradas: 45 },
+    periodoAusencia: { inicio: "", fim: "", tipo: "", motivo: "" },
+    metricas: { atendimentos: 0, faltas: 8, taxaConversao: 0, procedimentosRealizados: 112, agendamentosCriados: 0, esterilizacoesRegistradas: 45 },
     logAuditoria: [
-      { id: 1, data: "07/06/2026", hora: "08:03", acao: "Tentativa de login inválida (1/5)", modulo: "Sistema", ip: "192.168.1.20" },
-      { id: 2, data: "07/06/2026", hora: "08:04", acao: "Tentativa de login inválida (2/5)", modulo: "Sistema", ip: "192.168.1.20" },
-      { id: 3, data: "07/06/2026", hora: "08:05", acao: "Conta bloqueada após 5 tentativas — administrador notificado", modulo: "Sistema", ip: "192.168.1.20" },
+      { id: 1, data: "07/06/2026", hora: "08:03", acao: "Tentativa de login inválida (1/5)", modulo: "Sistema" },
+      { id: 2, data: "07/06/2026", hora: "08:04", acao: "Tentativa de login inválida (2/5)", modulo: "Sistema" },
+      { id: 3, data: "07/06/2026", hora: "08:05", acao: "Conta bloqueada após 5 tentativas — administrador notificado", modulo: "Sistema" },
     ],
     historicoAlteracoes: [
       { id: 1, campo: "Status", valorAnterior: "Ativo", valorAtualizado: "Suspenso", responsavel: "Sistema (bloqueio automático)", data: "07/06/2026" },
@@ -257,28 +249,46 @@ const COR_STATUS: Record<StatusColaborador, string> = {
 };
 
 const DIAS_SEMANA = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"];
+const TIPOS_AUSENCIA = ["Férias", "Afastamento", "Bloqueio Temporário"];
 
 // ─── Estado inicial do formulário ────────────────────────────────────────────
 const FORM_VAZIO = {
   nome: "", cpf: "", telefone: "", email: "", funcao: "Recepcionista" as FuncaoColaborador,
-  status: "Ativo" as StatusColaborador, login: "", senha: "", registro: "",
+  status: "Ativo" as StatusColaborador, login: "", senha: "",
   diasDisponiveis: ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"],
   horarioInicio: "08:00", horarioFim: "17:00",
-  periodoAusenciaInicio: "", periodoAusenciaFim: "", periodoAusenciaMotivo: "",
+  periodoAusenciaInicio: "", periodoAusenciaFim: "", periodoAusenciaTipo: "Férias", periodoAusenciaMotivo: "",
 };
 
 // ─── Componente Principal ────────────────────────────────────────────────────
-// ─── Integração com o backend (GET /api/colaboradores) ────────────────────────
+// ─── Integração com o backend (GET/POST/PUT /api/colaboradores) ───────────────
 
 const FUNCAO_BACKEND: Record<string, FuncaoColaborador> = {
   AUXILIAR: "Auxiliar", RECEPCIONISTA: "Recepcionista",
   ESPECIALISTA: "Especialista", ADMINISTRADOR: "Administrador",
 };
+const FUNCAO_PARA_BACKEND: Record<FuncaoColaborador, string> = {
+  Auxiliar: "AUXILIAR", Recepcionista: "RECEPCIONISTA",
+  Especialista: "ESPECIALISTA", Administrador: "ADMINISTRADOR",
+};
 const STATUS_BACKEND: Record<string, StatusColaborador> = {
   ATIVO: "Ativo", INATIVO: "Inativo", SUSPENSO: "Suspenso", FERIAS: "Férias", AFASTADO: "Afastado",
 };
+const STATUS_PARA_BACKEND: Record<StatusColaborador, string> = {
+  Ativo: "ATIVO", Inativo: "INATIVO", Suspenso: "SUSPENSO", Férias: "FERIAS", Afastado: "AFASTADO",
+};
 const DIA_BACKEND: Record<string, string> = {
   SEGUNDA: "Seg", TERCA: "Ter", QUARTA: "Qua", QUINTA: "Qui", SEXTA: "Sex", SABADO: "Sáb", DOMINGO: "Dom",
+};
+const DIA_PARA_BACKEND: Record<string, string> = {
+  Segunda: "SEGUNDA", Terça: "TERCA", Quarta: "QUARTA", Quinta: "QUINTA",
+  Sexta: "SEXTA", Sábado: "SABADO", Domingo: "DOMINGO",
+};
+const TIPO_AUSENCIA_PARA_BACKEND: Record<string, string> = {
+  "Férias": "FERIAS", "Afastamento": "AFASTAMENTO", "Bloqueio Temporário": "BLOQUEIO_TEMPORARIO",
+};
+const TIPO_AUSENCIA_BACKEND: Record<string, string> = {
+  FERIAS: "Férias", AFASTAMENTO: "Afastamento", BLOQUEIO_TEMPORARIO: "Bloqueio Temporário",
 };
 
 function adaptarColaborador(b: any, i: number): Colaborador {
@@ -299,26 +309,25 @@ function adaptarColaborador(b: any, i: number): Colaborador {
     nivelAcesso: FUNCAO_BACKEND[b.funcao] ?? "—",
     status: STATUS_BACKEND[b.status] ?? "Ativo",
     login: b.login ?? "—",
-    registro: "—",
     tentativasLogin: b.tentativasLoginInvalidas ?? 0,
     diasDisponiveis: (disp.diasDisponiveis ?? []).map((d: string) => DIA_BACKEND[d] ?? d),
     horarioInicio: hhmm(disp.horaInicio),
     horarioFim: hhmm(disp.horaFim),
     periodoAusencia: ausencia
-      ? { inicio: ausencia.inicio ?? "", fim: ausencia.fim ?? "", motivo: ausencia.motivo ?? ausencia.tipo ?? "" }
-      : { inicio: "", fim: "", motivo: "" },
+      ? { inicio: ausencia.inicio ?? "", fim: ausencia.fim ?? "",
+          tipo: TIPO_AUSENCIA_BACKEND[ausencia.tipo] ?? "", motivo: ausencia.motivo ?? "" }
+      : { inicio: "", fim: "", tipo: "", motivo: "" },
     metricas: {
       atendimentos,
       faltas: b.faltas ?? 0,
       taxaConversao: atendimentos > 0 ? Math.round((conversoes / atendimentos) * 100) : 0,
-      avaliacaoMedia: 0,
       procedimentosRealizados: contar("PROCEDIMENTO"),
       agendamentosCriados: contar("AGENDAMENTO"),
       esterilizacoesRegistradas: contar("ESTERILIZACAO"),
     },
     logAuditoria: auditoria.map((a, j) => {
       const [data = "", hora = ""] = (a.dataHora ?? "").split("T");
-      return { id: j + 1, data, hora: hora.slice(0, 5), acao: a.acao ?? "", modulo: a.modulo ?? "", ip: "—" };
+      return { id: j + 1, data, hora: hora.slice(0, 5), acao: a.acao ?? "", modulo: a.modulo ?? "" };
     }),
     historicoAlteracoes: (b.historicoAlteracoes ?? []).map((h: any, j: number) => ({
       id: j + 1,
@@ -334,9 +343,9 @@ function adaptarColaborador(b: any, i: number): Colaborador {
 export default function DentistaEquipe() {
   const [colaboradores, setColaboradores] = useState<Colaborador[]>(COLABORADORES_INICIAIS);
 
-  // Carrega os colaboradores reais do backend; mantém o mock como fallback.
-  useEffect(() => {
-    api.get<any[]>("/colaboradores")
+  // Carrega os colaboradores reais do backend; mantém o mock como fallback se vier vazio.
+  const carregarColaboradores = useCallback(() => {
+    return api.get<any[]>("/colaboradores")
       .then((lista) => {
         if (Array.isArray(lista) && lista.length > 0) {
           setColaboradores(lista.map(adaptarColaborador));
@@ -344,6 +353,9 @@ export default function DentistaEquipe() {
       })
       .catch((e) => console.warn("Falha ao carregar colaboradores:", e));
   }, []);
+
+  useEffect(() => { carregarColaboradores(); }, [carregarColaboradores]);
+
   const [busca, setBusca] = useState("");
   const [filtroFuncao, setFiltroFuncao] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("");
@@ -359,6 +371,10 @@ export default function DentistaEquipe() {
   const [form, setForm] = useState({ ...FORM_VAZIO });
   const [abaModal, setAbaModal] = useState<"dados" | "disponibilidade" | "permissoes">("dados");
   const [erros, setErros] = useState<Record<string, string>>({});
+  const [salvandoColaborador, setSalvandoColaborador] = useState(false);
+  const [erroSalvar, setErroSalvar] = useState("");
+  const [salvandoStatus, setSalvandoStatus] = useState(false);
+  const [erroStatus, setErroStatus] = useState("");
 
   // ─── Filtragem ──────────────────────────────────────────────────────────
   const colaboradoresFiltrados = useMemo(() => {
@@ -385,36 +401,40 @@ export default function DentistaEquipe() {
       setForm({
         nome: editando.nome, cpf: editando.cpf, telefone: editando.telefone,
         email: editando.email, funcao: editando.funcao, status: editando.status,
-        login: editando.login, senha: "", registro: editando.registro,
+        login: editando.login, senha: "",
         diasDisponiveis: [...editando.diasDisponiveis],
         horarioInicio: editando.horarioInicio, horarioFim: editando.horarioFim,
         periodoAusenciaInicio: editando.periodoAusencia.inicio,
         periodoAusenciaFim: editando.periodoAusencia.fim,
+        periodoAusenciaTipo: editando.periodoAusencia.tipo || "Férias",
         periodoAusenciaMotivo: editando.periodoAusencia.motivo,
       });
     } else {
       setForm({ ...FORM_VAZIO, diasDisponiveis: [...FORM_VAZIO.diasDisponiveis] });
     }
     setErros({});
+    setErroSalvar("");
     setAbaModal("dados");
     setModalCadastro({ aberto: true, editando });
   }
 
   // ─── Validação do formulário ─────────────────────────────────────────────
-  // Regra de negócio: impede CPF duplicado, telefone inválido, cadastro incompleto, e-mail já utilizado
+  // Regra de negócio: impede CPF duplicado, telefone inválido, cadastro incompleto, e-mail já utilizado.
+  // Nome/CPF/função/login/senha só são editáveis no cadastro (o backend não permite alterá-los depois).
   function validarForm(): boolean {
     const novosErros: Record<string, string> = {};
-    if (!form.nome.trim()) novosErros.nome = "Nome completo é obrigatório.";
-    if (!form.cpf.trim()) {
-      novosErros.cpf = "CPF é obrigatório.";
-    } else if (!cpfValido(form.cpf)) {
-      novosErros.cpf = "Formato inválido. Use XXX.XXX.XXX-XX.";
-    } else {
-      // Verificar duplicidade de CPF (exceto o próprio colaborador em edição)
-      const cpfExiste = colaboradores.some(
-        (c) => c.cpf === form.cpf && c.id !== modalCadastro.editando?.id
-      );
-      if (cpfExiste) novosErros.cpf = "CPF já cadastrado no sistema.";
+    if (!modalCadastro.editando) {
+      if (!form.nome.trim()) novosErros.nome = "Nome completo é obrigatório.";
+      if (!form.cpf.trim()) {
+        novosErros.cpf = "CPF é obrigatório.";
+      } else if (!cpfValido(form.cpf)) {
+        novosErros.cpf = "Formato inválido. Use XXX.XXX.XXX-XX.";
+      } else if (colaboradores.some((c) => c.cpf === form.cpf)) {
+        novosErros.cpf = "CPF já cadastrado no sistema.";
+      }
+      if (!form.funcao) novosErros.funcao = "Função é obrigatória.";
+      if (!form.login.trim()) novosErros.login = "Login é obrigatório.";
+      if (!form.senha.trim()) novosErros.senha = "Senha é obrigatória para novos cadastros.";
     }
     if (!form.telefone.trim()) {
       novosErros.telefone = "Telefone é obrigatório.";
@@ -424,122 +444,96 @@ export default function DentistaEquipe() {
     if (!form.email.trim()) {
       novosErros.email = "E-mail é obrigatório.";
     } else {
-      // Verificar duplicidade de e-mail
       const emailExiste = colaboradores.some(
         (c) => c.email === form.email && c.id !== modalCadastro.editando?.id
       );
       if (emailExiste) novosErros.email = "E-mail já utilizado por outro colaborador.";
     }
-    if (!form.funcao) novosErros.funcao = "Função é obrigatória.";
-    if (!form.login.trim()) novosErros.login = "Login é obrigatório.";
-    if (!modalCadastro.editando && !form.senha.trim()) novosErros.senha = "Senha é obrigatória para novos cadastros.";
     setErros(novosErros);
     return Object.keys(novosErros).length === 0;
   }
 
   // ─── Salvar cadastro ─────────────────────────────────────────────────────
-  function salvarColaborador() {
+  async function salvarColaborador() {
     if (!validarForm()) return;
-
-    const agora = new Date();
-    const dataHoje = agora.toLocaleDateString("pt-BR");
-
-    if (modalCadastro.editando) {
-      // Edição: gerar histórico de alterações para campos modificados
-      const original = modalCadastro.editando;
-      const novasAlteracoes: HistoricoAlteracao[] = [];
-      const camposVerificar: { campo: string; ant: string; novo: string }[] = [
-        { campo: "Nome", ant: original.nome, novo: form.nome },
-        { campo: "Telefone", ant: original.telefone, novo: form.telefone },
-        { campo: "E-mail", ant: original.email, novo: form.email },
-        { campo: "Função", ant: original.funcao, novo: form.funcao },
-        { campo: "Status", ant: original.status, novo: form.status },
-        { campo: "Login", ant: original.login, novo: form.login },
-        { campo: "Registro Profissional", ant: original.registro, novo: form.registro },
-        { campo: "Horário de Trabalho", ant: `${original.horarioInicio}–${original.horarioFim}`, novo: `${form.horarioInicio}–${form.horarioFim}` },
-        { campo: "Dias Disponíveis", ant: original.diasDisponiveis.join(", "), novo: form.diasDisponiveis.join(", ") },
-      ];
-      camposVerificar.forEach(({ campo, ant, novo }) => {
-        if (ant !== novo) {
-          novasAlteracoes.push({
-            id: Date.now() + Math.random(),
-            campo, valorAnterior: ant, valorAtualizado: novo,
-            responsavel: "Dr. Felipe", data: dataHoje,
-          });
-        }
-      });
-
-      setColaboradores((prev) =>
-        prev.map((c) =>
-          c.id === original.id
-            ? {
-                ...c,
-                nome: form.nome, cpf: form.cpf, telefone: form.telefone,
-                email: form.email, funcao: form.funcao, nivelAcesso: form.funcao,
-                status: form.status, login: form.login, registro: form.registro,
-                diasDisponiveis: [...form.diasDisponiveis],
-                horarioInicio: form.horarioInicio, horarioFim: form.horarioFim,
-                periodoAusencia: {
-                  inicio: form.periodoAusenciaInicio,
-                  fim: form.periodoAusenciaFim,
-                  motivo: form.periodoAusenciaMotivo,
-                },
-                historicoAlteracoes: [...c.historicoAlteracoes, ...novasAlteracoes],
-              }
-            : c
-        )
-      );
-    } else {
-      // Novo colaborador
-      const novo: Colaborador = {
-        id: Date.now(),
-        nome: form.nome, cpf: form.cpf, telefone: form.telefone,
-        email: form.email, funcao: form.funcao, nivelAcesso: form.funcao,
-        status: form.status, login: form.login, registro: form.registro,
-        tentativasLogin: 0,
-        diasDisponiveis: [...form.diasDisponiveis],
-        horarioInicio: form.horarioInicio, horarioFim: form.horarioFim,
-        periodoAusencia: {
-          inicio: form.periodoAusenciaInicio,
-          fim: form.periodoAusenciaFim,
-          motivo: form.periodoAusenciaMotivo,
-        },
-        metricas: { atendimentos: 0, faltas: 0, taxaConversao: 0, avaliacaoMedia: 0, procedimentosRealizados: 0, agendamentosCriados: 0, esterilizacoesRegistradas: 0 },
-        logAuditoria: [{ id: 1, data: dataHoje, hora: agora.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }), acao: "Colaborador cadastrado no sistema", modulo: "Gestão de Equipe", ip: "192.168.1.1" }],
-        historicoAlteracoes: [],
+    setSalvandoColaborador(true);
+    setErroSalvar("");
+    try {
+      const ausenciaPreenchida = form.periodoAusenciaInicio && form.periodoAusenciaFim && form.periodoAusenciaMotivo.trim();
+      const disponibilidadeBody = {
+        dias: form.diasDisponiveis.map((d) => DIA_PARA_BACKEND[d] ?? d),
+        horaInicio: parseInt(form.horarioInicio.split(":")[0], 10),
+        horaFim: parseInt(form.horarioFim.split(":")[0], 10),
       };
-      setColaboradores((prev) => [...prev, novo]);
+      const ausenciaBody = {
+        inicio: form.periodoAusenciaInicio, fim: form.periodoAusenciaFim,
+        tipo: TIPO_AUSENCIA_PARA_BACKEND[form.periodoAusenciaTipo] ?? "FERIAS",
+        motivo: form.periodoAusenciaMotivo,
+      };
+
+      if (modalCadastro.editando) {
+        const original = modalCadastro.editando;
+        const nomeRota = encodeURIComponent(original.nome);
+        if (form.telefone !== original.telefone) {
+          await api.put(`/colaboradores/${nomeRota}/dados`, { campo: "telefone", novoValor: form.telefone, responsavel: "Dr. Felipe" });
+        }
+        if (form.email !== original.email) {
+          await api.put(`/colaboradores/${nomeRota}/dados`, { campo: "email", novoValor: form.email, responsavel: "Dr. Felipe" });
+        }
+        const dispMudou = form.diasDisponiveis.join(",") !== original.diasDisponiveis.join(",")
+          || form.horarioInicio !== original.horarioInicio || form.horarioFim !== original.horarioFim;
+        if (dispMudou) {
+          await api.post(`/colaboradores/${nomeRota}/disponibilidade`, disponibilidadeBody);
+        }
+        if (ausenciaPreenchida && (
+          form.periodoAusenciaInicio !== original.periodoAusencia.inicio
+          || form.periodoAusenciaFim !== original.periodoAusencia.fim
+          || form.periodoAusenciaMotivo !== original.periodoAusencia.motivo
+          || form.periodoAusenciaTipo !== original.periodoAusencia.tipo
+        )) {
+          await api.post(`/colaboradores/${nomeRota}/ausencia`, ausenciaBody);
+        }
+      } else {
+        await api.post("/colaboradores/completo", {
+          nomeCompleto: form.nome, cpf: form.cpf, telefone: form.telefone, email: form.email,
+          login: form.login, senha: form.senha, funcao: FUNCAO_PARA_BACKEND[form.funcao],
+        });
+        const nomeRota = encodeURIComponent(form.nome);
+        if (form.status !== "Ativo") {
+          await api.post(`/colaboradores/${nomeRota}/status`, { status: STATUS_PARA_BACKEND[form.status] });
+        }
+        if (form.diasDisponiveis.length > 0) {
+          await api.post(`/colaboradores/${nomeRota}/disponibilidade`, disponibilidadeBody);
+        }
+        if (ausenciaPreenchida) {
+          await api.post(`/colaboradores/${nomeRota}/ausencia`, ausenciaBody);
+        }
+      }
+      await carregarColaboradores();
+      setModalCadastro({ aberto: false });
+    } catch (e: any) {
+      setErroSalvar(e.message ?? "Falha ao salvar colaborador.");
+    } finally {
+      setSalvandoColaborador(false);
     }
-    setModalCadastro({ aberto: false });
   }
 
   // ─── Alterar status rapidamente ──────────────────────────────────────────
-  function confirmarAlteracaoStatus(novoStatus: StatusColaborador) {
+  async function confirmarAlteracaoStatus(novoStatus: StatusColaborador) {
     if (!modalStatus.colab) return;
-    const dataHoje = new Date().toLocaleDateString("pt-BR");
-    setColaboradores((prev) =>
-      prev.map((c) =>
-        c.id === modalStatus.colab!.id
-          ? {
-              ...c,
-              status: novoStatus,
-              tentativasLogin: novoStatus === "Ativo" ? 0 : c.tentativasLogin,
-              historicoAlteracoes: [
-                ...c.historicoAlteracoes,
-                {
-                  id: Date.now(),
-                  campo: "Status",
-                  valorAnterior: c.status,
-                  valorAtualizado: novoStatus,
-                  responsavel: "Dr. Felipe",
-                  data: dataHoje,
-                },
-              ],
-            }
-          : c
-      )
-    );
-    setModalStatus({ aberto: false });
+    setSalvandoStatus(true);
+    setErroStatus("");
+    try {
+      await api.post(`/colaboradores/${encodeURIComponent(modalStatus.colab.nome)}/status`, {
+        status: STATUS_PARA_BACKEND[novoStatus],
+      });
+      await carregarColaboradores();
+      setModalStatus({ aberto: false });
+    } catch (e: any) {
+      setErroStatus(e.message ?? "Falha ao alterar status.");
+    } finally {
+      setSalvandoStatus(false);
+    }
   }
 
   // ─── Toggle dia disponível no formulário ─────────────────────────────────
@@ -655,7 +649,6 @@ export default function DentistaEquipe() {
                 {/* Função */}
                 <div className="p-3 border-r-2 border-gray-400">
                   <div className="font-bold text-gray-700">{colab.funcao}</div>
-                  <div className="text-xs text-gray-400">{colab.registro !== "-" ? colab.registro : "Sem registro"}</div>
                 </div>
 
                 {/* Status */}
@@ -774,6 +767,12 @@ export default function DentistaEquipe() {
               {/* Aba: Dados Cadastrais */}
               {abaModal === "dados" && (
                 <div className="space-y-4">
+                  {modalCadastro.editando && (
+                    <div className="bg-blue-50 border-2 border-blue-300 p-3 text-sm text-blue-800 flex items-start gap-2">
+                      <ShieldAlert className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <span>Nome, CPF, função, login e senha não podem ser alterados após o cadastro. Use o botão "Status" na tabela para mudar o status operacional.</span>
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-4">
                     {/* Nome */}
                     <div className="col-span-2">
@@ -781,8 +780,9 @@ export default function DentistaEquipe() {
                       <input
                         type="text"
                         value={form.nome}
+                        disabled={!!modalCadastro.editando}
                         onChange={(e) => setForm({ ...form, nome: e.target.value })}
-                        className={`w-full border-2 p-2 rounded focus:outline-none ${erros.nome ? "border-red-500" : "border-gray-300 focus:border-blue-500"}`}
+                        className={`w-full border-2 p-2 rounded focus:outline-none disabled:bg-gray-100 disabled:text-gray-500 ${erros.nome ? "border-red-500" : "border-gray-300 focus:border-blue-500"}`}
                         placeholder="Nome completo do colaborador"
                       />
                       {erros.nome && <p className="text-xs text-red-500 mt-1">{erros.nome}</p>}
@@ -794,8 +794,9 @@ export default function DentistaEquipe() {
                       <input
                         type="text"
                         value={form.cpf}
+                        disabled={!!modalCadastro.editando}
                         onChange={(e) => setForm({ ...form, cpf: e.target.value })}
-                        className={`w-full border-2 p-2 rounded focus:outline-none ${erros.cpf ? "border-red-500" : "border-gray-300 focus:border-blue-500"}`}
+                        className={`w-full border-2 p-2 rounded focus:outline-none disabled:bg-gray-100 disabled:text-gray-500 ${erros.cpf ? "border-red-500" : "border-gray-300 focus:border-blue-500"}`}
                         placeholder="XXX.XXX.XXX-XX"
                       />
                       {erros.cpf && <p className="text-xs text-red-500 mt-1">{erros.cpf}</p>}
@@ -832,8 +833,9 @@ export default function DentistaEquipe() {
                       <label className="text-sm font-bold block mb-1">Função <span className="text-red-500">*</span></label>
                       <select
                         value={form.funcao}
+                        disabled={!!modalCadastro.editando}
                         onChange={(e) => setForm({ ...form, funcao: e.target.value as FuncaoColaborador })}
-                        className="w-full border-2 border-gray-300 p-2 rounded focus:border-blue-500 focus:outline-none bg-white"
+                        className="w-full border-2 border-gray-300 p-2 rounded focus:border-blue-500 focus:outline-none bg-white disabled:bg-gray-100 disabled:text-gray-500"
                       >
                         <option value="Recepcionista">Recepcionista</option>
                         <option value="Auxiliar">Auxiliar</option>
@@ -848,8 +850,9 @@ export default function DentistaEquipe() {
                       <label className="text-sm font-bold block mb-1">Status Operacional <span className="text-red-500">*</span></label>
                       <select
                         value={form.status}
+                        disabled={!!modalCadastro.editando}
                         onChange={(e) => setForm({ ...form, status: e.target.value as StatusColaborador })}
-                        className="w-full border-2 border-gray-300 p-2 rounded focus:border-blue-500 focus:outline-none bg-white"
+                        className="w-full border-2 border-gray-300 p-2 rounded focus:border-blue-500 focus:outline-none bg-white disabled:bg-gray-100 disabled:text-gray-500"
                       >
                         <option value="Ativo">Ativo</option>
                         <option value="Inativo">Inativo</option>
@@ -864,42 +867,31 @@ export default function DentistaEquipe() {
                       )}
                     </div>
 
-                    {/* Registro Profissional */}
-                    <div>
-                      <label className="text-sm font-bold block mb-1">Registro Profissional</label>
-                      <input
-                        type="text"
-                        value={form.registro}
-                        onChange={(e) => setForm({ ...form, registro: e.target.value })}
-                        className="w-full border-2 border-gray-300 p-2 rounded focus:border-blue-500 focus:outline-none"
-                        placeholder="Ex: CRO-SP 12345"
-                      />
-                    </div>
-
                     {/* Login */}
                     <div>
                       <label className="text-sm font-bold block mb-1">Login <span className="text-red-500">*</span></label>
                       <input
                         type="text"
                         value={form.login}
+                        disabled={!!modalCadastro.editando}
                         onChange={(e) => setForm({ ...form, login: e.target.value })}
-                        className={`w-full border-2 p-2 rounded focus:outline-none ${erros.login ? "border-red-500" : "border-gray-300 focus:border-blue-500"}`}
+                        className={`w-full border-2 p-2 rounded focus:outline-none disabled:bg-gray-100 disabled:text-gray-500 ${erros.login ? "border-red-500" : "border-gray-300 focus:border-blue-500"}`}
                         placeholder="nome.sobrenome"
                       />
                       {erros.login && <p className="text-xs text-red-500 mt-1">{erros.login}</p>}
                     </div>
 
                     {/* Senha */}
-                    <div className="col-span-2">
+                    <div>
                       <label className="text-sm font-bold block mb-1">
                         Senha {!modalCadastro.editando && <span className="text-red-500">*</span>}
-                        {modalCadastro.editando && <span className="text-gray-400 font-normal"> (deixe em branco para manter)</span>}
                       </label>
                       <input
                         type="password"
                         value={form.senha}
+                        disabled={!!modalCadastro.editando}
                         onChange={(e) => setForm({ ...form, senha: e.target.value })}
-                        className={`w-full border-2 p-2 rounded focus:outline-none ${erros.senha ? "border-red-500" : "border-gray-300 focus:border-blue-500"}`}
+                        className={`w-full border-2 p-2 rounded focus:outline-none disabled:bg-gray-100 disabled:text-gray-500 ${erros.senha ? "border-red-500" : "border-gray-300 focus:border-blue-500"}`}
                         placeholder="••••••••"
                       />
                       {erros.senha && <p className="text-xs text-red-500 mt-1">{erros.senha}</p>}
@@ -977,6 +969,16 @@ export default function DentistaEquipe() {
                         />
                       </div>
                       <div className="col-span-2">
+                        <label className="text-xs font-bold block mb-1">Tipo</label>
+                        <select
+                          value={form.periodoAusenciaTipo}
+                          onChange={(e) => setForm({ ...form, periodoAusenciaTipo: e.target.value })}
+                          className="w-full border-2 border-gray-300 p-2 rounded focus:border-orange-400 focus:outline-none text-sm bg-white"
+                        >
+                          {TIPOS_AUSENCIA.map((t) => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+                      <div className="col-span-2">
                         <label className="text-xs font-bold block mb-1">Motivo</label>
                         <input
                           type="text"
@@ -1014,19 +1016,25 @@ export default function DentistaEquipe() {
             </div>
 
             {/* Rodapé do modal */}
-            <div className="p-4 border-t-2 border-gray-400 flex gap-3 bg-gray-50">
-              <button
-                onClick={() => setModalCadastro({ aberto: false })}
-                className="flex-1 px-4 py-2 border-2 border-gray-400 bg-white font-bold rounded hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={salvarColaborador}
-                className="flex-1 px-4 py-2 border-2 border-blue-500 bg-blue-500 text-white font-bold rounded hover:bg-blue-600 transition-colors"
-              >
-                {modalCadastro.editando ? "Salvar Alterações" : "Cadastrar Colaborador"}
-              </button>
+            <div className="p-4 border-t-2 border-gray-400 bg-gray-50">
+              {erroSalvar && (
+                <div className="mb-3 text-sm text-red-700 bg-red-50 border-2 border-red-300 p-2 rounded">{erroSalvar}</div>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setModalCadastro({ aberto: false })}
+                  className="flex-1 px-4 py-2 border-2 border-gray-400 bg-white font-bold rounded hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={salvarColaborador}
+                  disabled={salvandoColaborador}
+                  className="flex-1 px-4 py-2 border-2 border-blue-500 bg-blue-500 text-white font-bold rounded hover:bg-blue-600 transition-colors disabled:opacity-50"
+                >
+                  {salvandoColaborador ? "Salvando..." : modalCadastro.editando ? "Salvar Alterações" : "Cadastrar Colaborador"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -1046,7 +1054,8 @@ export default function DentistaEquipe() {
                 <button
                   key={s}
                   onClick={() => confirmarAlteracaoStatus(s)}
-                  className={`p-3 border-2 rounded font-bold text-sm transition-colors ${
+                  disabled={salvandoStatus}
+                  className={`p-3 border-2 rounded font-bold text-sm transition-colors disabled:opacity-50 ${
                     modalStatus.colab!.status === s
                       ? "border-blue-500 bg-blue-500 text-white"
                       : "border-gray-300 hover:border-blue-400 bg-white"
@@ -1060,8 +1069,11 @@ export default function DentistaEquipe() {
               <AlertTriangle className="w-3 h-3 inline mr-1" />
               Colaboradores Inativos ou Suspensos não podem realizar login. A alteração será registrada no histórico de auditoria.
             </div>
+            {erroStatus && (
+              <div className="mb-3 text-sm text-red-700 bg-red-50 border-2 border-red-300 p-2 rounded">{erroStatus}</div>
+            )}
             <button
-              onClick={() => setModalStatus({ aberto: false })}
+              onClick={() => { setModalStatus({ aberto: false }); setErroStatus(""); }}
               className="w-full px-4 py-2 border-2 border-gray-400 bg-white font-bold rounded hover:bg-gray-50 transition-colors"
             >
               Fechar
@@ -1101,19 +1113,6 @@ export default function DentistaEquipe() {
               ))}
             </div>
 
-            {/* Avaliação média */}
-            <div className="border-2 border-yellow-400 bg-yellow-50 p-4 mb-4 flex items-center gap-4">
-              <div>
-                <div className="text-3xl font-bold text-yellow-700">{modalIndicadores.colab.metricas.avaliacaoMedia.toFixed(1)}</div>
-                <div className="text-xs text-gray-500 font-bold">Avaliação Média (0–5)</div>
-              </div>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map((estrela) => (
-                  <span key={estrela} className={`text-xl ${estrela <= Math.round(modalIndicadores.colab!.metricas.avaliacaoMedia) ? "text-yellow-500" : "text-gray-300"}`}>★</span>
-                ))}
-              </div>
-            </div>
-
             <button
               onClick={() => setModalIndicadores({ aberto: false })}
               className="w-full px-4 py-2 border-2 border-gray-400 bg-white font-bold rounded hover:bg-gray-50 transition-colors"
@@ -1142,7 +1141,7 @@ export default function DentistaEquipe() {
               <div className="grid grid-cols-4 bg-gray-100 border-b-2 border-gray-300 text-xs font-bold text-gray-600 uppercase p-3">
                 <div>Data / Hora</div>
                 <div className="col-span-2">Ação Executada</div>
-                <div>Módulo / IP</div>
+                <div>Módulo</div>
               </div>
               {modalAuditoria.colab.logAuditoria.length === 0 ? (
                 <div className="p-6 text-center text-gray-500 text-sm">Nenhum registro de auditoria.</div>
@@ -1154,10 +1153,7 @@ export default function DentistaEquipe() {
                       <div className="text-xs flex items-center gap-1"><Clock className="w-3 h-3" />{log.hora}</div>
                     </div>
                     <div className="col-span-2 text-gray-800">{log.acao}</div>
-                    <div className="text-gray-500 text-xs">
-                      <div>{log.modulo}</div>
-                      <div className="text-gray-400">{log.ip}</div>
-                    </div>
+                    <div className="text-gray-500 text-xs">{log.modulo}</div>
                   </div>
                 ))
               )}

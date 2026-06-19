@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { api } from "../../api/client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -215,16 +215,6 @@ const ORDEM_PRIORIDADE: Record<PrioridadeRecall, number> = {
   CRITICO: 0, ALTO: 1, NORMAL: 2, BAIXO: 3,
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function hoje(): string {
-  return new Date().toLocaleDateString("pt-BR");
-}
-
-function hojeHora(): string {
-  return new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
-}
-
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function PrioridadeBadge({ p }: { p: PrioridadeRecall }) {
@@ -280,6 +270,11 @@ const RESULTADO_BACKEND: Record<string, ResultadoContato> = {
   CONTATO_REALIZADO: "ATENDEU", SEM_RESPOSTA: "NAO_ATENDEU", NUMERO_INVALIDO: "CAIXA_POSTAL",
   RETORNO_AGENDADO: "AGENDOU", PACIENTE_RECUSOU: "RECUSOU", SOLICITAR_NOVO_CONTATO: "NAO_ATENDEU",
 };
+// Inverso do mapeamento acima — usado ao enviar uma tentativa de contato pro backend.
+const RESULTADO_PARA_BACKEND: Record<ResultadoContato, string> = {
+  ATENDEU: "CONTATO_REALIZADO", NAO_ATENDEU: "SEM_RESPOSTA", CAIXA_POSTAL: "NUMERO_INVALIDO",
+  AGENDOU: "RETORNO_AGENDADO", RECUSOU: "PACIENTE_RECUSOU",
+};
 
 function adaptarRecall(b: any, indice: number): RecallItem {
   const fatores = b.fatores ?? {};
@@ -295,6 +290,12 @@ function adaptarRecall(b: any, indice: number): RecallItem {
       observacao: t.observacoes ?? "",
     };
   });
+  // Não há log de auditoria separado no backend — deriva da própria lista de tentativas (mais recente primeiro).
+  const auditLog = [...tentativas].reverse().map((t) => ({
+    data: t.data || "—",
+    acao: `Tentativa (${t.canal}) — ${RESULTADO_LABELS[t.resultado]}${t.observacao ? ": " + t.observacao : ""}`,
+    responsavel: t.responsavel,
+  }));
   return {
     id: b.id?.id ?? indice + 1,
     paciente: b.paciente ?? "—",
@@ -315,7 +316,7 @@ function adaptarRecall(b: any, indice: number): RecallItem {
     alertaInatividade: !!fatores.tratamentoInterrompido,
     conversaoRecall: !!b.flagConversaoRecall,
     tentativas,
-    auditLog: [],
+    auditLog,
   };
 }
 
@@ -324,9 +325,9 @@ function adaptarRecall(b: any, indice: number): RecallItem {
 export default function RecepcionistaRecall() {
   const [recalls, setRecalls] = useState<RecallItem[]>(MOCK_RECALL);
 
-  // Carrega os recalls reais do backend; mantém o mock como fallback se a API falhar.
-  useEffect(() => {
-    api.get<any[]>("/recalls")
+  // Carrega os recalls reais do backend; mantém o mock como fallback se a API falhar/vier vazia.
+  const carregarRecalls = useCallback(() => {
+    return api.get<any[]>("/recalls")
       .then((lista) => {
         if (Array.isArray(lista) && lista.length > 0) {
           setRecalls(lista.map(adaptarRecall));
@@ -334,6 +335,8 @@ export default function RecepcionistaRecall() {
       })
       .catch((e) => console.warn("Falha ao carregar recalls do backend:", e));
   }, []);
+
+  useEffect(() => { carregarRecalls(); }, [carregarRecalls]);
 
   // Filters
   const [filtroPrioridade, setFiltroPrioridade] = useState("TODAS");
@@ -351,9 +354,12 @@ export default function RecepcionistaRecall() {
 
   // Form: contato
   const [formContato, setFormContato] = useState<{
-    canal: CanalContato; resultado: ResultadoContato | ""; observacao: string;
-  }>({ canal: "TELEFONE", resultado: "", observacao: "" });
+    canal: CanalContato; resultado: ResultadoContato | ""; observacao: string; duracaoMinutos: string;
+  }>({ canal: "TELEFONE", resultado: "", observacao: "", duracaoMinutos: "5" });
   const [erroContato, setErroContato] = useState("");
+  const [salvandoContato, setSalvandoContato] = useState(false);
+  const [erroAgendar, setErroAgendar] = useState("");
+  const [salvandoAgendar, setSalvandoAgendar] = useState(false);
 
   // ─ Derived ──────────────────────────────────────────────────────────────────
 
@@ -407,69 +413,63 @@ export default function RecepcionistaRecall() {
   }
 
   function abrirContato(item: RecallItem) {
-    setFormContato({ canal: "TELEFONE", resultado: "", observacao: "" });
+    setFormContato({ canal: "TELEFONE", resultado: "", observacao: "", duracaoMinutos: "5" });
     setErroContato("");
     setModalContato({ aberto: true, item });
   }
 
-  function handleRegistrarContato(id: number) {
+  async function handleRegistrarContato(id: number) {
     if (!formContato.resultado) { setErroContato("Selecione o resultado do contato."); return; }
+    const item = recalls.find(r => r.id === id);
+    if (!item) return;
 
-    const nova: TentativaContato = {
-      id: Date.now(),
-      data: hoje(),
-      hora: hojeHora(),
-      canal: formContato.canal,
-      responsavel: "Recepcionista",
-      resultado: formContato.resultado as ResultadoContato,
-      observacao: formContato.observacao.trim(),
-    };
-
-    setRecalls(prev => prev.map(r => {
-      if (r.id !== id) return r;
-
-      const novasTentativas = [...r.tentativas, nova];
-      const semResposta = novasTentativas.filter(
-        t => t.resultado === "NAO_ATENDEU" || t.resultado === "CAIXA_POSTAL"
-      ).length;
-
-      const novoStatus: StatusRecall =
-        nova.resultado === "AGENDOU"  ? "AGENDADO" :
-        nova.resultado === "RECUSOU"  ? "RECUSOU"  :
-        semResposta >= 3              ? "NAO_RESPONSIVO" :
-                                        "CONTATADO";
-
-      const escalou = novoStatus === "NAO_RESPONSIVO" && r.status !== "NAO_RESPONSIVO";
-
-      return {
-        ...r,
-        tentativas: novasTentativas,
-        status: novoStatus,
-        conversaoRecall: nova.resultado === "AGENDOU" ? true : r.conversaoRecall,
-        auditLog: [
-          { data: hoje(), acao: `Tentativa ${novasTentativas.length}: ${nova.canal} — ${RESULTADO_LABELS[nova.resultado]}`, responsavel: "Recepcionista" },
-          ...(escalou ? [{ data: hoje(), acao: "Status alterado para Não Responsivo (escalonamento automático)", responsavel: "Sistema" }] : []),
-          ...r.auditLog,
-        ],
-      };
-    }));
-
-    setModalContato({ aberto: false });
-    showToast("Tentativa de contato registrada!", "sucesso");
+    setSalvandoContato(true);
+    setErroContato("");
+    try {
+      const escalonou = await api.post<boolean>(`/recalls/paciente/${encodeURIComponent(item.paciente)}/tentativa-detalhada`, {
+        canal: formContato.canal,
+        resultado: RESULTADO_PARA_BACKEND[formContato.resultado as ResultadoContato],
+        responsavel: "Recepcionista",
+        duracaoMinutos: Number(formContato.duracaoMinutos) || 0,
+        observacoes: formContato.observacao.trim(),
+      });
+      await carregarRecalls();
+      setModalContato({ aberto: false });
+      showToast(
+        escalonou ? "Tentativa registrada — caso escalonado (3+ tentativas sem sucesso)." : "Tentativa de contato registrada!",
+        escalonou ? "erro" : "sucesso"
+      );
+    } catch (e: any) {
+      setErroContato(e.message ?? "Falha ao registrar contato.");
+    } finally {
+      setSalvandoContato(false);
+    }
   }
 
-  function handleMarcarAgendado(id: number) {
-    setRecalls(prev => prev.map(r => r.id !== id ? r : {
-      ...r,
-      status: "AGENDADO",
-      conversaoRecall: true,
-      auditLog: [
-        { data: hoje(), acao: "Paciente agendado — conversão de recall confirmada", responsavel: "Recepcionista" },
-        ...r.auditLog,
-      ],
-    }));
-    setModalAgendar({ aberto: false });
-    showToast("Recall convertido em agendamento!", "sucesso");
+  async function handleMarcarAgendado(id: number) {
+    const item = recalls.find(r => r.id === id);
+    if (!item) return;
+
+    setSalvandoAgendar(true);
+    setErroAgendar("");
+    try {
+      // Não existe endpoint dedicado de "marcar como agendado": o backend transiciona
+      // automaticamente para AGENDADO quando a tentativa tem resultado RETORNO_AGENDADO.
+      await api.post(`/recalls/paciente/${encodeURIComponent(item.paciente)}/tentativa-detalhada`, {
+        canal: "TELEFONE",
+        resultado: "RETORNO_AGENDADO",
+        responsavel: "Recepcionista",
+        duracaoMinutos: 0,
+        observacoes: "Convertido em agendamento via tela de Recall.",
+      });
+      await carregarRecalls();
+      setModalAgendar({ aberto: false });
+      showToast("Recall convertido em agendamento!", "sucesso");
+    } catch (e: any) {
+      setErroAgendar(e.message ?? "Falha ao converter recall.");
+    } finally {
+      setSalvandoAgendar(false);
+    }
   }
 
   // ─ Render ────────────────────────────────────────────────────────────────────
@@ -743,6 +743,17 @@ export default function RecepcionistaRecall() {
               </div>
 
               <div>
+                <label className="block text-sm font-bold mb-1">Duração (min)</label>
+                <input
+                  type="number"
+                  min={0}
+                  className="w-full border-2 border-gray-400 p-2 outline-none"
+                  value={formContato.duracaoMinutos}
+                  onChange={e => setFormContato(f => ({ ...f, duracaoMinutos: e.target.value }))}
+                />
+              </div>
+
+              <div>
                 <label className="block text-sm font-bold mb-1">Observações</label>
                 <textarea
                   rows={2}
@@ -768,7 +779,13 @@ export default function RecepcionistaRecall() {
             </div>
             <div className="p-4 border-t-2 border-gray-400 flex gap-3 justify-end">
               <button onClick={() => setModalContato({ aberto: false })} className="px-4 py-2 border-2 border-gray-400 bg-white font-bold hover:bg-gray-100">Cancelar</button>
-              <button onClick={() => handleRegistrarContato(modalContato.item!.id)} className="px-4 py-2 border-2 border-blue-500 bg-blue-500 text-white font-bold hover:bg-blue-600">Registrar</button>
+              <button
+                onClick={() => handleRegistrarContato(modalContato.item!.id)}
+                disabled={salvandoContato}
+                className="px-4 py-2 border-2 border-blue-500 bg-blue-500 text-white font-bold hover:bg-blue-600 disabled:opacity-50"
+              >
+                {salvandoContato ? "Registrando..." : "Registrar"}
+              </button>
             </div>
           </div>
         </div>
@@ -900,10 +917,19 @@ export default function RecepcionistaRecall() {
               <div className="border-2 border-green-300 bg-green-50 p-2 mt-3 text-xs text-green-700">
                 ✓ Realize o agendamento na tela de Agenda para registrar data e horário.
               </div>
+              {erroAgendar && (
+                <div className="border-2 border-red-300 bg-red-50 p-2 mt-3 text-xs text-red-700">{erroAgendar}</div>
+              )}
             </div>
             <div className="p-4 border-t-2 border-gray-400 flex gap-3 justify-end">
               <button onClick={() => setModalAgendar({ aberto: false })} className="px-4 py-2 border-2 border-gray-400 bg-white font-bold hover:bg-gray-100">Cancelar</button>
-              <button onClick={() => handleMarcarAgendado(modalAgendar.item!.id)} className="px-4 py-2 border-2 border-green-500 bg-green-500 text-white font-bold hover:bg-green-600">Confirmar</button>
+              <button
+                onClick={() => handleMarcarAgendado(modalAgendar.item!.id)}
+                disabled={salvandoAgendar}
+                className="px-4 py-2 border-2 border-green-500 bg-green-500 text-white font-bold hover:bg-green-600 disabled:opacity-50"
+              >
+                {salvandoAgendar ? "Confirmando..." : "Confirmar"}
+              </button>
             </div>
           </div>
         </div>

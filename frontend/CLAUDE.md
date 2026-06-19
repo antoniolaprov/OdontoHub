@@ -56,9 +56,15 @@ useEffect(() => {
 - ✅ **Login / Cadastro de Clínica** (`/login`) — `POST /api/clinicas` (cadastro) +
   `POST /api/clinicas/login` (autenticação, F18). Sessão em `localStorage`
   (`odontohub.clinica`). Conta demo: `admin@odontohub.com` / `odonto123`.
-- ✅ **Recepcionista / Recall** — `GET /api/recalls`
+- ✅ **Recepcionista / Recall (F07)** — `GET /api/recalls` (leitura) +
+  `POST /api/recalls/paciente/{paciente}/tentativa-detalhada` (escrita real:
+  registrar contato e converter em agendamento via `resultado: RETORNO_AGENDADO`,
+  que é a única forma de o backend marcar como `AGENDADO`).
 - ✅ **Dentista / Financeiro** — `GET /api/fluxo-caixa/lancamentos` + `/saldo-atual`
-- ✅ **Dentista / Equipe** — `GET /api/colaboradores`
+- ✅ **Dentista / Equipe (F12)** — `GET /api/colaboradores` (leitura) +
+  `POST /completo` (cadastro), `PUT /{nome}/dados` (telefone/e-mail — só esses
+  dois campos são editáveis depois do cadastro), `POST /{nome}/status`,
+  `POST /{nome}/disponibilidade`, `POST /{nome}/ausencia` (escrita real).
 - ✅ **Dentista / Dashboard** — Pareto via `GET /api/churn/pareto-cancelamentos`
   (série mensal de churn e custo de cadeira vazia seguem mock — sem endpoint)
 - ✅ **Dentista / Medicamentos** — `GET /api/medicamentos`
