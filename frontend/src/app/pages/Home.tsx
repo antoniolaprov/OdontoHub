@@ -1,9 +1,43 @@
-import { Link } from "react-router";
+import { Link, Navigate, useNavigate } from "react-router";
+
+function clinicaLogada(): { nome: string } | null {
+  try {
+    const bruto = localStorage.getItem("odontohub.clinica");
+    return bruto ? JSON.parse(bruto) : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function Home() {
+  const navigate = useNavigate();
+  const clinica = clinicaLogada();
+
+  // Acesso ao portal exige login: sem sessão, volta para a tela de login.
+  if (!clinica) {
+    return <Navigate to="/" replace />;
+  }
+
+  function sair() {
+    localStorage.removeItem("odontohub.clinica");
+    navigate("/");
+  }
+
   return (
     <div className="size-full bg-gray-100 flex items-center justify-center p-8">
       <div className="max-w-4xl w-full">
+        <div className="flex justify-end items-center gap-3 mb-4">
+          <span className="text-sm text-gray-600">
+            Clínica: <strong>{clinica.nome}</strong>
+          </span>
+          <button
+            type="button"
+            onClick={sair}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            Sair
+          </button>
+        </div>
         <div className="text-center mb-12">
           <div className="h-20 border-4 border-gray-400 mb-6 flex items-center justify-center bg-white">
             <span className="text-2xl font-bold text-gray-700">OdontoHub</span>

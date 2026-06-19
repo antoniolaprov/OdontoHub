@@ -53,6 +53,9 @@ useEffect(() => {
   Recall) → use um default (`"—"`) até existir endpoint que forneça.
 
 ## Status da integração (telas)
+- ✅ **Login / Cadastro de Clínica** (`/login`) — `POST /api/clinicas` (cadastro) +
+  `POST /api/clinicas/login` (autenticação, F18). Sessão em `localStorage`
+  (`odontohub.clinica`). Conta demo: `admin@odontohub.com` / `odonto123`.
 - ✅ **Recepcionista / Recall** — `GET /api/recalls`
 - ✅ **Dentista / Financeiro** — `GET /api/fluxo-caixa/lancamentos` + `/saldo-atual`
 - ✅ **Dentista / Equipe** — `GET /api/colaboradores`

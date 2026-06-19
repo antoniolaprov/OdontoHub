@@ -1,5 +1,6 @@
 import { createBrowserRouter } from "react-router";
 import Home from "./pages/Home";
+import Login from "./pages/Login";
 import RecepcionistaLayout from "./pages/recepcionista/RecepcionistaLayout";
 import RecepcionistaAgenda from "./pages/recepcionista/Agenda";
 import RecepcionistaAcordos from "./pages/recepcionista/Acordos";
@@ -21,6 +22,16 @@ import DentistaMedicamentos from "./pages/dentista/Medicamentos";
 export const router = createBrowserRouter([
   {
     path: "/",
+    Component: Login,
+    ErrorBoundary: ErrorBoundary,
+  },
+  {
+    path: "/login",
+    Component: Login,
+    ErrorBoundary: ErrorBoundary,
+  },
+  {
+    path: "/portal",
     Component: Home,
     ErrorBoundary: ErrorBoundary,
   },

@@ -28,6 +28,7 @@ import static io.cucumber.junit.platform.engine.Constants.PLUGIN_PROPERTY_NAME;
 @SelectClasspathResource("features/F15_pagamentos.feature")
 @SelectClasspathResource("features/F16_lembretes.feature")
 @SelectClasspathResource("features/F17_nao_comparecimento.feature")
+@SelectClasspathResource("features/F18_clinica.feature")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "com.g4.odontohub.steps")
 @ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "pretty, summary")
 public class CucumberRunnerTest {}
