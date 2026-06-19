@@ -1,15 +1,11 @@
 package com.g4.odontohub.financeiro.domain.model;
 
-/**
- * Parcela em cobrança com encargos calculados automaticamente pelo sistema.
- * Os valores de juros e multa não podem ser editados manualmente pela recepção.
- */
 public class ParcelaCobranca {
 
     private final double valor;
-    private final int diasAtraso;
-    private final double multa;
-    private final double juros;
+    private int diasAtraso;
+    private double multa;
+    private double juros;
     private StatusParcela status;
 
     public ParcelaCobranca(double valor, int diasAtraso, double multa, double juros) {
@@ -20,13 +16,11 @@ public class ParcelaCobranca {
         this.status = StatusParcela.VENCIDA;
     }
 
-    /** Cálculo travado: a recepção não pode alterar juros/multa. */
     public void editarJurosOuMulta(double novoValor) {
         throw new IllegalStateException(
-                "Juros e multa são calculados automaticamente e não podem ser editados manualmente");
+                "Juros e multa sao calculados automaticamente e nao podem ser editados manualmente");
     }
 
-    /** Reconstitui a parcela a partir da persistência (camada de infraestrutura). */
     public static ParcelaCobranca reconstituir(double valor, int diasAtraso, double multa,
                                                double juros, StatusParcela status) {
         ParcelaCobranca p = new ParcelaCobranca(valor, diasAtraso, multa, juros);
@@ -38,14 +32,30 @@ public class ParcelaCobranca {
         this.status = StatusParcela.SUBSTITUIDA;
     }
 
+    public void vencer(int diasAtraso, double multa, double juros) {
+        this.diasAtraso = diasAtraso;
+        this.multa = multa;
+        this.juros = juros;
+        this.status = StatusParcela.VENCIDA;
+    }
+
     public void marcarPendente() {
         this.status = StatusParcela.PENDENTE;
+    }
+
+    public void cancelar() {
+        this.status = StatusParcela.CANCELADA;
+    }
+
+    public void liquidar() {
+        this.status = StatusParcela.LIQUIDADA;
     }
 
     public boolean contaNoFluxoCaixa() {
         return status != StatusParcela.SUBSTITUIDA;
     }
 
+    public double getValorAtualizado() { return valor + multa + juros; }
     public double getValor() { return valor; }
     public int getDiasAtraso() { return diasAtraso; }
     public double getMulta() { return multa; }

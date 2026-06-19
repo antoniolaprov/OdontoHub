@@ -11,18 +11,10 @@ public class LancamentoFinanceiro {
     private String categoria;
     private String descricao;
     private final boolean geradoAutomaticamente;
-    /** Previsto = entrada futura (parcela a vencer) ou saída planejada, ainda não confirmada. */
-    private final boolean previsto;
 
     public LancamentoFinanceiro(LancamentoId id, TipoLancamento tipo, double valor,
                                 LocalDate data, String categoria, String descricao,
                                 boolean geradoAutomaticamente) {
-        this(id, tipo, valor, data, categoria, descricao, geradoAutomaticamente, false);
-    }
-
-    public LancamentoFinanceiro(LancamentoId id, TipoLancamento tipo, double valor,
-                                LocalDate data, String categoria, String descricao,
-                                boolean geradoAutomaticamente, boolean previsto) {
         this.id = id;
         this.tipo = tipo;
         this.valor = valor;
@@ -30,7 +22,6 @@ public class LancamentoFinanceiro {
         this.categoria = categoria;
         this.descricao = descricao;
         this.geradoAutomaticamente = geradoAutomaticamente;
-        this.previsto = previsto;
     }
 
     public void editar(double novoValor, String novaCategoria, String novaDescricao) {
@@ -50,5 +41,4 @@ public class LancamentoFinanceiro {
     public String getCategoria() { return categoria; }
     public String getDescricao() { return descricao; }
     public boolean isGeradoAutomaticamente() { return geradoAutomaticamente; }
-    public boolean isPrevisto() { return previsto; }
 }

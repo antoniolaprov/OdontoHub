@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 
 /**
- * Camada de apresentação (REST) do contexto de Pagamento — F15.
+ * Camada de apresentação (REST) do contexto de Pagamento — F17.
  * Delega as operações para a camada de aplicação.
  */
 @RestController
