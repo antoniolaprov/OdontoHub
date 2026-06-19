@@ -26,16 +26,43 @@ public class MedicamentoApplicationService {
         return service.cadastrar(nomeComercial, principioAtivo, categoriaTerapeutica, classeFarmacologica);
     }
 
-    public void inativar(String nomeComercial, String justificativa) {
-        service.inativar(nomeComercial, justificativa);
+    public Medicamento cadastrar(String nomeComercial, String principioAtivo,
+                                 String categoriaTerapeutica, String classeFarmacologica,
+                                 String apresentacao, String viaAdministracao) {
+        return service.cadastrar(nomeComercial, principioAtivo, categoriaTerapeutica,
+                classeFarmacologica, apresentacao, viaAdministracao);
+    }
+
+    public boolean inativar(String nomeComercial, String justificativa) {
+        return service.inativar(nomeComercial, justificativa);
     }
 
     public void adicionarPosologiaPadrao(String nomeComercial, String posologia) {
         service.adicionarPosologiaPadrao(nomeComercial, posologia);
     }
 
-    public List<Medicamento> todos() {
-        return service.todos();
+    public void adicionarContraindicacoes(String nomeComercial, List<String> contraindicacoes) {
+        service.adicionarContraindicacoes(nomeComercial, contraindicacoes);
+    }
+
+    public void adicionarInteracoes(String nomeComercial, List<String> interacoes) {
+        service.adicionarInteracoes(nomeComercial, interacoes);
+    }
+
+    public void alterarCategoriaTerapeutica(String nomeComercial, String novaCategoria, String usuario) {
+        service.alterarCategoriaTerapeutica(nomeComercial, novaCategoria, usuario);
+    }
+
+    public void alterarClasseFarmacologica(String nomeComercial, String novaClasseFarmacologica, String usuario) {
+        service.alterarClasseFarmacologica(nomeComercial, novaClasseFarmacologica, usuario);
+    }
+
+    public void registrarPrescricoesRecentes(String nomeComercial, int dias) {
+        service.registrarPrescricoesRecentes(nomeComercial, dias);
+    }
+
+    public void removerPrescricoesRecentes(String nomeComercial) {
+        service.removerPrescricoesRecentes(nomeComercial);
     }
 
     public List<Medicamento> listarParaSelecao() {

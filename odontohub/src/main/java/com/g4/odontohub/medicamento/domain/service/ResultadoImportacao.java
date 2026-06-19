@@ -1,6 +1,7 @@
 package com.g4.odontohub.medicamento.domain.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,5 +29,13 @@ public class ResultadoImportacao {
 
     public String motivoRejeicao(String nomeComercial) {
         return rejeicoes.get(nomeComercial);
+    }
+
+    public List<String> getSucessos() {
+        return Collections.unmodifiableList(sucessos);
+    }
+
+    public Map<String, String> getRejeicoes() {
+        return Collections.unmodifiableMap(rejeicoes);
     }
 }

@@ -18,6 +18,8 @@ public class MedicamentoJpaEntity {
     private String principioAtivo;
     private String categoriaTerapeutica;
     private String classeFarmacologica;
+    private String apresentacao;
+    private String viaAdministracao;
     @Enumerated(EnumType.STRING)
     @Column(length = 30)
     private StatusMedicamento status;
@@ -32,6 +34,11 @@ public class MedicamentoJpaEntity {
     @Column(name = "contraindicacao", length = 500)
     private List<String> contraindicacoes = new ArrayList<>();
 
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "medicamento_interacao", joinColumns = @JoinColumn(name = "medicamento_id"))
+    @Column(name = "interacao", length = 500)
+    private List<String> interacoes = new ArrayList<>();
+
     protected MedicamentoJpaEntity() {
     }
 
@@ -42,14 +49,18 @@ public class MedicamentoJpaEntity {
         e.principioAtivo = m.getPrincipioAtivo();
         e.categoriaTerapeutica = m.getCategoriaTerapeutica();
         e.classeFarmacologica = m.getClasseFarmacologica();
+        e.apresentacao = m.getApresentacao();
+        e.viaAdministracao = m.getViaAdministracao();
         e.status = m.getStatus();
         e.posologiasPadrao = new ArrayList<>(m.getPosologiasPadrao());
         e.contraindicacoes = new ArrayList<>(m.getContraindicacoes());
+        e.interacoes = new ArrayList<>(m.getInteracoes());
         return e;
     }
 
     public Medicamento toDomain() {
         return Medicamento.reconstituir(new MedicamentoId(id), nomeComercial, principioAtivo,
-                categoriaTerapeutica, classeFarmacologica, status, posologiasPadrao, contraindicacoes);
+                categoriaTerapeutica, classeFarmacologica, status, posologiasPadrao, contraindicacoes,
+                interacoes, apresentacao, viaAdministracao, null);
     }
 }
