@@ -46,6 +46,11 @@ public class PagamentoApplicationService {
         return service.registrarPagamentoPresencial(referencia, valor, data, forma);
     }
 
+    public Pagamento registrarPagamentoPresencial(String referencia, double valor, LocalDate data,
+                                                  String forma, String observacao) {
+        return service.registrarPagamentoPresencial(referencia, valor, data, forma, observacao);
+    }
+
     public Pagamento lancarAguardandoComprovante(String referencia, String forma) {
         return service.lancarAguardandoComprovante(referencia, forma);
     }
@@ -72,5 +77,13 @@ public class PagamentoApplicationService {
 
     public int getQuantidadeEntradasFluxoCaixa() {
         return service.getQuantidadeEntradasFluxoCaixa();
+    }
+
+    public double getTotalEntradasFluxoCaixa() {
+        return service.getTotalEntradasFluxoCaixa();
+    }
+
+    public java.util.List<Pagamento> pagamentos() {
+        return service.pagamentos();
     }
 }

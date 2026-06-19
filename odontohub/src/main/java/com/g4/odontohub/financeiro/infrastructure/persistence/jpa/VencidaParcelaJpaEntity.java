@@ -30,4 +30,8 @@ public class VencidaParcelaJpaEntity {
     public ParcelaCobranca toDomain() {
         return parcela.toDomain();
     }
+
+    public String getPaciente() {
+        return paciente;
+    }
 }

@@ -26,7 +26,6 @@ public class LancamentoFinanceiroJpaEntity {
     private String categoria;
     private String descricao;
     private boolean geradoAutomaticamente;
-    private boolean previsto;
 
     protected LancamentoFinanceiroJpaEntity() {
     }
@@ -40,12 +39,11 @@ public class LancamentoFinanceiroJpaEntity {
         e.categoria = l.getCategoria();
         e.descricao = l.getDescricao();
         e.geradoAutomaticamente = l.isGeradoAutomaticamente();
-        e.previsto = l.isPrevisto();
         return e;
     }
 
     public LancamentoFinanceiro toDomain() {
         return new LancamentoFinanceiro(new LancamentoId(id), tipo, valor, data,
-                categoria, descricao, geradoAutomaticamente, previsto);
+                categoria, descricao, geradoAutomaticamente);
     }
 }

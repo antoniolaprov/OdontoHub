@@ -1,5 +1,7 @@
 package com.g4.odontohub.pagamento.domain.model;
 
+import java.text.Normalizer;
+
 public enum FormaPagamento {
     PIX,
     CARTAO_CREDITO,
@@ -11,6 +13,11 @@ public enum FormaPagamento {
         if (label == null || label.isBlank()) {
             throw new IllegalArgumentException("A forma de pagamento é obrigatória");
         }
-        return FormaPagamento.valueOf(label.trim().toUpperCase());
+        String normalizado = Normalizer.normalize(label.trim(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace(' ', '_')
+                .toUpperCase()
+                .replace("_DE_", "_");
+        return FormaPagamento.valueOf(normalizado);
     }
 }

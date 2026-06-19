@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * F15 — Gestão de Pagamentos e Quitação de Débitos.
+ * F17 — Gestão de Pagamentos e Quitação de Débitos.
  * Registra pagamentos presenciais e remotos, baixa parcelas e alimenta o fluxo de caixa.
  * A persistência é delegada à porta {@link PagamentoRepository} (camada de infraestrutura).
  */
@@ -37,6 +37,11 @@ public class PagamentoService {
     }
 
     public Pagamento registrarPagamentoPresencial(String referencia, double valor, LocalDate data, String formaLabel) {
+        return registrarPagamentoPresencial(referencia, valor, data, formaLabel, null);
+    }
+
+    public Pagamento registrarPagamentoPresencial(String referencia, double valor, LocalDate data,
+                                                  String formaLabel, String observacao) {
         FormaPagamento forma = FormaPagamento.fromLabel(formaLabel);
         validarValorEData(valor, data);
         ParcelaPagavel parcela = parcela(referencia);
@@ -45,6 +50,7 @@ public class PagamentoService {
         }
         Pagamento pagamento = new Pagamento(new PagamentoId(repositorio.proximoId()), referencia, forma, StatusPagamento.PAGO);
         pagamento.confirmar(valor, data);
+        pagamento.setObservacao(observacao);
         repositorio.salvarPagamento(pagamento);
         parcela.registrarPagamento(valor);
         repositorio.salvarParcela(parcela);
@@ -56,7 +62,7 @@ public class PagamentoService {
     public Pagamento lancarAguardandoComprovante(String referencia, String formaLabel) {
         FormaPagamento forma = FormaPagamento.fromLabel(formaLabel);
         if (existeAguardando(referencia)) {
-            throw new IllegalStateException("Já existe um lançamento aguardando comprovante para esta parcela");
+            throw new IllegalStateException("Já existe um comprovante aguardando confirmação para esta parcela. Cancele ou confirme o registro existente antes de criar um novo.");
         }
         parcela(referencia); // garante que a parcela existe
         Pagamento pagamento = new Pagamento(new PagamentoId(repositorio.proximoId()), referencia, forma,
@@ -82,7 +88,7 @@ public class PagamentoService {
 
     public void cancelarLancamentoAguardando(String referencia, String justificativa) {
         if (justificativa == null || justificativa.isBlank()) {
-            throw new IllegalArgumentException("A justificativa do cancelamento é obrigatória");
+            throw new IllegalArgumentException("Informe a justificativa para cancelar o pagamento pendente.");
         }
         Pagamento pagamento = aguardandoDe(referencia)
                 .orElseThrow(() -> new IllegalStateException("Sem lançamento aguardando para a parcela " + referencia));
@@ -117,6 +123,10 @@ public class PagamentoService {
         return entradasFluxoCaixa.stream().mapToDouble(Double::doubleValue).sum();
     }
 
+    public List<Pagamento> pagamentos() {
+        return repositorio.todosPagamentos();
+    }
+
     private boolean existeAguardando(String referencia) {
         return aguardandoDe(referencia).isPresent();
     }
@@ -129,10 +139,10 @@ public class PagamentoService {
 
     private void validarValorEData(double valor, LocalDate data) {
         if (valor <= 0) {
-            throw new IllegalArgumentException("O valor do pagamento deve ser positivo");
+            throw new IllegalArgumentException("O valor recebido deve ser maior que zero.");
         }
         if (data != null && data.isAfter(LocalDate.now())) {
-            throw new IllegalArgumentException("A data do pagamento não pode ser futura");
+            throw new IllegalArgumentException("A data do pagamento não pode ser futura.");
         }
     }
 }
