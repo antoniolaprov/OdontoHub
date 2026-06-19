@@ -12,6 +12,9 @@ import com.g4.odontohub.cadastropaciente.domain.service.PacienteService;
 import com.g4.odontohub.cadastropaciente.infrastructure.persistence.InMemoryPacienteRepository;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
+import java.util.Comparator;
+import java.util.List;
+
 public class PacienteApplicationService {
 
     private final PacienteService service;
@@ -67,5 +70,12 @@ public class PacienteApplicationService {
 
     public Paciente buscarPorNome(String nomeCompleto) {
         return service.buscarPorNome(nomeCompleto);
+    }
+
+    /** Pacientes cadastrados, mais recente primeiro (leitura para o frontend). */
+    public List<Paciente> listarTodos() {
+        return service.listarTodos().stream()
+                .sorted(Comparator.comparing((Paciente p) -> p.getId().id()).reversed())
+                .toList();
     }
 }

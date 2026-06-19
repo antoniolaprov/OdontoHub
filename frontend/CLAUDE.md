@@ -62,8 +62,10 @@ useEffect(() => {
 - ✅ **Dentista / Dashboard** — Pareto via `GET /api/churn/pareto-cancelamentos`
   (série mensal de churn e custo de cadeira vazia seguem mock — sem endpoint)
 - ✅ **Dentista / Medicamentos** — `GET /api/medicamentos`
-- ⬜ **Dentista / Prontuários** — precisa de **read model novo no backend**
-  (lista de pacientes/planos/procedimentos/prescrições/ficha clínica não existe).
+- ✅ **Dentista / Prontuários (Anamnese + Plano de Tratamento, F02/F03)** —
+  `GET /api/pacientes` (lista), `GET/POST /api/prontuarios/anamnese/...`,
+  `GET/POST/PUT/DELETE /api/prontuarios/planos/...` (procedimentos, encerrar,
+  excluir). A aba Prescrições (F08) continua mock — fora de escopo do F02/F03.
 - ⬜ **Recepcionista** — Agenda, Pacientes, Pagamentos, Acordos
 - ⬜ **Auxiliar** — Estoque, Esterilização, Instrumentos
 

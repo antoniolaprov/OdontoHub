@@ -52,6 +52,10 @@ public class AnamneseService {
         return repository.buscarPorPacienteId(pacienteId) != null;
     }
 
+    public Anamnese buscarPorPacienteId(Long pacienteId) {
+        return repository.buscarPorPacienteId(pacienteId);
+    }
+
     public String verificarAlergiaParaSubstancia(Long pacienteId, String substancia) {
         Anamnese anamnese = repository.buscarPorPacienteId(pacienteId);
         if (anamnese == null) return null;

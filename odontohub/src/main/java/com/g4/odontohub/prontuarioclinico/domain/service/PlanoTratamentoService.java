@@ -16,6 +16,10 @@ public class PlanoTratamentoService {
         this.repository = repository;
     }
 
+    public PlanoTratamento buscarPorPacienteId(Long pacienteId) {
+        return repository.buscarPorPacienteId(pacienteId);
+    }
+
     public PlanoId criarPlano(Long pacienteId, Long dentistaId) {
         if (!anamneseService.anamneseExiste(pacienteId)) {
             throw new IllegalStateException("Paciente não possui anamnese registrada");

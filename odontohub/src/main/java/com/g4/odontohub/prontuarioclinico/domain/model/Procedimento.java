@@ -62,6 +62,11 @@ public class Procedimento {
         return horasPassadas <= 24;
     }
 
+    /** Alias em formato getter (para serialização JSON) de {@link #estaDentroDaJanelaDeCorrecao()}. */
+    public boolean isDentroDaJanelaDeCorrecao() {
+        return estaDentroDaJanelaDeCorrecao();
+    }
+
     public ProcedimentoId getId() { return id; }
     public String getNome() { return nome; }
     public StatusProcedimento getStatus() { return status; }

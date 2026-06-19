@@ -5,6 +5,8 @@ import com.g4.odontohub.cadastropaciente.domain.model.Paciente;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /** Camada de apresentação (REST) do contexto de Cadastro de Paciente — F13. */
 @RestController
 @RequestMapping("/api/pacientes")
@@ -30,6 +32,12 @@ public class PacienteRestController {
     @GetMapping("/{nome}")
     public ResponseEntity<Paciente> buscar(@PathVariable String nome) {
         return ResponseEntity.ok(applicationService.buscarPorNome(nome));
+    }
+
+    /** Lista todos os pacientes, mais recente primeiro (leitura para o frontend). */
+    @GetMapping
+    public ResponseEntity<List<Paciente>> listar() {
+        return ResponseEntity.ok(applicationService.listarTodos());
     }
 
     public record PacienteRequest(String nomeCompleto, String cpf, String dataNascimento,
