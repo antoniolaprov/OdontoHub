@@ -85,24 +85,34 @@ public class FluxoCaixaService {
         return l;
     }
 
+    /** Saldo atual: soma só os lançamentos já confirmados (data até hoje). */
     public double calcularSaldoAtual() {
-        return calcularSaldo();
+        return calcularSaldo(true);
     }
 
+    /** Saldo projetado: confirmados + previstos (parcelas a vencer, saídas previstas). */
     public double calcularSaldoProjetado() {
-        return calcularSaldo();
+        return calcularSaldo(false);
     }
 
     // =========================
 
     public double calcularSaldo() {
+        return calcularSaldo(false);
+    }
+
+    private double calcularSaldo(boolean apenasConfirmados) {
+        LocalDate hoje = LocalDate.now();
+
         double entradas = repositorio.todos().stream()
                 .filter(l -> l.getTipo() == TipoLancamento.ENTRADA)
+                .filter(l -> !apenasConfirmados || !l.getData().isAfter(hoje))
                 .mapToDouble(LancamentoFinanceiro::getValor)
                 .sum();
 
         double saidas = repositorio.todos().stream()
                 .filter(l -> l.getTipo() == TipoLancamento.SAIDA)
+                .filter(l -> !apenasConfirmados || !l.getData().isAfter(hoje))
                 .mapToDouble(LancamentoFinanceiro::getValor)
                 .sum();
 
