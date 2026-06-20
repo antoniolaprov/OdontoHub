@@ -3,32 +3,6 @@
 Story map (estilo Jeff Patton) das 18 funcionalidades (F1–F18), organizado pelas
 **jornadas de usuário** (personas) do sistema.
 
-## Como ler este mapa
-- **Persona** (seção `##`): a jornada de usuário responsável — *Clínica/Administrador,
-  Recepcionista, Auxiliar, Cirurgião-Dentista*.
-- **Funcionalidade** (seção `###`): a atividade principal dentro da jornada daquela
-  persona (ex.: *Agendar consultas*) — é o "guarda-chuva" de todas as tabelas/colunas
-  abaixo dela.
-- **Mini-funcionalidades** (cabeçalho da tabela): as ações que compõem a funcionalidade
-  principal. A própria funcionalidade principal sempre aparece como a **primeira
-  coluna**; as demais são ações secundárias (ex.: *Remarcar agendamento*). Regras de
-  negócio que o sistema executa por conta própria (ex.: bloquear agendamento em
-  conflito de horário, calcular juros automaticamente) **não entram como coluna** —
-  só ações que o próprio usuário realiza.
-- **Passos** (linhas da tabela): a sequência para realizar aquela ação, sempre com
-  verbo no infinitivo. O número de passos varia de coluna para coluna.
-
-> 💡 **F10 (Follow-up), F16 (Lembretes) e F17 (Não Comparecimento)** têm ação de
-> usuário real (quem registra é a Recepcionista), mas **não têm tela própria** no
-> frontend hoje — são cobertas só por BDD. Estão incluídas no mapa porque são
-> funcionalidades do sistema, só não fazem parte da demonstração visual.
-> No F15, as ações descritas como "paciente acessa o portal" no BDD não têm tela de
-> autoatendimento implementada — quem opera essa parte hoje é a Recepcionista.
-
----
-
-## 🟪 Persona: Clínica / Administrador
-
 
 ## 🟦 Persona: Recepcionista
 
