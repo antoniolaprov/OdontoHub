@@ -1,84 +1,87 @@
 # 🎤 Roteiro de Apresentação — OdontoHub
 ### "A jornada de um paciente na Clínica OdontoHub"
 
-> Sistema de gestão para clínicas odontológicas — **DDD + Arquitetura Limpa**.
-> 18 funcionalidades (F1–F18) em *bounded contexts* independentes, que se
-> conversam por **eventos de domínio**, com cobertura **BDD (Cucumber, 190 cenários verdes)**.
+> Apresentação **informal**, direto com o professor, **sem abrir código/IDE em nenhum
+> momento** — só o sistema rodando no navegador e, no fechamento, um terminal com o
+> resultado dos testes (texto em português, não código). Cada um fala da própria
+> funcionalidade, mostrando na tela e contando a história, sem ler slide.
 
 ---
 
 ## ✅ Antes de começar
 - Sistema rodando: `docker compose up --build` (faça o **1º build com antecedência** — baixa dependências e leva alguns minutos).
 - Acesso: **http://localhost:8090** · login `admin@odontohub.com` / `odonto123`.
-- Os dados já vêm **semeados** (paciente *Maria Santos*, equipe, estoque, medicamentos, etc.).
-- Use o botão **"← Trocar perfil"** no menu lateral pra navegar entre **Recepcionista / Auxiliar / Cirurgião-Dentista**.
-- **Importante:** garanta que a máquina está na branch `feat/automacao-bdd-f07-f17`.
+- Os dados já vêm **semeados** (paciente *Maria Santos*, equipe, estoque, medicamentos, etc.) — não precisa cadastrar nada do zero pra ter o que mostrar.
+- Use o botão **"← Trocar perfil"** no menu lateral pra navegar entre **Recepcionista / Auxiliar / Cirurgião-Dentista** — é o que faz o "handoff" entre quem está falando.
+- Garanta que a máquina está na branch `main` (ou `feat/automacao-bdd-f07-f17`, são iguais).
+- Deixa um terminal aberto, na pasta `odontohub`, **sem rodar nada ainda** — só usado no fechamento.
 
-> 💡 As funcionalidades **com tela** são demonstradas ao vivo. As que são
-> **backend + regra de negócio** (Follow-up F10, Lembretes F16, Não Comparecimento F17)
-> são apresentadas pelos **cenários BDD em português** (especificação executável) + testes.
+> 💡 Três funcionalidades não têm tela própria (Follow-up F10, Lembretes F16, Não
+> Comparecimento F17) — são regras que rodam "nos bastidores" (disparadas
+> automaticamente pelo sistema, não por um clique do usuário). Em vez de abrir
+> código pra mostrar isso, a gente **conta a regra com uma frase** e deixa a prova
+> pro fechamento, quando todo mundo já apresentou.
 
 ---
 
 ## 1️⃣ Antônio Augusto — Abertura + Clínica (F18) + Financeiro (F4) + Estoque (F5)
 *~4 min — abre a apresentação porque o contexto dele é "a própria clínica".*
 
-- **Login/Cadastro de Clínica (F18):** mostra a tela de login; explica que é **multi-clínica**, com senha protegida por **BCrypt**. Faz o login.
-- **Pitch de arquitetura (30s):** *"O sistema é DDD + Arquitetura Limpa, 18 funcionalidades em bounded contexts independentes, que se conversam por eventos de domínio."*
-- **Auxiliar → Estoque (F5):** mostra os materiais; clica **Repor** num material.
+- **Login/Cadastro de Clínica (F18):** mostra a tela de login, comenta rápido que o sistema é **multi-clínica** (cada clínica tem seu próprio login) e que a senha é protegida (não fica visível nem pra quem administra). Faz o login.
+- **Auxiliar → Estoque (F5):** mostra os materiais cadastrados; clica em **Repor** num material que está baixo.
 - **Cirurgião-Dentista → Fluxo de Caixa (F4):** mostra o **Saldo Atual** e os lançamentos.
-  - **🔗 Integração:** repor estoque gerou automaticamente uma **saída no caixa** (eventos entre contextos). Faz um **Novo Lançamento Manual**.
+  - **🔗 Plot twist:** "a reposição que eu acabei de fazer no estoque já apareceu aqui como uma saída" — mostra o lançamento novo. Depois faz um **Novo Lançamento Manual** pra fechar.
 
 ## 2️⃣ João Patriota — Recepção: Pacientes (F13) + Agenda (F1) + Instrumentos (F14) + Esterilização (F6)
-*~5 min — "recebe" o paciente e cuida dos bastidores.*
+*~5 min — "recebe" o paciente e cuida dos bastidores da clínica.*
 
-- **Recepcionista → Pacientes (F13):** cadastra um paciente novo — mostra as **máscaras automáticas** (CPF / telefone / data de nascimento).
-- **🔗 Integração ao vivo:** vai na **Agenda (F1)** e mostra que o paciente recém-cadastrado **já aparece no seletor** (propagação por eventos F13→F1). Cria um **agendamento**.
-- **Auxiliar → Instrumentos (F14):** lista / cadastra um instrumento.
-- **Auxiliar → Esterilização (F6):** roda um **ciclo de esterilização** num instrumento (esterilizar → contaminar).
+- **Recepcionista → Pacientes (F13):** cadastra um paciente novo, mostrando que o sistema **formata sozinho** CPF, telefone e data de nascimento enquanto digita.
+- **Agenda (F1):** abre o seletor de paciente e mostra que o paciente **que acabou de cadastrar já está lá** — cria um agendamento pra ele.
+- **Auxiliar → Instrumentos (F14):** mostra a lista de instrumentos, cadastra um novo.
+- **Auxiliar → Esterilização (F6):** pega um instrumento e roda o ciclo: esterilizar → (se quiser, mostrar) contaminar.
 
 ## 3️⃣ Felipe Andrade — Atendimento Clínico: Anamnese (F2) + Plano de Tratamento (F3)
 *~4 min — o paciente é atendido.*
 
-- **Cirurgião-Dentista → Prontuários:** escolhe o paciente.
-- **Anamnese (F2):** preenche alergias e condições sistêmicas.
-- **Plano de Tratamento (F3):** cria o plano, **adiciona um procedimento**, marca como **Realizado** e por fim **Encerra o plano**.
-  - Destaque: **trilha de auditoria** e **versionamento** do plano.
+- **Cirurgião-Dentista → Prontuários:** escolhe um paciente.
+- **Anamnese (F2):** preenche alergias e condições de saúde do paciente.
+- **Plano de Tratamento (F3):** cria um plano, adiciona um procedimento (já com os **materiais usados**, que abate do estoque de verdade), marca como **Realizado** e por fim encerra o plano.
+  - Comenta de passagem: cada alteração fica registrada num histórico — não tem como "sumir" com uma evolução clínica depois de 24h.
 
 ## 4️⃣ Mateus Dornellas — Medicação + Financeiro do Paciente: Medicamentos (F8) + Pagamentos (F15) + Inadimplência (F9)
 *~5 min — prescrição e cobrança.*
 
-- **Cirurgião-Dentista → Medicamentos (F8):** mostra o catálogo (classes farmacológicas validadas).
+- **Cirurgião-Dentista → Medicamentos (F8):** mostra o catálogo de medicamentos.
 - **Recepcionista → Pagamentos (F15):** numa parcela em aberto, clica **Registrar pagamento → Confirmar agora**.
-  - **🔗 Integração:** o recebimento **gera entrada automática no Fluxo de Caixa** (pode voltar no F4 pra mostrar).
-- **Recepcionista → Acordos/Inadimplência (F9):** mostra o paciente **Restrito** (juros/multa calculados), **registra uma cobrança** e **cria um acordo** (a restrição some).
+  - **🔗 Plot twist:** volta no Financeiro (F4) e mostra que esse pagamento **já entrou como receita no caixa**, sem ninguém ter lançado na mão.
+- **Recepcionista → Acordos/Inadimplência (F9):** mostra um paciente **Restrito** (com juros calculados), registra uma cobrança e fecha um **acordo** — a restrição cai.
 
 ## 5️⃣ Daniel Andrade — Relacionamento + Equipe: Recall (F7) + Equipe (F12)
 *~4 min.*
 
-- **Recepcionista → Recall (F7):** mostra a **fila de retorno** priorizada; **registra uma tentativa de contato** com um paciente.
-- **Cirurgião-Dentista → Equipe (F12):** mostra os colaboradores e **permissões por função** (Especialista / Recepcionista / Auxiliar / Administrador); cadastra um colaborador, registra **disponibilidade / ausência**.
+- **Recepcionista → Recall (F7):** mostra a fila de pacientes que estão devendo retorno, ordenada por prioridade; registra uma tentativa de contato com um deles.
+- **Cirurgião-Dentista → Equipe (F12):** mostra os colaboradores e as permissões de cada função (Cirurgião-Dentista / Recepcionista / Auxiliar); cadastra um colaborador novo e registra uma ausência.
 
 ## 6️⃣ Jarbas Esteves — Retenção: Churn (F11) + Follow-up (F10)
-*~3 min — parte visual + parte BDD.*
+*~3 min.*
 
-- **Churn (F11) — visual:** **Cirurgião-Dentista → Dashboard** → mostra o **Pareto de cancelamentos** (backend `/api/churn/pareto-cancelamentos`).
-- **Follow-up (F10) — via BDD:** funcionalidade de regra (sem tela). Abre **`odontohub/src/test/resources/features/F10_followup.feature`** (Cucumber em português) e lê 1–2 cenários como "especificação executável". Explica o gatilho de follow-up pós-procedimento.
+- **Churn (F11):** **Cirurgião-Dentista → Dashboard** → mostra o gráfico de **Pareto de cancelamentos** (quais motivos mais cancelam consulta).
+- **Follow-up (F10) — sem tela, conta a regra:** "depois de um procedimento, o sistema agenda sozinho um contato de acompanhamento — não é o profissional que precisa lembrar". Não precisa abrir nada — só essa frase, e segue.
 
 ## 7️⃣ Gabriel Belo — Confirmação: Lembretes (F16) + Não Comparecimento (F17)
-*~3 min — via BDD.*
+*~3 min — sem tela, conta as regras.*
 
-- Funcionalidades de domínio/regra (sem tela dedicada). Apresenta pelos **cenários BDD**:
-  - **`F16_lembretes.feature`** — envio / confirmação / recusa de lembrete de consulta.
-  - **`F17_nao_comparecimento.feature`** — registro de falta e **detecção de paciente reincidente**.
-- Mostra que a regra está **coberta e testada**, mesmo sem UI.
+- **Lembretes (F16):** "o sistema dispara um lembrete antes da consulta, e registra se o paciente confirmou ou recusou."
+- **Não Comparecimento (F17):** "se o paciente falta sem avisar, o sistema registra a falta — e se isso se repetir, ele entra como reincidente, o que pode bloquear novo agendamento (é o gancho com o F1, que o João mostrou no começo)."
+- Fecha com: "essas duas e o Follow-up do Jarbas não têm uma tela própria de propósito — são regras que o sistema cumpre sozinho. A prova de que funcionam é a próxima parte."
 
 ## 🏁 Fechamento (Antônio Augusto, ou todos juntos)
-*~2 min — prova de qualidade + arquitetura.*
+*~2 min — a prova de que tudo (com tela ou sem tela) realmente funciona.*
 
-- Roda no terminal: `cd odontohub && ./mvnw test` → **"190 cenários, 0 falhas"** ao vivo.
-  - *"Todas as funcionalidades têm comportamento garantido por testes automatizados (BDD)."*
-- Frase de efeito sobre **integração:** *"Cada contexto é independente, mas o sistema é coeso — um paciente cadastrado uma vez aparece na Agenda, no Recall, na Inadimplência e nos Pagamentos, via eventos de domínio."*
+- Roda no terminal, ao vivo: `cd odontohub && ./mvnw test`.
+- Enquanto sobe, comenta: "isso aqui não é código, é o resultado: cada linha é uma regra de negócio escrita em português, sendo checada de verdade contra o sistema."
+- Deixa aparecer o resultado final: **"190 Scenarios (190 passed)"** — esse número cobre as 18 funcionalidades, incluindo as 3 que não têm tela.
+- Frase de fechamento: *"Um paciente cadastrado uma vez aparece na Agenda, no Recall, na Inadimplência e nos Pagamentos sem ninguém digitar de novo — porque os módulos conversam entre si por dentro do sistema."*
 
 ---
 
@@ -91,15 +94,16 @@
 | 3 | **Felipe Andrade** | F2, F3 | Dentista→Prontuários |
 | 4 | **Mateus Dornellas** | F8, F15, F9 | Dentista→Medicamentos · Recep→Pagamentos/Acordos |
 | 5 | **Daniel Andrade** | F7, F12 | Recep→Recall · Dentista→Equipe |
-| 6 | **Jarbas Esteves** | F11, F10 | Dentista→Dashboard · `.feature` (BDD) |
-| 7 | **Gabriel Belo** | F16, F17 | `.feature` (BDD) |
+| 6 | **Jarbas Esteves** | F11, F10 | Dentista→Dashboard · (F10 só de boca) |
+| 7 | **Gabriel Belo** | F16, F17 | Só de boca, prova no fechamento |
 
 ---
 
 ## 🧭 Dicas finais
-- **Ordem dos perfis** segue a jornada: **Recepção → Auxiliar → Dentista**. O botão **"Trocar perfil"** facilita os *handoffs* entre apresentadores.
-- Ao agir numa tela, **dê F5 depois** pra provar que **persistiu** (não é mock — é banco H2 real).
-- **Mencionem as integrações** (estoque→caixa, pagamento→caixa, paciente→agenda) — é o que mais impressiona e mostra maturidade de arquitetura.
+- **Ordem dos perfis** segue a jornada: **Recepção → Auxiliar → Dentista**. O botão **"Trocar perfil"** facilita os *handoffs* entre quem está apresentando.
+- Ao agir numa tela, **dê F5 depois** pra provar que persistiu (é banco H2 real, não é mock).
+- **Aposta nas integrações** (estoque→caixa, pagamento→caixa, paciente→agenda) — é o que mais impressiona e mostra que o sistema não é um conjunto de telas soltas.
+- Nenhum apresentador precisa abrir IDE ou arquivo de código — só o navegador, e um terminal único no fechamento.
 - Login demo: `admin@odontohub.com` / `odonto123`.
 
 ---
@@ -109,4 +113,4 @@
 **Recepcionista:** Agenda (F1) · Pacientes (F13) · Recall (F7) · Acordos/Inadimplência (F9) · Pagamentos (F15)
 **Auxiliar:** Estoque (F5) · Esterilização (F6) · Instrumentos (F14)
 **Cirurgião-Dentista:** Prontuários — Anamnese/Plano (F2/F3) · Financeiro (F4) · Equipe (F12) · Medicamentos (F8) · Dashboard/Churn (F11)
-**Sem tela (apresentar via BDD):** Follow-up (F10) · Lembretes (F16) · Não Comparecimento (F17)
+**Sem tela (contar de boca, provar no fechamento):** Follow-up (F10) · Lembretes (F16) · Não Comparecimento (F17)

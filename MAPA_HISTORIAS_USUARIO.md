@@ -1,127 +1,219 @@
 # 🗺️ Mapa de Histórias de Usuário — OdontoHub
 
-Story map (estilo Jeff Patton) das 18 funcionalidades (F1–F18), organizado pela
-**jornada da clínica**: a linha de cima (espinha dorsal) são as grandes etapas;
-abaixo de cada etapa ficam as histórias de usuário correspondentes.
+Story map (estilo Jeff Patton) das 18 funcionalidades (F1–F18), organizado pelas
+**jornadas de usuário** (personas) do sistema.
 
-> 💡 Este diagrama **renderiza automaticamente no GitHub e no VS Code**.
-> Para exportar como imagem (PNG/SVG), veja as instruções no fim do arquivo.
+## Como ler este mapa
+- **Persona** (seção `##`): a jornada de usuário responsável — *Clínica/Administrador,
+  Recepcionista, Auxiliar, Cirurgião-Dentista*.
+- **Funcionalidade** (seção `###`): a atividade principal dentro da jornada daquela
+  persona (ex.: *Agendar consultas*) — é o "guarda-chuva" de todas as tabelas/colunas
+  abaixo dela.
+- **Mini-funcionalidades** (cabeçalho da tabela): as ações que compõem a funcionalidade
+  principal. A própria funcionalidade principal sempre aparece como a **primeira
+  coluna**; as demais são ações secundárias (ex.: *Remarcar agendamento*). Regras de
+  negócio que o sistema executa por conta própria (ex.: bloquear agendamento em
+  conflito de horário, calcular juros automaticamente) **não entram como coluna** —
+  só ações que o próprio usuário realiza.
+- **Passos** (linhas da tabela): a sequência para realizar aquela ação, sempre com
+  verbo no infinitivo. O número de passos varia de coluna para coluna.
 
----
-
-## Diagrama (Mermaid)
-
-```mermaid
-flowchart LR
-    %% ===== Espinha dorsal (atividades da jornada) =====
-    subgraph E1["1 · Acessar o Sistema"]
-        direction TB
-        n18["F18 · Cadastrar / logar clínica"]
-    end
-
-    subgraph E2["2 · Receber o Paciente"]
-        direction TB
-        n13["F13 · Cadastrar paciente"]
-        n1["F1 · Agendar consulta"]
-        n16["F16 · Enviar lembrete de consulta"]
-        n17["F17 · Registrar não comparecimento"]
-    end
-
-    subgraph E3["3 · Preparar o Atendimento"]
-        direction TB
-        n5["F5 · Controlar estoque de materiais"]
-        n14["F14 · Cadastrar instrumentos"]
-        n6["F6 · Esterilizar instrumentos"]
-    end
-
-    subgraph E4["4 · Realizar o Atendimento"]
-        direction TB
-        n2["F2 · Registrar anamnese"]
-        n3["F3 · Montar plano de tratamento"]
-        n8["F8 · Prescrever medicamentos"]
-    end
-
-    subgraph E5["5 · Faturar e Cobrar"]
-        direction TB
-        n15["F15 · Registrar pagamentos"]
-        n9["F9 · Gerir inadimplência / acordos"]
-        n4["F4 · Acompanhar fluxo de caixa"]
-    end
-
-    subgraph E6["6 · Relacionar e Reter"]
-        direction TB
-        n7["F7 · Recall de retorno"]
-        n10["F10 · Follow-up pós-atendimento"]
-        n11["F11 · Analisar churn (cancelamentos)"]
-    end
-
-    subgraph E7["7 · Gerir a Clínica"]
-        direction TB
-        n12["F12 · Gerir equipe e permissões"]
-    end
-
-    %% ===== Backbone (sequência da jornada) =====
-    E1 --> E2 --> E3 --> E4 --> E5 --> E6 --> E7
-
-    %% ===== Cores por persona =====
-    classDef gestor    fill:#E8DAFF,stroke:#7C3AED,color:#111;
-    classDef recep     fill:#DBEAFE,stroke:#2563EB,color:#111;
-    classDef auxiliar  fill:#DCFCE7,stroke:#16A34A,color:#111;
-    classDef dentista  fill:#FEF9C3,stroke:#CA8A04,color:#111;
-
-    class n18,n12 gestor;
-    class n13,n1,n16,n17,n15,n9,n7 recep;
-    class n5,n14,n6 auxiliar;
-    class n2,n3,n8,n4,n10,n11 dentista;
-```
-
-**Legenda de personas (cores):**
-🟪 Gestor/Clínica · 🟦 Recepcionista · 🟩 Auxiliar · 🟨 Cirurgião-Dentista
-
-> As funcionalidades **F10 (Follow-up)**, **F16 (Lembretes)** e **F17 (Não
-> Comparecimento)** são de regra de negócio (sem tela), validadas por **BDD**.
+> 💡 **F10 (Follow-up), F16 (Lembretes) e F17 (Não Comparecimento)** têm ação de
+> usuário real (quem registra é a Recepcionista), mas **não têm tela própria** no
+> frontend hoje — são cobertas só por BDD. Estão incluídas no mapa porque são
+> funcionalidades do sistema, só não fazem parte da demonstração visual.
+> No F15, as ações descritas como "paciente acessa o portal" no BDD não têm tela de
+> autoatendimento implementada — quem opera essa parte hoje é a Recepcionista.
 
 ---
 
-## Histórias de usuário (detalhadas)
+## 🟪 Persona: Clínica / Administrador
 
-| F | Persona | História ("Como… quero… para…") |
+
+## 🟦 Persona: Recepcionista
+
+### F13 · Cadastrar pacientes
+
+| Cadastrar paciente | Cadastrar paciente (rápido) | Atualizar dados do paciente | Restringir / reativar paciente |
+|---|---|---|---|
+| Informar nome | Informar nome | Selecionar paciente | Selecionar paciente |
+| Informar CPF | Informar telefone | Escolher campo a alterar | Confirmar alteração de status |
+| Informar telefone | Confirmar cadastro rápido | Informar novo valor | |
+| Informar data de nascimento | | Informar responsável pela alteração | |
+| Informar e-mail | | Confirmar atualização | |
+| Confirmar cadastro | | | |
+
+### F1 · Agendar consultas
+
+| Agendar consulta | Confirmar agendamento | Remarcar agendamento | Cancelar agendamento |
+|---|---|---|---|
+| Selecionar paciente | Selecionar agendamento | Selecionar agendamento | Selecionar agendamento |
+| Selecionar dentista | Confirmar presença do paciente | Escolher nova data e horário | Selecionar categoria do motivo |
+| Escolher data e horário | | Confirmar remarcação | Informar o motivo do cancelamento |
+| Confirmar agendamento | | | Confirmar cancelamento |
+
+### F16 · Enviar lembrete de consulta
+
+| Gerar lembrete |
+|---|
+| Selecionar o agendamento |
+| Escolher o canal de envio (WhatsApp/SMS/E-mail) |
+| Confirmar a geração do lembrete |
+
+### F17 · Registrar não comparecimento
+
+| Registrar falta |
+|---|
+| Selecionar o agendamento |
+| Informar se a falta foi justificada |
+| Confirmar o registro da falta |
+
+### F7 · Gerenciar fila de recall
+
+| Consultar fila priorizada | Registrar tentativa de contato | Agendar a partir do recall |
 |---|---|---|
-| **F18** | Clínica | Como dono da clínica, quero **cadastrar e acessar minha clínica com senha segura** para usar o sistema com meus dados isolados. |
-| **F13** | Recepcionista | Como recepcionista, quero **cadastrar os pacientes** (completo ou rápido) para manter um registro confiável. |
-| **F1** | Recepcionista | Como recepcionista, quero **agendar, confirmar, remarcar e cancelar consultas** para organizar a agenda. |
-| **F16** | Recepcionista | Como recepcionista, quero **enviar lembretes de consulta** para reduzir faltas. |
-| **F17** | Recepcionista | Como recepcionista, quero **registrar não comparecimentos** e identificar reincidentes para agir sobre faltas recorrentes. |
-| **F5** | Auxiliar | Como auxiliar, quero **controlar o estoque de materiais** (repor, alerta de mínimo) para nunca faltar insumo. |
-| **F14** | Auxiliar | Como auxiliar, quero **cadastrar e acompanhar instrumentos** para rastrear o instrumental. |
-| **F6** | Auxiliar | Como auxiliar, quero **gerir ciclos de esterilização** para garantir a biossegurança. |
-| **F2** | Dentista | Como dentista, quero **registrar a anamnese** (alergias, condições) para um atendimento seguro. |
-| **F3** | Dentista | Como dentista, quero **montar e gerir o plano de tratamento** (procedimentos, realizar, encerrar) para conduzir o caso. |
-| **F8** | Dentista | Como dentista, quero **consultar o catálogo e prescrever medicamentos** para receitar com segurança. |
-| **F15** | Recepcionista | Como recepcionista, quero **registrar pagamentos e comprovantes** para baixar parcelas e alimentar o caixa. |
-| **F9** | Recepcionista | Como recepcionista, quero **acompanhar inadimplentes e negociar acordos** para recuperar débitos. |
-| **F4** | Dentista/Gestor | Como gestor, quero **acompanhar o fluxo de caixa** (saldo, lançamentos, projeção) para controlar as finanças. |
-| **F7** | Recepcionista | Como recepcionista, quero **priorizar e contatar pacientes para recall** para trazer pacientes de volta. |
-| **F10** | Sistema | Como clínica, quero **disparar follow-up pós-atendimento** para acompanhar o paciente após o procedimento. |
-| **F11** | Gestor | Como gestor, quero **analisar churn (Pareto de cancelamentos)** para entender e reduzir a perda de pacientes. |
-| **F12** | Gestor | Como gestor, quero **gerir a equipe e permissões por função** para organizar acessos e disponibilidade. |
+| Abrir a fila de recall | Selecionar paciente na fila | Selecionar paciente na fila |
+| Visualizar a prioridade de cada paciente | Escolher o canal de contato | Escolher data e horário |
+| | Registrar o resultado do contato | Confirmar o agendamento |
+
+### F9 · Gerir inadimplência e acordos
+
+| Consultar inadimplentes | Registrar cobrança | Criar acordo de pagamento | Cancelar acordo |
+|---|---|---|---|
+| Abrir a lista de inadimplentes | Selecionar paciente inadimplente | Selecionar as parcelas vencidas | Selecionar o acordo ativo |
+| Visualizar parcelas, juros e multa | Escolher o canal de contato | Definir o número de parcelas | Informar a justificativa |
+| | Registrar o resultado da cobrança | Informar a justificativa | Confirmar o cancelamento |
+| | | Confirmar o acordo | |
+
+### F15 · Registrar pagamentos
+
+| Registrar pagamento | Marcar aguardando comprovante | Confirmar comprovante | Cancelar pagamento pendente | Emitir comprovante / declaração |
+|---|---|---|---|---|
+| Selecionar a parcela em aberto | Selecionar a parcela | Selecionar a parcela pendente | Selecionar o lançamento pendente | Selecionar o paciente |
+| Informar o valor recebido | Confirmar a marcação | Informar o valor recebido | Informar a justificativa | Consultar o histórico financeiro |
+| Selecionar a forma de pagamento | | Informar a data | Confirmar o cancelamento | Solicitar comprovante ou declaração de quitação |
+| Confirmar o pagamento | | Confirmar o recebimento | | |
+
+### F10 · Acompanhar pós-operatório
+
+| Preencher checklist de acompanhamento |
+|---|
+| Selecionar a tarefa de follow-up pendente |
+| Informar se houve sangramento |
+| Informar o nível de dor |
+| Confirmar o checklist |
 
 ---
 
-## 📤 Como visualizar e exportar como imagem (passo a passo)
+## 🟩 Persona: Auxiliar
 
-### Opção A — Ver no GitHub (mais simples)
-1. Faça o push (já versionado no repositório).
-2. Abra o arquivo `MAPA_HISTORIAS_USUARIO.md` direto no GitHub.
-3. O diagrama Mermaid **renderiza sozinho** na página. (Para virar imagem, dê print ou use a Opção C.)
+### F5 · Controlar estoque de materiais
 
-### Opção B — Ver no VS Code
-1. Instale a extensão **"Markdown Preview Mermaid Support"** (bierner).
-2. Abra este arquivo e tecle **Ctrl+Shift+V** (preview).
-3. Para PNG: instale também **"Mermaid Markdown Syntax Highlighting"** ou use a Opção C.
+| Cadastrar material | Registrar reposição |
+|---|---|
+| Informar o nome do material | Selecionar o material |
+| Informar a unidade de medida | Informar a quantidade reposta |
+| Informar o saldo inicial | Informar o custo unitário |
+| Informar o ponto mínimo | Informar o fornecedor |
+| Confirmar o cadastro | Confirmar a reposição |
 
-### Opção C — Exportar PNG/SVG (mermaid.live)
-1. Acesse **https://mermaid.live**.
-2. Apague o exemplo e **cole apenas o conteúdo de dentro do bloco ```mermaid```** (sem as crases).
-3. No painel direito → menu **Actions / Export** → escolha **PNG** ou **SVG**.
-4. Salve a imagem onde quiser.
+### F6 · Esterilizar instrumentos
+
+| Marcar como estéril | Marcar como contaminado | Consultar instrumentos prontos para uso |
+|---|---|---|
+| Selecionar o instrumento | Selecionar o instrumento | Abrir a lista de instrumentos |
+| Selecionar o responsável pela esterilização | Confirmar a marcação como contaminado | Filtrar por estéril e dentro do prazo |
+| Confirmar a esterilização | | |
+
+### F14 · Cadastrar instrumentos
+
+| Cadastrar instrumento | Cadastrar kit | Desativar / reativar instrumento | Configurar prazo de validade |
+|---|---|---|---|
+| Informar o nome | Informar o nome do kit | Selecionar o instrumento | Escolher prazo global ou por categoria |
+| Informar a categoria | Informar a categoria | Confirmar a alteração de status | Informar o novo prazo em dias |
+| Informar o código | Informar o código | | Confirmar a alteração |
+| Informar o prazo de validade | Selecionar os instrumentos que compõem o kit | | |
+| Confirmar o cadastro | Confirmar o cadastro | | |
+
+---
+
+## 🟨 Persona: Cirurgião-Dentista
+
+### F2 · Registrar anamnese
+
+| Registrar anamnese | Atualizar anamnese |
+|---|---|
+| Selecionar o paciente | Selecionar o paciente |
+| Selecionar o responsável | Adicionar nova alergia ou condição |
+| Informar alergias | Confirmar a atualização |
+| Informar condições sistêmicas | |
+| Confirmar o registro | |
+
+### F3 · Montar plano de tratamento
+
+| Criar plano de tratamento | Adicionar procedimento | Realizar procedimento | Cancelar procedimento | Excluir procedimento | Encerrar plano |
+|---|---|---|---|---|---|
+| Selecionar o paciente | Selecionar o plano | Selecionar o procedimento pendente | Selecionar o procedimento pendente | Selecionar o procedimento realizado | Selecionar o plano |
+| Confirmar a criação do plano | Informar o procedimento | Selecionar o agendamento vinculado | Informar a justificativa | Informar a justificativa | Informar a justificativa de encerramento |
+| | Confirmar a inclusão | Selecionar o executor | Confirmar o cancelamento | Confirmar a exclusão | Confirmar o encerramento |
+| | | Informar a evolução clínica | | | |
+| | | Informar os materiais utilizados | | | |
+| | | Confirmar a realização | | | |
+
+### F4 · Acompanhar fluxo de caixa
+
+| Registrar lançamento manual | Consultar saldo e lançamentos |
+|---|---|
+| Escolher o tipo (entrada ou saída) | Abrir o fluxo de caixa |
+| Informar o valor | Filtrar por tipo |
+| Informar a categoria | Filtrar por período |
+| Informar a descrição | Visualizar o saldo atual |
+| Confirmar o lançamento | |
+
+### F11 · Analisar churn
+
+| Consultar dashboard de cancelamentos | Filtrar churn por procedimento |
+|---|---|
+| Abrir o dashboard | Selecionar o procedimento |
+| Visualizar o gráfico de Pareto dos motivos | Visualizar os pacientes evadidos filtrados |
+
+### F12 · Gerir equipe
+
+| Cadastrar colaborador | Editar dados do colaborador | Desativar / reativar colaborador | Definir disponibilidade | Registrar ausência |
+|---|---|---|---|---|
+| Informar o nome | Selecionar o colaborador | Selecionar o colaborador | Selecionar o colaborador | Selecionar o colaborador |
+| Informar o CPF | Editar telefone ou e-mail | Confirmar a alteração de status | Informar os dias e horários disponíveis | Selecionar o tipo de ausência |
+| Informar o telefone | Confirmar a atualização | | Confirmar a disponibilidade | Informar o período |
+| Selecionar a função | | | | Confirmar o registro |
+| Confirmar o cadastro | | | | |
+
+### F8 · Consultar e prescrever medicamentos
+
+| Consultar catálogo | Prescrever medicamento | Repetir prescrição anterior | Consultar histórico de prescrições |
+|---|---|---|---|
+| Abrir o catálogo de medicamentos | Selecionar o paciente | Selecionar a prescrição anterior | Selecionar o paciente |
+| Selecionar o medicamento | Selecionar o medicamento | Confirmar a repetição | Filtrar por período |
+| Visualizar contraindicações e interações | Ajustar a posologia | | Visualizar o histórico |
+| | Adicionar observação | | |
+| | Confirmar a prescrição | | |
+
+### F18 · Cadastrar e acessar a clínica
+
+| Cadastrar clínica | Acessar a clínica (login) |
+|---|---|
+| Informar nome da clínica | Informar e-mail cadastrado |
+| Informar CNPJ | Informar senha |
+| Informar e-mail | Confirmar login |
+| Definir senha de acesso | |
+| Confirmar cadastro | |
+
+---
+---
+
+## 📌 Tabela-resumo (cola rápida)
+
+| Persona | Funcionalidades |
+|---|---|
+| **Recepcionista** | F13, F1, F16, F17, F7, F9, F15, F10 |
+| **Auxiliar** | F5, F6, F14 |
+| **Cirurgião-Dentista** | F2, F3, F4, F11, F12, F8, F18 |
