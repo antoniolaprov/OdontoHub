@@ -32,6 +32,12 @@ public class MedicamentoRestController {
         return ResponseEntity.noContent().build();
     }
 
+    /** Lista o catálogo de medicamentos (leitura para o frontend). */
+    @GetMapping
+    public ResponseEntity<List<Medicamento>> listar() {
+        return ResponseEntity.ok(applicationService.listarParaSelecao());
+    }
+
     @GetMapping("/selecao")
     public ResponseEntity<List<Medicamento>> listarParaSelecao() {
         return ResponseEntity.ok(applicationService.listarParaSelecao());

@@ -5,8 +5,12 @@ import com.g4.odontohub.agendamento.domain.repository.AgendamentoRepository;
 import com.g4.odontohub.cadastropaciente.domain.event.PacienteCadastrado;
 import com.g4.odontohub.cadastropaciente.domain.event.PacienteCadastradoRapido;
 import com.g4.odontohub.shared.DomainEventPublisher;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Configuration
 public class AgendamentoBeanConfig {
@@ -25,5 +29,24 @@ public class AgendamentoBeanConfig {
         DomainEventPublisher.subscribe(PacienteCadastradoRapido.class,
                 e -> service.cadastrarPaciente(e.nomeCompleto()));
         return service;
+    }
+
+    /** Semeia agendamentos de exemplo para a agenda não iniciar vazia (só se não houver nenhum). */
+    @Bean
+    public CommandLineRunner seedAgendamentos(AgendamentoApplicationService agendamentoService) {
+        return args -> {
+            if (!agendamentoService.listarTodos().isEmpty()) {
+                return;
+            }
+            agendamentoService.cadastrarDentista("Dra. Helena Martins");
+            agendamentoService.cadastrarPaciente("Maria Santos");
+            agendamentoService.cadastrarPaciente("João Pereira");
+            agendamentoService.cadastrarPaciente("Ana Costa");
+
+            LocalDateTime base = LocalDateTime.of(LocalDateTime.now().toLocalDate().plusDays(1), LocalTime.of(9, 0));
+            agendamentoService.registrarAgendamento("Maria Santos", "Dra. Helena Martins", base);
+            agendamentoService.registrarAgendamento("João Pereira", "Dra. Helena Martins", base.plusHours(1));
+            agendamentoService.registrarAgendamento("Ana Costa", "Dra. Helena Martins", base.plusDays(1));
+        };
     }
 }

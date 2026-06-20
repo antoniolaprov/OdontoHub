@@ -38,4 +38,19 @@ public class EstoqueBeanConfig {
     public InstrumentoApplicationService instrumentoApplicationService(InstrumentoRepository instrumentoRepository) {
         return new InstrumentoApplicationService(instrumentoRepository);
     }
+
+    /** Semeia instrumentos de exemplo para a tela de Instrumentos não iniciar vazia (só se não houver nenhum). */
+    @Bean
+    public CommandLineRunner seedInstrumentos(InstrumentoApplicationService instrumentoService) {
+        return args -> {
+            if (!instrumentoService.listarTodos().isEmpty()) {
+                return;
+            }
+            instrumentoService.cadastrarInstrumento("Espelho Clínico nº5", "Diagnóstico", "INS-001");
+            instrumentoService.cadastrarInstrumento("Sonda Exploradora", "Diagnóstico", "INS-002");
+            instrumentoService.cadastrarInstrumento("Pinça Clínica", "Diagnóstico", "INS-003");
+            instrumentoService.cadastrarInstrumento("Cureta Periodontal", "Periodontia", "INS-004");
+            instrumentoService.cadastrarInstrumento("Fórceps nº150", "Cirurgia", "INS-005");
+        };
+    }
 }
