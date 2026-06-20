@@ -33,6 +33,12 @@ public class FluxoCaixaRestController {
         return ResponseEntity.ok(applicationService.getLancamentos());
     }
 
+    /** Saldo atual (apenas lançamentos já confirmados) — usado pela KPI do frontend. */
+    @GetMapping("/saldo-atual")
+    public ResponseEntity<Double> saldoAtual() {
+        return ResponseEntity.ok(applicationService.calcularSaldoAtual());
+    }
+
     @GetMapping("/saldo-projetado")
     public ResponseEntity<Double> saldoProjetado() {
         return ResponseEntity.ok(applicationService.calcularSaldoProjetado());
