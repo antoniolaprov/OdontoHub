@@ -130,8 +130,9 @@ public class F11ChurnSteps {
 
     @E("a mensagem deve informar {string}")
     public void mensagemDeveInformar(String mensagem) {
-        assertNotNull(excecaoCapturada);
-        assertEquals(mensagem, excecaoCapturada.getMessage());
+        Exception ex = excecaoCapturada != null ? excecaoCapturada : SharedTestServices.getLastException();
+        assertNotNull(ex);
+        assertEquals(mensagem, ex.getMessage());
     }
 
     // ----- F11: Pareto de motivos de cancelamento e filtro por procedimento -----

@@ -192,7 +192,8 @@ public class F01AgendamentoSteps {
 
     @Então("o sistema deve rejeitar o cancelamento")
     public void sistemaDeveRejeitarCancelamento() {
-        assertNotNull(excecaoCapturada, "O sistema deveria ter rejeitado o cancelamento");
+        Exception ex = excecaoCapturada != null ? excecaoCapturada : SharedTestServices.getLastException();
+        assertNotNull(ex, "O sistema deveria ter rejeitado o cancelamento");
     }
 
     @Então("o sistema deve rejeitar a remarcação")
