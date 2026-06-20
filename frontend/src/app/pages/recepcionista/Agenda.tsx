@@ -38,6 +38,23 @@ interface Paciente {
   restrito: boolean;
 }
 
+interface FollowupCard {
+  paciente: string;
+  cirurgia: string;
+  data: string;
+}
+
+interface FollowupFlags {
+  dorIntensa: boolean;
+  sangramentoExcessivo: boolean;
+  febre: boolean;
+}
+
+const FOLLOWUP_CARDS: FollowupCard[] = [
+  { paciente: "Marcos Pereira", cirurgia: "Extração", data: "26/04/2026" },
+  { paciente: "Paula Mendes", cirurgia: "Implante", data: "27/04/2026" },
+];
+
 const DENTISTAS = [
   "Dra. Sofia Martins",
   "Dr. Ricardo Alves",
@@ -175,6 +192,14 @@ function adaptarPacienteParaAgenda(b: any): Paciente {
   };
 }
 
+function followupFlagsPadrao(): FollowupFlags {
+  return {
+    dorIntensa: false,
+    sangramentoExcessivo: false,
+    febre: false,
+  };
+}
+
 // Mesma regra do backend (Agendamento.validarHorarioComercial): seg-sex, 08:00-17:00.
 function foraDoHorarioComercial(data: Date, hora: string): string | null {
   const dia = data.getDay();
@@ -194,6 +219,10 @@ export default function RecepcionistaAgenda() {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [carregandoAgendamentos, setCarregandoAgendamentos] = useState(true);
+  const [followupFlags, setFollowupFlags] = useState<Record<string, FollowupFlags>>(() =>
+    Object.fromEntries(FOLLOWUP_CARDS.map((card) => [card.paciente, followupFlagsPadrao()])) as Record<string, FollowupFlags>,
+  );
+  const [followupEnviando, setFollowupEnviando] = useState<Record<string, boolean>>({});
 
   // Carrega os agendamentos reais do backend — sem fallback: vazio/erro mostra a tela vazia.
   const carregarAgendamentos = useCallback(() => {
@@ -568,6 +597,34 @@ export default function RecepcionistaAgenda() {
       setErroRemarcar(e.message ?? "Falha ao remarcar agendamento.");
     } finally {
       setSalvandoRemarcar(false);
+    }
+  }
+
+  async function handleAcionarEmergencia(card: FollowupCard) {
+    const flags = followupFlags[card.paciente] ?? followupFlagsPadrao();
+    setFollowupEnviando((atual) => ({ ...atual, [card.paciente]: true }));
+    try {
+      await api.post("/followups/gatilho", {
+        paciente: card.paciente,
+        tipoProcedimento: "Cirurgia",
+      });
+      await api.post("/followups/checklist", {
+        paciente: card.paciente,
+        sangramento: flags.sangramentoExcessivo,
+        nivelDor: flags.dorIntensa ? 8 : 3,
+        observacoes: flags.febre
+          ? "Febre relatada no follow-up pós-cirúrgico."
+          : "Checklist pós-cirúrgico registrado pela recepção.",
+        responsavel: "Recepcionista",
+        dentistaResponsavel: "Dra. Sofia Martins",
+      });
+      setToast({ msg: `Follow-up de ${card.paciente} registrado com sucesso!`, tipo: "sucesso" });
+      setTimeout(() => setToast(null), 3000);
+    } catch (e: any) {
+      setToast({ msg: e.message ?? "Falha ao registrar follow-up.", tipo: "erro" });
+      setTimeout(() => setToast(null), 3000);
+    } finally {
+      setFollowupEnviando((atual) => ({ ...atual, [card.paciente]: false }));
     }
   }
 
@@ -1051,51 +1108,83 @@ export default function RecepcionistaAgenda() {
             <span>🏥</span> Follow-up Pós-Cirúrgico
           </h3>
           <div className="space-y-2">
-            {[
-              {
-                nome: "Marcos Pereira",
-                cirurgia: "Extração",
-                data: "26/04/2026",
-              },
-              {
-                nome: "Paula Mendes",
-                cirurgia: "Implante",
-                data: "27/04/2026",
-              },
-            ].map((pac, i) => (
+            {FOLLOWUP_CARDS.map((pac) => {
+              const flags = followupFlags[pac.paciente] ?? followupFlagsPadrao();
+              const enviando = Boolean(followupEnviando[pac.paciente]);
+              return (
               <div
-                key={i}
+                key={pac.paciente}
                 className="border-2 border-gray-300 bg-white p-3"
               >
                 <div className="font-bold text-sm">
-                  {pac.nome}
+                  {pac.paciente}
                 </div>
                 <div className="text-xs text-gray-500 mb-2">
                   {pac.cirurgia} — {pac.data}
                 </div>
                 <div className="space-y-1 mb-2">
                   {[
-                    "Dor intensa?",
-                    "Sangramento excessivo?",
-                    "Febre?",
-                  ].map((q) => (
+                    {
+                      label: "Dor intensa?",
+                      checked: flags.dorIntensa,
+                      onChange: (checked: boolean) =>
+                        setFollowupFlags((atual) => ({
+                          ...atual,
+                          [pac.paciente]: {
+                            ...(atual[pac.paciente] ?? followupFlagsPadrao()),
+                            dorIntensa: checked,
+                          },
+                        })),
+                    },
+                    {
+                      label: "Sangramento excessivo?",
+                      checked: flags.sangramentoExcessivo,
+                      onChange: (checked: boolean) =>
+                        setFollowupFlags((atual) => ({
+                          ...atual,
+                          [pac.paciente]: {
+                            ...(atual[pac.paciente] ?? followupFlagsPadrao()),
+                            sangramentoExcessivo: checked,
+                          },
+                        })),
+                    },
+                    {
+                      label: "Febre?",
+                      checked: flags.febre,
+                      onChange: (checked: boolean) =>
+                        setFollowupFlags((atual) => ({
+                          ...atual,
+                          [pac.paciente]: {
+                            ...(atual[pac.paciente] ?? followupFlagsPadrao()),
+                            febre: checked,
+                          },
+                        })),
+                    },
+                  ].map((item) => (
                     <label
-                      key={q}
+                      key={item.label}
                       className="flex items-center gap-2 text-xs"
                     >
                       <input
                         type="checkbox"
                         className="border-2 border-gray-400"
+                        checked={item.checked}
+                        onChange={(e) => item.onChange(e.target.checked)}
                       />
-                      {q}
+                      {item.label}
                     </label>
                   ))}
                 </div>
-                <button className="w-full px-3 py-1 border-2 border-red-500 bg-red-500 text-white text-xs font-bold">
-                  🚨 Acionar Emergência
+                <button
+                  onClick={() => void handleAcionarEmergencia(pac)}
+                  disabled={enviando}
+                  className="w-full px-3 py-1 border-2 border-red-500 bg-red-500 text-white text-xs font-bold disabled:opacity-60"
+                >
+                  {enviando ? "Registrando..." : "🚨 Acionar Emergência"}
                 </button>
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
