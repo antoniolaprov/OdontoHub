@@ -13,7 +13,16 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
 
   if (!res.ok) {
     const texto = await res.text().catch(() => "");
-    throw new Error(`API ${method} ${path} falhou (${res.status}): ${texto}`);
+    // O backend devolve erros de validação como {"erro":"..."} (ou {"message":"..."}).
+    // Quando houver, mostramos só essa mensagem limpa; senão, o texto/HTTP cru.
+    let mensagem = "";
+    try {
+      const corpo = JSON.parse(texto);
+      mensagem = corpo?.erro ?? corpo?.message ?? "";
+    } catch {
+      /* corpo não-JSON: mantém o texto cru */
+    }
+    throw new Error(mensagem || `API ${method} ${path} falhou (${res.status}): ${texto}`);
   }
 
   // Endpoints que retornam 204/202 sem corpo.

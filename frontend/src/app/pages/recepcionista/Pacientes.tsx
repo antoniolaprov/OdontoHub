@@ -31,6 +31,39 @@ interface Paciente {
   historicoAlteracoes: AlteracaoCadastral[];
 }
 
+// ─── Máscaras de input (formatam enquanto o usuário digita) ───────────────────
+// Backend guarda cpf/dataNascimento/telefone como String pura — máscara é só
+// cosmética e mantém o formato consistente (ajuda inclusive na checagem de CPF).
+
+function mascaraCPF(valor: string): string {
+  const d = valor.replace(/\D/g, "").slice(0, 11);
+  return d
+    .replace(/^(\d{3})(\d)/, "$1.$2")
+    .replace(/^(\d{3})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/^(\d{3})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3-$4");
+}
+
+function mascaraTelefone(valor: string): string {
+  const d = valor.replace(/\D/g, "").slice(0, 11);
+  if (d.length <= 10) {
+    // (00) 0000-0000
+    return d
+      .replace(/^(\d{2})(\d)/, "($1) $2")
+      .replace(/(\d{4})(\d)/, "$1-$2");
+  }
+  // (00) 00000-0000
+  return d
+    .replace(/^(\d{2})(\d)/, "($1) $2")
+    .replace(/(\d{5})(\d)/, "$1-$2");
+}
+
+function mascaraData(valor: string): string {
+  const d = valor.replace(/\D/g, "").slice(0, 8);
+  return d
+    .replace(/^(\d{2})(\d)/, "$1/$2")
+    .replace(/^(\d{2})\/(\d{2})(\d)/, "$1/$2/$3");
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: StatusPaciente }) {
@@ -599,12 +632,12 @@ export default function RecepcionistaPacientes() {
                 </label>
                 <input
                   className="w-full border-2 border-gray-400 p-2 outline-none"
-                  placeholder="Ex: 81 9 9999-1111"
+                  placeholder="Ex: (81) 99999-1111"
                   value={form.telefone}
                   onChange={(e) => {
                     setForm((f) => ({
                       ...f,
-                      telefone: e.target.value,
+                      telefone: mascaraTelefone(e.target.value),
                     }));
                     setErroForm("");
                   }}
@@ -625,7 +658,7 @@ export default function RecepcionistaPacientes() {
                       onChange={(e) => {
                         setForm((f) => ({
                           ...f,
-                          cpf: e.target.value,
+                          cpf: mascaraCPF(e.target.value),
                         }));
                         setErroForm("");
                       }}
@@ -638,11 +671,12 @@ export default function RecepcionistaPacientes() {
                     <input
                       className="w-full border-2 border-gray-400 p-2 outline-none"
                       placeholder="DD/MM/AAAA"
+                      inputMode="numeric"
                       value={form.dataNascimento}
                       onChange={(e) =>
                         setForm((f) => ({
                           ...f,
-                          dataNascimento: e.target.value,
+                          dataNascimento: mascaraData(e.target.value),
                         }))
                       }
                     />
