@@ -1,9 +1,12 @@
 package com.g4.odontohub.financeiro.infrastructure.config;
 
+import com.g4.odontohub.cadastropaciente.domain.event.PacienteCadastrado;
+import com.g4.odontohub.cadastropaciente.domain.event.PacienteCadastradoRapido;
 import com.g4.odontohub.financeiro.application.FluxoCaixaApplicationService;
 import com.g4.odontohub.financeiro.application.InadimplenciaApplicationService;
 import com.g4.odontohub.financeiro.domain.repository.InadimplenciaRepository;
 import com.g4.odontohub.financeiro.domain.repository.LancamentoRepository;
+import com.g4.odontohub.shared.DomainEventPublisher;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -35,6 +38,14 @@ public class FinanceiroBeanConfig {
 
     @Bean
     public InadimplenciaApplicationService inadimplenciaApplicationService(InadimplenciaRepository inadimplenciaRepository) {
-        return new InadimplenciaApplicationService(inadimplenciaRepository);
+        InadimplenciaApplicationService service = new InadimplenciaApplicationService(inadimplenciaRepository);
+        // Cross-context via eventos: paciente cadastrado no F13 passa a ser
+        // conhecido pela Inadimplência (F9), para cobranças/acordos operarem
+        // sobre pacientes reais. Inscrição só na raiz de composição de produção.
+        DomainEventPublisher.subscribe(PacienteCadastrado.class,
+                e -> service.registrarPaciente(e.nomeCompleto()));
+        DomainEventPublisher.subscribe(PacienteCadastradoRapido.class,
+                e -> service.registrarPaciente(e.nomeCompleto()));
+        return service;
     }
 }
