@@ -26,7 +26,6 @@ interface Paciente {
   telefone: string;
   email: string;
   status: StatusPaciente;
-  temPlano: boolean;
   inadimplente: boolean;
   historicoAlteracoes: AlteracaoCadastral[];
 }
@@ -64,6 +63,19 @@ function mascaraData(valor: string): string {
     .replace(/^(\d{2})\/(\d{2})(\d)/, "$1/$2/$3");
 }
 
+// Valida data de calendário real (rejeita 31/02/2026) e não-futura — mesma regra do backend.
+function dataValida(ddmmyyyy: string): boolean {
+  const m = ddmmyyyy.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return false;
+  const [, dStr, mStr, yStr] = m;
+  const dia = Number(dStr), mes = Number(mStr), ano = Number(yStr);
+  const data = new Date(ano, mes - 1, dia);
+  const dataValidaNoCalendario =
+    data.getFullYear() === ano && data.getMonth() === mes - 1 && data.getDate() === dia;
+  if (!dataValidaNoCalendario) return false;
+  return data.getTime() <= new Date().getTime();
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: StatusPaciente }) {
@@ -85,7 +97,7 @@ function StatusBadge({ status }: { status: StatusPaciente }) {
 
 function emptyForm(): Omit<
   Paciente,
-  "id" | "historicoAlteracoes"
+  "id" | "historicoAlteracoes" | "inadimplente"
 > {
   return {
     nome: "",
@@ -94,15 +106,14 @@ function emptyForm(): Omit<
     telefone: "",
     email: "",
     status: "ATIVO",
-    temPlano: false,
-    inadimplente: false,
   };
 }
 
-// ─── Integração com o backend (GET /api/pacientes) ────────────────────────────
+// ─── Integração com o backend (GET /api/pacientes, GET /api/inadimplencia) ───
 // Sem fallback pra mock: lista vazia/erro mostra a tela vazia de verdade.
 // status do backend (ATIVO/INATIVO/INCOMPLETO/RESTRITO) já bate com a UI.
-// temPlano/inadimplente não existem no contexto de Cadastro de Paciente — default false.
+// "Inadimplente" não existe no contexto de Cadastro de Paciente — é derivado de
+// verdade a partir da Inadimplência (F09), cruzando pelo nome do paciente.
 
 const CAMPO_PARA_BACKEND: Record<string, string> = {
   nome: "nomeCompleto",
@@ -121,7 +132,6 @@ function adaptarPaciente(b: any, indice: number): Paciente {
     telefone: b.telefone ?? "",
     email: b.email ?? "",
     status: (b.status as StatusPaciente) ?? "ATIVO",
-    temPlano: false,
     inadimplente: false,
     historicoAlteracoes: (b.historicoAlteracoes ?? []).map((h: any) => ({
       campo: h.campo ?? "",
@@ -140,14 +150,27 @@ export default function RecepcionistaPacientes() {
   const [carregandoPacientes, setCarregandoPacientes] = useState(true);
 
   // Carrega os pacientes reais do backend — sem fallback: vazio/erro mostra a tela vazia.
+  // Cruza com /api/inadimplencia (F09) pra marcar "Inadimplente" com dado real, em vez de mock.
   const carregarPacientes = useCallback(() => {
-    return api.get<any[]>("/pacientes")
-      .then((lista) => setPacientes(Array.isArray(lista) ? lista.map(adaptarPaciente) : []))
-      .catch((e) => {
+    return Promise.all([
+      api.get<any[]>("/pacientes").catch((e) => {
         console.warn("Falha ao carregar pacientes do backend:", e);
-        setPacientes([]);
-      })
-      .finally(() => setCarregandoPacientes(false));
+        return [];
+      }),
+      api.get<any[]>("/inadimplencia").catch((e) => {
+        console.warn("Falha ao carregar inadimplência do backend:", e);
+        return [];
+      }),
+    ]).then(([listaPacientes, listaInadimplencia]) => {
+      const nomesInadimplentes = new Set(
+        (Array.isArray(listaInadimplencia) ? listaInadimplencia : []).map((i: any) => i.paciente),
+      );
+      const adaptados = (Array.isArray(listaPacientes) ? listaPacientes : []).map((b, i) => ({
+        ...adaptarPaciente(b, i),
+        inadimplente: nomesInadimplentes.has(b.nomeCompleto),
+      }));
+      setPacientes(adaptados);
+    }).finally(() => setCarregandoPacientes(false));
   }, []);
 
   useEffect(() => { carregarPacientes(); }, [carregarPacientes]);
@@ -239,8 +262,6 @@ export default function RecepcionistaPacientes() {
       telefone: p.telefone,
       email: p.email,
       status: p.status,
-      temPlano: p.temPlano,
-      inadimplente: p.inadimplente,
     });
     setCadastroRapido(false);
     setErroForm("");
@@ -254,6 +275,10 @@ export default function RecepcionistaPacientes() {
       setErroForm("Nome é obrigatório.");
       return;
     }
+    if (!/[A-Za-zÀ-ÖØ-öø-ÿ]/.test(form.nome)) {
+      setErroForm("Nome deve conter ao menos uma letra.");
+      return;
+    }
     if (!cadastroRapido && !form.cpf.trim()) {
       setErroForm("CPF é obrigatório no cadastro completo.");
       return;
@@ -262,12 +287,26 @@ export default function RecepcionistaPacientes() {
       setErroForm("Telefone é obrigatório.");
       return;
     }
+    if (!cadastroRapido) {
+      if (!form.dataNascimento.trim()) {
+        setErroForm("Data de nascimento é obrigatória no cadastro completo.");
+        return;
+      }
+      if (!dataValida(form.dataNascimento)) {
+        setErroForm("Data de nascimento inválida.");
+        return;
+      }
+      if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+        setErroForm("E-mail em formato inválido.");
+        return;
+      }
+    }
 
     setSalvando(true);
     setErroForm("");
     try {
       if (modalForm.paciente) {
-        // editar — um PUT por campo alterado (status só é suportado via Restringir)
+        // editar — um PUT por campo alterado, mais um POST /status se o status mudou
         const pacienteAtual = modalForm.paciente;
         const campos: (keyof typeof form)[] = [
           "nome",
@@ -287,8 +326,8 @@ export default function RecepcionistaPacientes() {
             });
           }
         }
-        if (form.status === "RESTRITO" && pacienteAtual.status !== "RESTRITO") {
-          await api.post(`/pacientes/${pacienteAtual.id}/restringir`);
+        if (form.status !== pacienteAtual.status) {
+          await api.post(`/pacientes/${pacienteAtual.id}/status`, { status: form.status });
         }
         await carregarPacientes();
         showToast("Paciente atualizado com sucesso.", "sucesso");
@@ -698,66 +737,35 @@ export default function RecepcionistaPacientes() {
                       }
                     />
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-bold mb-1">
-                        Status
-                      </label>
-                      <select
-                        className="w-full border-2 border-gray-400 p-2 bg-white outline-none"
-                        value={form.status}
-                        onChange={(e) =>
-                          setForm((f) => ({
-                            ...f,
-                            status: e.target
-                              .value as StatusPaciente,
-                          }))
-                        }
-                      >
-                        <option value="ATIVO">Ativo</option>
-                        <option value="INATIVO">Inativo</option>
-                        <option value="INCOMPLETO">
-                          Incompleto
-                        </option>
-                        <option value="RESTRITO">
-                          Restrito
-                        </option>
-                      </select>
-                    </div>
-                    <div className="flex flex-col gap-2 pt-6">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={form.temPlano}
-                          onChange={(e) =>
-                            setForm((f) => ({
-                              ...f,
-                              temPlano: e.target.checked,
-                            }))
-                          }
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-bold">
-                          Tem plano
-                        </span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={form.inadimplente}
-                          onChange={(e) =>
-                            setForm((f) => ({
-                              ...f,
-                              inadimplente: e.target.checked,
-                            }))
-                          }
-                          className="w-4 h-4"
-                        />
-                        <span className="text-sm font-bold text-red-600">
-                          Inadimplente
-                        </span>
-                      </label>
-                    </div>
+                  <div>
+                    <label className="block text-sm font-bold mb-1">
+                      Status
+                    </label>
+                    <select
+                      className="w-full border-2 border-gray-400 p-2 bg-white outline-none"
+                      value={form.status}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          status: e.target
+                            .value as StatusPaciente,
+                        }))
+                      }
+                    >
+                      <option value="ATIVO">Ativo</option>
+                      <option value="INATIVO">Inativo</option>
+                      <option value="INCOMPLETO">
+                        Incompleto
+                      </option>
+                      <option value="RESTRITO">
+                        Restrito
+                      </option>
+                    </select>
+                    <p className="text-xs text-gray-400 mt-1">
+                      "Inadimplente" é calculado automaticamente
+                      a partir da Inadimplência (F09) — não é
+                      editável aqui.
+                    </p>
                   </div>
                 </>
               )}
@@ -825,12 +833,6 @@ export default function RecepcionistaPacientes() {
                 {
                   label: "E-mail",
                   value: modalDetalhes.paciente.email || "—",
-                },
-                {
-                  label: "Tem plano",
-                  value: modalDetalhes.paciente.temPlano
-                    ? "Sim"
-                    : "Não",
                 },
                 {
                   label: "Inadimplente",

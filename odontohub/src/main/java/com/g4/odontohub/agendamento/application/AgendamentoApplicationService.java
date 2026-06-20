@@ -5,6 +5,8 @@ import com.g4.odontohub.agendamento.domain.model.*;
 import com.g4.odontohub.agendamento.domain.repository.AgendamentoRepository;
 import com.g4.odontohub.agendamento.domain.service.AgendamentoService;
 import com.g4.odontohub.agendamento.infrastructure.persistence.InMemoryAgendamentoRepository;
+import com.g4.odontohub.cadastropaciente.application.PacienteApplicationService;
+import com.g4.odontohub.cadastropaciente.domain.model.StatusPaciente;
 import com.g4.odontohub.shared.DomainEventPublisher;
 
 import java.time.LocalDateTime;
@@ -15,13 +17,21 @@ import java.util.Map;
 public class AgendamentoApplicationService {
 
     private final AgendamentoService agendamentoService;
+    /** Leitura cross-context (ACL): null nos testes BDD, que não verificam a regra de Restrito. */
+    private final PacienteApplicationService pacienteApplicationService;
 
     public AgendamentoApplicationService() {
-        this(new InMemoryAgendamentoRepository());
+        this(new InMemoryAgendamentoRepository(), null);
     }
 
     public AgendamentoApplicationService(AgendamentoRepository repositorio) {
+        this(repositorio, null);
+    }
+
+    public AgendamentoApplicationService(AgendamentoRepository repositorio,
+                                         PacienteApplicationService pacienteApplicationService) {
         this.agendamentoService = new AgendamentoService(repositorio);
+        this.pacienteApplicationService = pacienteApplicationService;
     }
 
     // ACL: simulação de dados cross-context (em memória para testes)
@@ -70,12 +80,25 @@ public class AgendamentoApplicationService {
         Long denId = dentistaIds.get(nomeDentista);
         boolean planoAtivo = pacientesComPlanoAtivo.getOrDefault(pacId, false);
         boolean inadimplente = pacientesInadimplentes.getOrDefault(pacId, false);
+        boolean restrito = pacienteEstaRestrito(nomePaciente);
 
         Agendamento ag = agendamentoService.registrarAgendamento(
-                new PacienteId(pacId), new DentistaId(denId), dataHora, planoAtivo, inadimplente,
+                new PacienteId(pacId), new DentistaId(denId), dataHora, planoAtivo, inadimplente, restrito,
                 nomesDentistas.getOrDefault(denId, nomeDentista));
         DomainEventPublisher.publish(new AgendamentoRegistrado(ag.getId(), pacId, denId, dataHora, ag.getTipo()));
         return ag;
+    }
+
+    /** Consulta o status real do paciente no contexto de Cadastro de Pacientes (F13). */
+    private boolean pacienteEstaRestrito(String nomePaciente) {
+        if (pacienteApplicationService == null) {
+            return false;
+        }
+        try {
+            return pacienteApplicationService.statusDe(nomePaciente) == StatusPaciente.RESTRITO;
+        } catch (IllegalArgumentException pacienteNaoEncontrado) {
+            return false;
+        }
     }
 
     /** Leitura de um agendamento pelo identificador; retorna {@code null} se inexistente. */

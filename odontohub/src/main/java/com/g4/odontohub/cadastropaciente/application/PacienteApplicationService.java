@@ -7,6 +7,7 @@ import com.g4.odontohub.cadastropaciente.domain.event.PacienteRestrito;
 import com.g4.odontohub.cadastropaciente.domain.model.AlteracaoCadastral;
 import com.g4.odontohub.cadastropaciente.domain.model.Paciente;
 import com.g4.odontohub.cadastropaciente.domain.model.PacienteRegistroId;
+import com.g4.odontohub.cadastropaciente.domain.model.StatusPaciente;
 import com.g4.odontohub.cadastropaciente.domain.repository.PacienteRepository;
 import com.g4.odontohub.cadastropaciente.domain.service.PacienteService;
 import com.g4.odontohub.cadastropaciente.infrastructure.persistence.InMemoryPacienteRepository;
@@ -58,6 +59,18 @@ public class PacienteApplicationService {
         Paciente paciente = service.buscarPorId(pacienteId);
         DomainEventPublisher.publish(new PacienteRestrito(pacienteId));
         return paciente;
+    }
+
+    /** Transição genérica de status — usada pela tela de edição para reverter um paciente Restrito. */
+    public Paciente atualizarStatus(PacienteRegistroId pacienteId, StatusPaciente novoStatus, String responsavel) {
+        service.atualizarStatus(pacienteId, novoStatus, responsavel);
+        return service.buscarPorId(pacienteId);
+    }
+
+    /** Status atual do paciente (leitura usada por outros contextos, ex.: Agendamento, para bloquear pacientes Restritos). */
+    public StatusPaciente statusDe(String nomeCompleto) {
+        Paciente paciente = service.buscarPorNome(nomeCompleto);
+        return paciente.getStatus();
     }
 
     public boolean cpfJaCadastrado(String cpf) {

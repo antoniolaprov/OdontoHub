@@ -19,12 +19,16 @@ public class AgendamentoService {
 
     public Agendamento registrarAgendamento(PacienteId pacienteId, DentistaId dentistaId,
                                             LocalDateTime dataHora, boolean pacienteTemPlanoAtivo,
-                                            boolean pacienteInadimplente, String nomeDentista) {
+                                            boolean pacienteInadimplente, boolean pacienteRestrito, String nomeDentista) {
         if (dataHora.isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Não é possível agendar para datas passadas.");
         }
+        Agendamento.validarHorarioComercial(dataHora);
         if (pacienteInadimplente) {
             throw new IllegalArgumentException("Paciente inadimplente");
+        }
+        if (pacienteRestrito) {
+            throw new IllegalArgumentException("Paciente restrito");
         }
         if (existeConflitoDeHorario(dentistaId, dataHora)) {
             throw new IllegalArgumentException("Conflito de horário: " + nomeDentista

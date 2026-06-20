@@ -26,6 +26,11 @@ public class PacienteService {
         if (cpfJaCadastrado(cpf)) {
             throw new IllegalArgumentException("CPF já cadastrado.");
         }
+        if (vazio(dataNascimento)) {
+            throw new IllegalArgumentException("Data de nascimento é obrigatória no cadastro completo.");
+        }
+        Paciente.validarDataNascimentoFormato(dataNascimento);
+        Paciente.validarEmailFormato(email);
         if (!vazio(email) && emailJaCadastrado(email)) {
             throw new IllegalArgumentException("E-mail já cadastrado.");
         }
@@ -54,6 +59,14 @@ public class PacienteService {
     public void restringirPaciente(PacienteRegistroId pacienteId) {
         Paciente paciente = buscarPorId(pacienteId);
         paciente.restringir();
+        repositorio.salvar(paciente);
+        ultimoPaciente = paciente;
+    }
+
+    /** Transição genérica de status — única forma de tirar um paciente de Restrito. */
+    public void atualizarStatus(PacienteRegistroId pacienteId, StatusPaciente novoStatus, String responsavel) {
+        Paciente paciente = buscarPorId(pacienteId);
+        paciente.atualizarStatus(novoStatus);
         repositorio.salvar(paciente);
         ultimoPaciente = paciente;
     }
@@ -93,9 +106,7 @@ public class PacienteService {
     }
 
     private void validarNome(String nomeCompleto) {
-        if (vazio(nomeCompleto)) {
-            throw new IllegalArgumentException("Nome é obrigatório.");
-        }
+        Paciente.validarNomeFormato(nomeCompleto);
     }
 
     private void validarTelefone(String telefone) {

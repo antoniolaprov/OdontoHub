@@ -2,6 +2,7 @@ package com.g4.odontohub.agendamento.infrastructure.config;
 
 import com.g4.odontohub.agendamento.application.AgendamentoApplicationService;
 import com.g4.odontohub.agendamento.domain.repository.AgendamentoRepository;
+import com.g4.odontohub.cadastropaciente.application.PacienteApplicationService;
 import com.g4.odontohub.cadastropaciente.domain.event.PacienteCadastrado;
 import com.g4.odontohub.cadastropaciente.domain.event.PacienteCadastradoRapido;
 import com.g4.odontohub.shared.DomainEventPublisher;
@@ -9,6 +10,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
@@ -16,8 +19,9 @@ import java.time.LocalTime;
 public class AgendamentoBeanConfig {
 
     @Bean
-    public AgendamentoApplicationService agendamentoApplicationService(AgendamentoRepository repositorio) {
-        AgendamentoApplicationService service = new AgendamentoApplicationService(repositorio);
+    public AgendamentoApplicationService agendamentoApplicationService(
+            AgendamentoRepository repositorio, PacienteApplicationService pacienteApplicationService) {
+        AgendamentoApplicationService service = new AgendamentoApplicationService(repositorio, pacienteApplicationService);
         // Integração cross-context (ACL) via eventos de domínio: um paciente
         // cadastrado no contexto de Cadastro de Pacientes (F13) passa a ser
         // reconhecido pelo Agendamento (F1), sem acoplar os dois contextos.
@@ -43,10 +47,21 @@ public class AgendamentoBeanConfig {
             agendamentoService.cadastrarPaciente("João Pereira");
             agendamentoService.cadastrarPaciente("Ana Costa");
 
-            LocalDateTime base = LocalDateTime.of(LocalDateTime.now().toLocalDate().plusDays(1), LocalTime.of(9, 0));
+            // Agendamentos só são aceitos de segunda a sexta — usa o próximo dia útil pra não falhar no boot de fim de semana.
+            LocalDate proximoDiaUtil = proximoDiaUtil(LocalDateTime.now().toLocalDate().plusDays(1));
+            LocalDate diaUtilSeguinte = proximoDiaUtil(proximoDiaUtil.plusDays(1));
+            LocalDateTime base = LocalDateTime.of(proximoDiaUtil, LocalTime.of(9, 0));
             agendamentoService.registrarAgendamento("Maria Santos", "Dra. Helena Martins", base);
             agendamentoService.registrarAgendamento("João Pereira", "Dra. Helena Martins", base.plusHours(1));
-            agendamentoService.registrarAgendamento("Ana Costa", "Dra. Helena Martins", base.plusDays(1));
+            agendamentoService.registrarAgendamento("Ana Costa", "Dra. Helena Martins", LocalDateTime.of(diaUtilSeguinte, LocalTime.of(9, 0)));
         };
+    }
+
+    private static LocalDate proximoDiaUtil(LocalDate data) {
+        LocalDate d = data;
+        while (d.getDayOfWeek() == DayOfWeek.SATURDAY || d.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            d = d.plusDays(1);
+        }
+        return d;
     }
 }

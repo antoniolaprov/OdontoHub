@@ -35,6 +35,7 @@ interface Paciente {
   telefone: string;
   temPlano: boolean;
   inadimplente: boolean;
+  restrito: boolean;
 }
 
 const DENTISTAS = [
@@ -170,7 +171,21 @@ function adaptarPacienteParaAgenda(b: any): Paciente {
     telefone: b.telefone ?? "—",
     temPlano: false,
     inadimplente: false,
+    restrito: b.status === "RESTRITO",
   };
+}
+
+// Mesma regra do backend (Agendamento.validarHorarioComercial): seg-sex, 08:00-17:00.
+function foraDoHorarioComercial(data: Date, hora: string): string | null {
+  const dia = data.getDay();
+  if (dia === 0 || dia === 6) {
+    return "Agendamentos só podem ser feitos de segunda a sexta-feira.";
+  }
+  const [h] = hora.split(":").map(Number);
+  if (h < 8 || h > 17) {
+    return "Agendamentos só podem ser feitos entre 08:00 e 17:00.";
+  }
+  return null;
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
@@ -250,6 +265,7 @@ export default function RecepcionistaAgenda() {
   const [erroCriar, setErroCriar] = useState("");
   const [erroInadimplente, setErroInadimplente] =
     useState(false);
+  const [erroRestrito, setErroRestrito] = useState(false);
 
   // Form: cancelar
   const [motivoCancelar, setMotivoCancelar] = useState("");
@@ -360,6 +376,7 @@ export default function RecepcionistaAgenda() {
     });
     setErroCriar("");
     setErroInadimplente(false);
+    setErroRestrito(false);
     setModalCriar(true);
   }
 
@@ -414,11 +431,20 @@ export default function RecepcionistaAgenda() {
       );
       return;
     }
+    const erroHorario = foraDoHorarioComercial(dataSel, formCriar.hora);
+    if (erroHorario) {
+      setErroCriar(erroHorario);
+      return;
+    }
     const pac = pacientes.find(
       (p) => p.nome === formCriar.paciente,
     );
     if (pac?.inadimplente) {
       setErroInadimplente(true);
+      return;
+    }
+    if (pac?.restrito) {
+      setErroRestrito(true);
       return;
     }
 
@@ -504,6 +530,11 @@ export default function RecepcionistaAgenda() {
       setErroRemarcar(
         "Não é possível remarcar para datas passadas.",
       );
+      return;
+    }
+    const erroHorario = foraDoHorarioComercial(dataSel, formRemarcar.hora);
+    if (erroHorario) {
+      setErroRemarcar(erroHorario);
       return;
     }
     const dataStr = dateToBR(dataSel);
@@ -1096,6 +1127,18 @@ export default function RecepcionistaAgenda() {
                   </div>
                 </div>
               )}
+              {erroRestrito && (
+                <div className="border-2 border-red-500 bg-red-50 p-3">
+                  <div className="font-bold text-red-700 text-sm">
+                    🚫 Paciente Restrito
+                  </div>
+                  <div className="text-xs text-red-600 mt-1">
+                    Este paciente está com status Restrito no
+                    cadastro. Altere o status na tela de
+                    Pacientes antes de agendar.
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-bold mb-1">
                   Paciente *
@@ -1110,6 +1153,7 @@ export default function RecepcionistaAgenda() {
                     }));
                     setErroCriar("");
                     setErroInadimplente(false);
+                    setErroRestrito(false);
                   }}
                 >
                   <option value="">
@@ -1122,6 +1166,7 @@ export default function RecepcionistaAgenda() {
                     >
                       {p.nome}
                       {p.inadimplente ? " ⚠ Inadimplente" : ""}
+                      {p.restrito ? " 🚫 Restrito" : ""}
                     </option>
                   ))}
                 </select>

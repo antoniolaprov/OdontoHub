@@ -7,8 +7,10 @@ import com.g4.odontohub.agendamento.domain.model.StatusAgendamento;
 import com.g4.odontohub.agendamento.domain.model.TipoAtendimento;
 import io.cucumber.java.pt.*;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -78,7 +80,7 @@ public class F01AgendamentoSteps {
 
     @Dado("que existe um agendamento com status {string} para {string}")
     public void existeAgendamentoComStatus(String status, String nomePaciente) {
-        ultimoAgendamento = service.registrarAgendamento(nomePaciente, DENTISTA_PADRAO, LocalDateTime.now().plusDays(10));
+        ultimoAgendamento = service.registrarAgendamento(nomePaciente, DENTISTA_PADRAO, horarioComercialFuturo(10));
         aplicarStatus(status);
     }
 
@@ -91,7 +93,7 @@ public class F01AgendamentoSteps {
 
     @Dado("que existe um agendamento com status diferente de {string} para {string}")
     public void existeAgendamentoComStatusDiferente(String status, String nomePaciente) {
-        ultimoAgendamento = service.registrarAgendamento(nomePaciente, DENTISTA_PADRAO, LocalDateTime.now().plusDays(10));
+        ultimoAgendamento = service.registrarAgendamento(nomePaciente, DENTISTA_PADRAO, horarioComercialFuturo(10));
     }
 
     @Dado("que existe um agendamento com status diferente de {string} para {string} em {string}")
@@ -115,7 +117,7 @@ public class F01AgendamentoSteps {
     @Quando("a recepcionista tenta registrar um agendamento para {string}")
     public void tentaRegistrarAgendamentoPara(String nomePaciente) {
         tentarExecutar(() -> ultimoAgendamento = service.registrarAgendamento(
-                nomePaciente, DENTISTA_PADRAO, LocalDateTime.now().plusDays(5)));
+                nomePaciente, DENTISTA_PADRAO, horarioComercialFuturo(5)));
     }
 
     @Quando("a recepcionista tenta registrar um agendamento para {string} com {string} em {string}")
@@ -260,8 +262,17 @@ public class F01AgendamentoSteps {
         } else if (statusAgendamento == StatusAgendamento.CANCELADO) {
             service.cancelarAgendamento(ultimoAgendamento.getId(), "Cancelamento de teste", RESPONSAVEL_RECEPCAO);
         } else if (statusAgendamento == StatusAgendamento.REMARCADO) {
-            service.remarcarAgendamento(ultimoAgendamento.getId(), LocalDateTime.now().plusDays(11), RESPONSAVEL_RECEPCAO);
+            service.remarcarAgendamento(ultimoAgendamento.getId(), horarioComercialFuturo(11), RESPONSAVEL_RECEPCAO);
         }
+    }
+
+    /** Próximo horário dentro do expediente (dia útil, 10h) — evita que o teste vire flaky fora de seg-sex/08-17h. */
+    private static LocalDateTime horarioComercialFuturo(int dias) {
+        LocalDate data = LocalDate.now().plusDays(dias);
+        while (data.getDayOfWeek() == DayOfWeek.SATURDAY || data.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            data = data.plusDays(1);
+        }
+        return LocalDateTime.of(data, LocalTime.of(10, 0));
     }
 
     private void tentarExecutar(Operacao operacao) {

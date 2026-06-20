@@ -60,11 +60,11 @@ Funcionalidade: Agendamento de Consultas e Retornos
 
   Cenário: Remarcação de agendamento registra nova data e atualiza status
     Dado que existe um agendamento com status diferente de "CANCELADO" para "João Silva" em "10/05/2030 09:00"
-    Quando a recepcionista remarca o agendamento para "12/05/2030 14:00"
+    Quando a recepcionista remarca o agendamento para "13/05/2030 14:00"
     Então o status do agendamento deve ser "REMARCADO"
-    E a nova data do agendamento deve ser "12/05/2030"
+    E a nova data do agendamento deve ser "13/05/2030"
     E o novo horário deve ser "14:00"
-    E o histórico deve conter uma entrada com a ação "Remarcado para 12/05/2030 às 14:00"
+    E o histórico deve conter uma entrada com a ação "Remarcado para 13/05/2030 às 14:00"
     E o responsável registrado no histórico deve ser "Recepcionista"
 
   Cenário: Rejeição de remarcação em data passada

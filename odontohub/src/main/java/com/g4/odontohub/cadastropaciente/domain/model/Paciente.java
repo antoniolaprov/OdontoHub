@@ -1,6 +1,9 @@
 package com.g4.odontohub.cadastropaciente.domain.model;
 
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,7 +49,12 @@ public class Paciente {
     }
 
     public void restringir() {
-        this.status = StatusPaciente.RESTRITO;
+        atualizarStatus(StatusPaciente.RESTRITO);
+    }
+
+    /** Transição genérica de status (ex.: reverter um paciente Restrito para Ativo). */
+    public void atualizarStatus(StatusPaciente novoStatus) {
+        this.status = novoStatus;
     }
 
     private String valorDoCampo(String campo) {
@@ -62,12 +70,57 @@ public class Paciente {
 
     private void alterarCampo(String campo, String novoValor) {
         switch (campo) {
-            case "nomeCompleto" -> this.nomeCompleto = novoValor;
+            case "nomeCompleto" -> {
+                validarNomeFormato(novoValor);
+                this.nomeCompleto = novoValor;
+            }
             case "cpf" -> this.cpf = novoValor;
-            case "dataNascimento" -> this.dataNascimento = novoValor;
+            case "dataNascimento" -> {
+                validarDataNascimentoFormato(novoValor);
+                this.dataNascimento = novoValor;
+            }
             case "telefone" -> this.telefone = novoValor;
-            case "email" -> this.email = novoValor;
+            case "email" -> {
+                validarEmailFormato(novoValor);
+                this.email = novoValor;
+            }
             default -> throw new IllegalArgumentException("Campo desconhecido: " + campo);
+        }
+    }
+
+    private static final DateTimeFormatter FORMATO_DATA_NASCIMENTO =
+            DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(ResolverStyle.STRICT);
+
+    /** Exige ao menos uma letra — rejeita nomes vazios ou só com números/símbolos. */
+    public static void validarNomeFormato(String nome) {
+        if (nome == null || nome.isBlank()) {
+            throw new IllegalArgumentException("Nome é obrigatório.");
+        }
+        if (!nome.matches(".*[A-Za-zÀ-ÖØ-öø-ÿ].*")) {
+            throw new IllegalArgumentException("Nome deve conter ao menos uma letra.");
+        }
+    }
+
+    /** E-mail é opcional, mas se informado precisa ter formato válido. */
+    public static void validarEmailFormato(String email) {
+        if (email != null && !email.isBlank() && !email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new IllegalArgumentException("E-mail em formato inválido.");
+        }
+    }
+
+    /** Data de nascimento, quando informada, precisa ser uma data de calendário válida (dd/MM/yyyy) e não futura. */
+    public static void validarDataNascimentoFormato(String dataNascimento) {
+        if (dataNascimento == null || dataNascimento.isBlank()) {
+            return;
+        }
+        LocalDate data;
+        try {
+            data = LocalDate.parse(dataNascimento, FORMATO_DATA_NASCIMENTO);
+        } catch (DateTimeParseException e) {
+            throw new IllegalArgumentException("Data de nascimento inválida.");
+        }
+        if (data.isAfter(LocalDate.now())) {
+            throw new IllegalArgumentException("Data de nascimento não pode ser no futuro.");
         }
     }
 

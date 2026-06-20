@@ -77,6 +77,12 @@ public class AgendamentoRestController {
                 a.getResponsavelAlteracao(), a.getDataUltimaAlteracao(), a.getHistorico());
     }
 
+    /** Mapeia erros de validação/regra de negócio para 400, em vez do 500 genérico padrão. */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> tratarErroDeValidacao(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
+
     public record AgendamentoRequest(String paciente, String dentista,
                                      @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataHora) {}
 

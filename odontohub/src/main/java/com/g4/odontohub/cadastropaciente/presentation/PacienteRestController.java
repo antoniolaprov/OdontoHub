@@ -3,6 +3,7 @@ package com.g4.odontohub.cadastropaciente.presentation;
 import com.g4.odontohub.cadastropaciente.application.PacienteApplicationService;
 import com.g4.odontohub.cadastropaciente.domain.model.Paciente;
 import com.g4.odontohub.cadastropaciente.domain.model.PacienteRegistroId;
+import com.g4.odontohub.cadastropaciente.domain.model.StatusPaciente;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -53,8 +54,23 @@ public class PacienteRestController {
         return ResponseEntity.ok(applicationService.restringirPaciente(new PacienteRegistroId(id)));
     }
 
+    /** Transição genérica de status — única forma de tirar um paciente de Restrito (ex.: voltar para Ativo). */
+    @PostMapping("/{id}/status")
+    public ResponseEntity<Paciente> atualizarStatus(@PathVariable Long id, @RequestBody StatusRequest r) {
+        return ResponseEntity.ok(applicationService.atualizarStatus(
+                new PacienteRegistroId(id), StatusPaciente.valueOf(r.status()), "Recepcionista"));
+    }
+
     public record PacienteRequest(String nomeCompleto, String cpf, String dataNascimento,
                                   String telefone, String email) {}
 
     public record AtualizarCampoRequest(String campo, String novoValor) {}
+
+    public record StatusRequest(String status) {}
+
+    /** Mapeia erros de validação/regra de negócio para 400, em vez do 500 genérico padrão. */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> tratarErroDeValidacao(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
 }

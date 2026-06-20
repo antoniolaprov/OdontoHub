@@ -1,6 +1,8 @@
 package com.g4.odontohub.agendamento.domain.model;
 
+import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -70,6 +72,7 @@ public class Agendamento {
         if (novaDataHora.isBefore(LocalDateTime.now())) {
             throw new IllegalArgumentException("Não é possível remarcar para datas passadas.");
         }
+        validarHorarioComercial(novaDataHora);
         this.dataHora = novaDataHora;
         this.status = StatusAgendamento.REMARCADO;
         this.responsavelAlteracao = RESPONSAVEL_RECEPCAO;
@@ -79,6 +82,18 @@ public class Agendamento {
 
     private void adicionarHistorico(String acao, String responsavel) {
         historico.add(new EntradaHistorico(acao, responsavel, LocalDateTime.now()));
+    }
+
+    /** Consultório só atende de segunda a sexta, das 08:00 às 17:00. */
+    public static void validarHorarioComercial(LocalDateTime dataHora) {
+        DayOfWeek dia = dataHora.getDayOfWeek();
+        if (dia == DayOfWeek.SATURDAY || dia == DayOfWeek.SUNDAY) {
+            throw new IllegalArgumentException("Agendamentos só podem ser feitos de segunda a sexta-feira.");
+        }
+        LocalTime hora = dataHora.toLocalTime();
+        if (hora.isBefore(LocalTime.of(8, 0)) || hora.isAfter(LocalTime.of(17, 0))) {
+            throw new IllegalArgumentException("Agendamentos só podem ser feitos entre 08:00 e 17:00.");
+        }
     }
 
     public AgendamentoId getId() { return id; }
