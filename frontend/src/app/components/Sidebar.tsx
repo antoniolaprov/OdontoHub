@@ -13,7 +13,7 @@ export default function Sidebar({
 
   return (
     <aside className="w-64 border-r-2 border-gray-300 bg-gray-50 p-6">
-      <div className="mb-8">
+      <div className="mb-4">
         <Link
           to="/"
           className="h-12 border-2 border-gray-400 flex items-center justify-center bg-white hover:border-blue-500 hover:bg-blue-50 transition-colors"
@@ -23,6 +23,13 @@ export default function Sidebar({
           </span>
         </Link>
       </div>
+
+      <Link
+        to="/portal"
+        className="mb-6 block p-2 border-2 border-gray-300 bg-white text-center text-sm font-bold text-gray-600 hover:border-blue-400 hover:bg-blue-50 transition-colors"
+      >
+        ← Trocar perfil
+      </Link>
 
       <nav className="space-y-2">
         {items.map((item) => {
