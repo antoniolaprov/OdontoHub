@@ -155,6 +155,21 @@ public class InadimplenciaService {
         return acordo;
     }
 
+    /** Leitura: conjunto de pacientes conhecidos (com parcelas/acordos). */
+    public java.util.Set<String> pacientes() {
+        return repositorio.pacientes();
+    }
+
+    /** Leitura: parcelas (vencidas/substituídas) de um paciente. */
+    public List<ParcelaCobranca> vencidasDe(String paciente) {
+        return repositorio.vencidasDe(paciente);
+    }
+
+    /** Leitura: acordo do paciente, ou {@code null} se não houver. */
+    public Acordo acordoDeOuNull(String paciente) {
+        return repositorio.acordoDe(paciente);
+    }
+
     public ContatoCobranca ultimoContatoDe(String paciente) {
         List<ContatoCobranca> contatos = repositorio.contatosDe(paciente);
         if (contatos.isEmpty()) {

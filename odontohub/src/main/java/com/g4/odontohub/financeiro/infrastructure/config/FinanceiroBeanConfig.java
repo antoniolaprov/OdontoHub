@@ -48,4 +48,18 @@ public class FinanceiroBeanConfig {
                 e -> service.registrarPaciente(e.nomeCompleto()));
         return service;
     }
+
+    /** Semeia inadimplentes de exemplo para a tela de Acordos não iniciar vazia (só se não houver nenhum). */
+    @Bean
+    public CommandLineRunner seedInadimplencia(InadimplenciaApplicationService inadimplencia) {
+        return args -> {
+            if (!inadimplencia.pacientes().isEmpty()) {
+                return;
+            }
+            inadimplencia.registrarParcelaVencida("Maria Santos", 600.0, 45);
+            inadimplencia.registrarParcelaVencida("Maria Santos", 600.0, 15);
+            inadimplencia.registrarParcelaVencida("Pedro Alves", 300.0, 10);
+            inadimplencia.registrarParcelaVencida("Lucia Ramos", 800.0, 60);
+        };
+    }
 }

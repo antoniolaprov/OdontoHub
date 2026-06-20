@@ -94,6 +94,18 @@ public class InadimplenciaApplicationService {
         return service.acordoDe(paciente);
     }
 
+    public java.util.Set<String> pacientes() {
+        return service.pacientes();
+    }
+
+    public List<ParcelaCobranca> vencidasDe(String paciente) {
+        return service.vencidasDe(paciente);
+    }
+
+    public Acordo acordoDeOuNull(String paciente) {
+        return service.acordoDeOuNull(paciente);
+    }
+
     public ContatoCobranca ultimoContatoDe(String paciente) {
         return service.ultimoContatoDe(paciente);
     }
