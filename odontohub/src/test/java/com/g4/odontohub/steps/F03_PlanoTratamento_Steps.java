@@ -104,6 +104,15 @@ public class F03_PlanoTratamento_Steps {
         appService.getPlanoTratamentoService().realizarProcedimento(planoIdAtual, procedimentoAlvoId, evolucao, agendamentoVinculadoId, "Dr.");
     }
 
+    @Quando("o dentista tenta realizar o procedimento {string} sem vincular um agendamento")
+    public void o_dentista_tenta_realizar_procedimento_sem_agendamento(String nomeProcedimento) {
+        try {
+            appService.getPlanoTratamentoService().realizarProcedimento(planoIdAtual, procedimentoAlvoId, "Evolução", null, "Dr.");
+        } catch (Exception e) {
+            this.excecaoCapturada = e;
+        }
+    }
+
     @Quando("o dentista cancela o procedimento {string} com justificativa {string}")
     public void o_dentista_cancela_o_procedimento(String nomeProcedimento, String justificativa) {
         appService.getPlanoTratamentoService().cancelarProcedimento(planoIdAtual, procedimentoAlvoId, justificativa);

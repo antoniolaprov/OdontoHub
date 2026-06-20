@@ -201,7 +201,7 @@ const STATUS_PLANO_LABEL: Record<StatusPlanoUI, string> = {
 const DENTISTA_ID_DEMO = 1;
 
 interface ColaboradorResumo { nome: string; funcao: string; }
-interface AgendamentoResumo { id: number; label: string; }
+interface AgendamentoResumo { id: number; dentista: string; label: string; }
 interface MaterialResumo { nome: string; unidadeMedida: string; quantidadeEmEstoque: number; }
 interface MaterialUsado { material: string; quantidade: string; }
 
@@ -218,6 +218,29 @@ export default function DentistaProntuarios() {
   const [erroPacientes, setErroPacientes] = useState<string | null>(null);
 
   const pacienteSelecionado = pacientes.find((p) => p.id === pacienteSelecionadoId) ?? null;
+
+  // Busca com autocomplete: lista horizontal de todos os pacientes não escala
+  // visualmente com muitos cadastros — agora pesquisa por nome (sem distinção
+  // de maiúsculas/minúsculas) e sugere os pacientes que combinam.
+  const [buscaPacienteInput, setBuscaPacienteInput] = useState("");
+  const [sugestoesPacienteAbertas, setSugestoesPacienteAbertas] = useState(false);
+  const buscaPacienteRef = useRef<HTMLDivElement>(null);
+
+  const pacientesFiltrados = useMemo(() => {
+    const q = buscaPacienteInput.trim().toLowerCase();
+    if (!q) return pacientes;
+    return pacientes.filter((p) => p.nome.toLowerCase().includes(q));
+  }, [buscaPacienteInput, pacientes]);
+
+  useEffect(() => {
+    function handleClickForaBuscaPaciente(e: MouseEvent) {
+      if (buscaPacienteRef.current && !buscaPacienteRef.current.contains(e.target as Node)) {
+        setSugestoesPacienteAbertas(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickForaBuscaPaciente);
+    return () => document.removeEventListener("mousedown", handleClickForaBuscaPaciente);
+  }, []);
 
   // ── Colaboradores (F12) — usado nos selects de "responsável"/"executor" ─
   const [colaboradores, setColaboradores] = useState<ColaboradorResumo[]>([]);
@@ -258,8 +281,14 @@ export default function DentistaProntuarios() {
   const [modalRealizar, setModalRealizar] = useState<{ aberto: boolean; procedimento?: ProcedimentoUI }>({ aberto: false });
   const [realizarDescricao, setRealizarDescricao] = useState("");
   const [realizarAgendamentoId, setRealizarAgendamentoId] = useState("");
-  const [realizarExecutor, setRealizarExecutor] = useState("");
   const [materiaisUsados, setMateriaisUsados] = useState<MaterialUsado[]>([]);
+
+  // O agendamento já indica o cirurgião-dentista responsável pela consulta —
+  // por isso o executor não é mais escolhido à parte, é derivado do agendamento.
+  const executorDoAgendamentoSelecionado = useMemo(
+    () => agendamentosPaciente.find((a) => a.id === Number(realizarAgendamentoId))?.dentista ?? "",
+    [agendamentosPaciente, realizarAgendamentoId],
+  );
   const [erroMateriais, setErroMateriais] = useState<string | null>(null);
 
   const [modalJustificativa, setModalJustificativa] = useState<{
@@ -473,7 +502,6 @@ export default function DentistaProntuarios() {
         const primeiro = adaptados.find((c) => c.funcao === "ESPECIALISTA");
         if (primeiro) {
           setResponsavelSelecionado((atual) => atual || primeiro.nome);
-          setRealizarExecutor((atual) => atual || primeiro.nome);
           setResponsavelAcaoInput((atual) => atual || primeiro.nome);
         }
       })
@@ -499,7 +527,7 @@ export default function DentistaProntuarios() {
           .filter((a: any) => a.paciente === pacienteSelecionado.nome)
           .map((a: any) => {
             const dataHora = a.dataHora ? new Date(a.dataHora).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
-            return { id: a.id, label: `${dataHora} — ${a.dentista ?? "—"} (${a.status ?? "—"})` };
+            return { id: a.id, dentista: a.dentista ?? "—", label: `${dataHora} — ${a.dentista ?? "—"} (${a.status ?? "—"})` };
           });
         setAgendamentosPaciente(doPaciente);
       })
@@ -622,7 +650,15 @@ export default function DentistaProntuarios() {
 
   async function handleRealizarProcedimento(e: React.FormEvent) {
     e.preventDefault();
-    if (!plano || !modalRealizar.procedimento || pacienteSelecionadoId == null || !realizarExecutor) return;
+    if (!plano || !modalRealizar.procedimento || pacienteSelecionadoId == null) return;
+    if (!realizarAgendamentoId) {
+      setErroAcao("Selecione o agendamento vinculado a este procedimento.");
+      return;
+    }
+    if (!executorDoAgendamentoSelecionado) {
+      setErroAcao("O agendamento selecionado não tem um cirurgião-dentista associado.");
+      return;
+    }
     const itensValidos = materiaisUsados.filter((m) => m.material && Number(m.quantidade) > 0);
     setErroAcao(null);
     setErroMateriais(null);
@@ -630,8 +666,8 @@ export default function DentistaProntuarios() {
       const procedimentoId = modalRealizar.procedimento.id;
       await api.put(`/prontuarios/planos/${plano.id}/procedimentos/${procedimentoId}/realizar`, {
         descricaoEvolucao: realizarDescricao,
-        agendamentoId: realizarAgendamentoId ? Number(realizarAgendamentoId) : null,
-        executor: realizarExecutor,
+        agendamentoId: Number(realizarAgendamentoId),
+        executor: executorDoAgendamentoSelecionado,
       });
 
       // Consome o estoque dos materiais usados — falha aqui não desfaz o procedimento
@@ -734,22 +770,42 @@ export default function DentistaProntuarios() {
         {erroPacientes && <div className="mt-2 text-sm text-red-600">{erroPacientes}</div>}
 
         {pacientes.length > 0 && (
-          <div className="mt-4 border-t border-gray-300 pt-3">
-            <div className="text-xs font-bold text-gray-500 mb-2">Pacientes (mais recente primeiro)</div>
-            <div className="flex flex-wrap gap-2">
-              {pacientes.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => setPacienteSelecionadoId(p.id)}
-                  className={`px-3 py-1.5 border-2 text-sm rounded transition-colors ${
-                    p.id === pacienteSelecionadoId
-                      ? "bg-blue-500 border-blue-600 text-white font-bold"
-                      : "bg-white border-gray-300 text-gray-700 hover:bg-gray-50"
-                  }`}
-                >
-                  {p.nome}
-                </button>
-              ))}
+          <div className="mt-4 border-t border-gray-300 pt-3" ref={buscaPacienteRef}>
+            <label className="text-xs font-bold text-gray-500 mb-2 block">Buscar paciente</label>
+            <div className="relative max-w-sm">
+              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={buscaPacienteInput}
+                onChange={(e) => { setBuscaPacienteInput(e.target.value); setSugestoesPacienteAbertas(true); }}
+                onFocus={() => setSugestoesPacienteAbertas(true)}
+                placeholder="Digite o nome do paciente..."
+                className="w-full border-2 border-gray-300 rounded pl-9 pr-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+              />
+              {sugestoesPacienteAbertas && (
+                <div className="absolute z-10 mt-1 w-full bg-white border-2 border-gray-300 rounded shadow-lg max-h-56 overflow-auto">
+                  {pacientesFiltrados.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-gray-400">Nenhum paciente encontrado.</div>
+                  ) : (
+                    pacientesFiltrados.map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          setPacienteSelecionadoId(p.id);
+                          setBuscaPacienteInput("");
+                          setSugestoesPacienteAbertas(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 ${
+                          p.id === pacienteSelecionadoId ? "bg-blue-50 font-bold text-blue-700" : "text-gray-700"
+                        }`}
+                      >
+                        {p.nome}
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1295,35 +1351,37 @@ export default function DentistaProntuarios() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Agendamento vinculado</label>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">
+                    Agendamento vinculado <span className="text-red-500">*</span>
+                  </label>
                   <select
-                    className="w-full border-2 border-gray-300 p-2 rounded bg-white"
+                    className="w-full border-2 border-gray-300 p-2 rounded bg-white disabled:bg-gray-100"
                     value={realizarAgendamentoId}
                     onChange={(e) => setRealizarAgendamentoId(e.target.value)}
+                    disabled={agendamentosPaciente.length === 0}
+                    required
                   >
-                    <option value="">Nenhum (sem vínculo)</option>
+                    <option value="">
+                      {agendamentosPaciente.length === 0 ? "Nenhum agendamento encontrado" : "Selecione o agendamento"}
+                    </option>
                     {agendamentosPaciente.map((a) => (
                       <option key={a.id} value={a.id}>{a.label}</option>
                     ))}
                   </select>
                   <p className="text-xs text-gray-400 mt-1">
-                    Vincula a evolução ao agendamento real em que o procedimento ocorreu
-                    (rastreio do prontuário). Opcional, mas recomendado.
+                    {agendamentosPaciente.length === 0
+                      ? "Este paciente não possui agendamentos para vincular — crie um agendamento antes de realizar o procedimento."
+                      : "Vincula a evolução ao agendamento real em que o procedimento ocorreu (rastreio do prontuário). Obrigatório."}
                   </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Executor <span className="text-red-500">*</span></label>
-                  <select
-                    className="w-full border-2 border-gray-300 p-2 rounded bg-white"
-                    value={realizarExecutor}
-                    onChange={(e) => setRealizarExecutor(e.target.value)}
-                    required
-                  >
-                    <option value="">Selecione o cirurgião-dentista</option>
-                    {cirurgioesDentistas.map((c) => (
-                      <option key={c.nome} value={c.nome}>{c.nome}</option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Executor</label>
+                  <div className="w-full border-2 border-gray-200 bg-gray-100 text-gray-700 p-2 rounded min-h-[2.5rem] flex items-center">
+                    {executorDoAgendamentoSelecionado || "—"}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Definido automaticamente pelo cirurgião-dentista do agendamento selecionado.
+                  </p>
                 </div>
               </div>
 

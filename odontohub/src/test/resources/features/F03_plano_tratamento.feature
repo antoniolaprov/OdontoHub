@@ -28,6 +28,12 @@ Cenário: Criação de Plano de Tratamento quando paciente possui anamnese
     E a evolução clínica deve ser registrada com data e executor
     E o agendamento confirmado deve estar vinculado ao procedimento
 
+  Cenário: Bloqueio de realização de procedimento sem agendamento vinculado
+    Dado que o Plano de Tratamento de "Pedro Santos" possui o procedimento "Limpeza" com status "Pendente"
+    Quando o dentista tenta realizar o procedimento "Limpeza" sem vincular um agendamento
+    Então o sistema do plano deve bloquear a operação
+    E a mensagem de erro do plano deve informar "É obrigatório vincular o procedimento a um agendamento do paciente."
+
   Cenário: Cancelamento de procedimento exige justificativa e não gera histórico
     Dado que o Plano de Tratamento de "Pedro Santos" possui o procedimento "Restauração" com status "Pendente"
     Quando o dentista cancela o procedimento "Restauração" com justificativa "Paciente recusou o procedimento"

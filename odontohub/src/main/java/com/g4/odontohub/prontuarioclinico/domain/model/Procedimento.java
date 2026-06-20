@@ -39,6 +39,9 @@ public class Procedimento {
     }
 
     public void realizar(EvolucaoClinica evolucao, ProcedimentoAgendamentoVinculado agendamento) {
+        if (agendamento == null || agendamento.agendamentoVinculadoId() == null) {
+            throw new IllegalStateException("É obrigatório vincular o procedimento a um agendamento do paciente.");
+        }
         this.status = StatusProcedimento.REALIZADO;
         this.evolucao = evolucao;
         this.agendamentoVinculado = agendamento;
