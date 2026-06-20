@@ -8,7 +8,6 @@ export default function DentistaLayout() {
     { path: "financeiro", label: "Financeiro", icon: "💰" },
     { path: "dashboards", label: "Dashboards", icon: "📊" },
     { path: "equipe", label: "Equipe", icon: "👥" },
-    { path: "estoque", label: "Estoque", icon: "📦" },
     { path: "medicamentos", label: "Medicamentos", icon: "💊" },
   ];
 

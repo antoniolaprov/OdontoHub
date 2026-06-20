@@ -138,6 +138,16 @@ export default function AuxiliarEsterilizacao() {
 
   useEffect(() => { carregarInstrumentos(); }, [carregarInstrumentos]);
 
+  // Auxiliares cadastrados — usado no select de "Responsável pela esterilização".
+  const [auxiliares, setAuxiliares] = useState<string[]>([]);
+  useEffect(() => {
+    api.get<any[]>("/colaboradores")
+      .then((lista) => setAuxiliares(
+        (lista ?? []).filter((c: any) => c.funcao === "AUXILIAR").map((c: any) => c.nomeCompleto ?? "—"),
+      ))
+      .catch((e) => console.warn("Falha ao carregar colaboradores:", e));
+  }, []);
+
   // Filters
   const [busca, setBusca] = useState("");
   const [filtroStatus, setFiltroStatus] = useState("TODOS");
@@ -285,6 +295,19 @@ export default function AuxiliarEsterilizacao() {
       showToast(e.message ?? "Falha ao desativar instrumento.", "erro");
     } finally {
       setModalDesativar({ aberto: false });
+    }
+  }
+
+  /** Único jeito de tirar um instrumento de Inativo — desativar() era uma via de mão única. */
+  async function handleReativar(id: number) {
+    const item = instrumentos.find((i) => i.id === id);
+    if (!item) return;
+    try {
+      await api.post(`/instrumentos/${encodeURIComponent(item.nome)}/reativar`);
+      await carregarInstrumentos();
+      showToast("Instrumento reativado.", "sucesso");
+    } catch (e: any) {
+      showToast(e.message ?? "Falha ao reativar instrumento.", "erro");
     }
   }
 
@@ -556,7 +579,7 @@ export default function AuxiliarEsterilizacao() {
                 >
                   Detalhes
                 </button>
-                {item.ativo && (
+                {item.ativo ? (
                   <button
                     onClick={() =>
                       setModalDesativar({ aberto: true, item })
@@ -564,6 +587,13 @@ export default function AuxiliarEsterilizacao() {
                     className="px-2 py-1 border-2 border-red-400 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white text-xs font-bold"
                   >
                     Desativar
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleReativar(item.id)}
+                    className="px-2 py-1 border-2 border-green-500 bg-green-50 text-green-700 hover:bg-green-500 hover:text-white text-xs font-bold"
+                  >
+                    Reativar
                   </button>
                 )}
               </div>
@@ -616,19 +646,23 @@ export default function AuxiliarEsterilizacao() {
                   <label className="block text-sm font-bold mb-1">
                     Responsável pela esterilização *
                   </label>
-                  <input
-                    className={`w-full border-2 p-2 outline-none text-sm ${
+                  <select
+                    className={`w-full border-2 p-2 outline-none text-sm bg-white ${
                       erroResponsavel
                         ? "border-red-500"
                         : "border-gray-400"
                     }`}
-                    placeholder="Ex: Lucas"
                     value={responsavelInput}
                     onChange={(e) => {
                       setResponsavelInput(e.target.value);
                       setErroResponsavel("");
                     }}
-                  />
+                  >
+                    <option value="">Selecione o auxiliar</option>
+                    {auxiliares.map((nome) => (
+                      <option key={nome} value={nome}>{nome}</option>
+                    ))}
+                  </select>
                   {erroResponsavel && (
                     <p className="text-red-600 text-xs mt-1 font-bold">
                       {erroResponsavel}

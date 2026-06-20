@@ -43,6 +43,10 @@ public class InstrumentoApplicationService {
         service.desativarInstrumento(idDe(nome));
     }
 
+    public void reativarInstrumento(String nome) {
+        service.reativarInstrumento(idDe(nome));
+    }
+
     public boolean existeCodigoIdentificador(String codigoIdentificador) {
         return service.existeCodigoIdentificador(codigoIdentificador);
     }

@@ -74,6 +74,19 @@ public class InstrumentoRestController {
         return ResponseEntity.ok(applicationService.buscarPorNome(nome));
     }
 
+    /** Único jeito de tirar um instrumento de Inativo (desativar() era uma via de mão única). */
+    @PostMapping("/{nome}/reativar")
+    public ResponseEntity<Instrumento> reativar(@PathVariable String nome) {
+        applicationService.reativarInstrumento(nome);
+        return ResponseEntity.ok(applicationService.buscarPorNome(nome));
+    }
+
     public record InstrumentoRequest(String nome, String categoria, String codigoIdentificador,
                                      int prazoValidadeDias, String tipo, List<String> codigosComponentes) {}
+
+    /** Mapeia erros de validação/regra de negócio para 400, em vez do 500 genérico padrão. */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> tratarErroDeValidacao(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
 }

@@ -38,7 +38,22 @@ public class MaterialRestController {
         return ResponseEntity.ok(applicationService.buscarPorNome(nome));
     }
 
+    /** Baixa de estoque por uso real (ex.: materiais consumidos ao realizar um procedimento — F03). */
+    @PostMapping("/{nome}/consumo")
+    public ResponseEntity<MaterialConsumivel> consumir(@PathVariable String nome, @RequestBody ConsumoRequest r) {
+        applicationService.descontarConsumo(nome, r.quantidade(), r.procedimentoId());
+        return ResponseEntity.ok(applicationService.buscarPorNome(nome));
+    }
+
     public record MaterialRequest(String nome, String unidadeMedida, int saldoInicial, int pontoMinimo) {}
 
     public record ReposicaoRequest(String fornecedor, int quantidade, double custoUnitario) {}
+
+    public record ConsumoRequest(int quantidade, Long procedimentoId) {}
+
+    /** Mapeia erros de validação/regra de negócio para 400, em vez do 500 genérico padrão. */
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<String> tratarErroDeValidacao(IllegalArgumentException e) {
+        return ResponseEntity.badRequest().body(e.getMessage());
+    }
 }

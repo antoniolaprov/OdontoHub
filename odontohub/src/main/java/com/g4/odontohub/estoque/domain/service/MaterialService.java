@@ -17,6 +17,18 @@ public class MaterialService {
 
     public MaterialConsumivel cadastrarMaterial(String nome, String unidadeMedida,
                                                 int saldoInicial, int pontoMinimo) {
+        if (nome == null || nome.isBlank()) {
+            throw new IllegalArgumentException("Nome do material é obrigatório.");
+        }
+        if (unidadeMedida == null || unidadeMedida.isBlank()) {
+            throw new IllegalArgumentException("Unidade de medida é obrigatória.");
+        }
+        if (saldoInicial < 0 || pontoMinimo < 0) {
+            throw new IllegalArgumentException("Saldo inicial e ponto mínimo não podem ser negativos.");
+        }
+        if (repositorio.buscarPorNome(nome) != null) {
+            throw new IllegalArgumentException("Já existe um material cadastrado com esse nome.");
+        }
         MaterialConsumivel m = new MaterialConsumivel(
                 new MaterialId(repositorio.proximoId()), nome, unidadeMedida,
                 saldoInicial, pontoMinimo, LocalDate.now());

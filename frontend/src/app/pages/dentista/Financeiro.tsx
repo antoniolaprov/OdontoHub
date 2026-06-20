@@ -10,18 +10,40 @@ const dataBR = (iso: string) => {
 };
 
 interface LancamentoUI {
-  id: number; data: string; descricao: string; categoria: string;
+  id: number; dataISO: string; data: string; descricao: string; categoria: string;
   tipo: "Entrada" | "Saída"; valor: string; automatico: boolean;
+}
+
+// Mês/ano de uma data ISO (yyyy-MM-dd...), sem depender de fuso horário do navegador.
+function anoMesDe(iso: string): { ano: number; mes: number } | null {
+  if (!iso) return null;
+  const [ano, mes] = iso.split("T")[0].split("-").map(Number);
+  return Number.isFinite(ano) && Number.isFinite(mes) ? { ano, mes } : null;
 }
 
 export default function DentistaFinanceiro() {
   const [lancamentos, setLancamentos] = useState<LancamentoUI[]>([]);
   const [modalAberto, setModalAberto] = useState(false);
+  const [filtroTipo, setFiltroTipo] = useState<"TODOS" | "Entrada" | "Saída">("TODOS");
+  const [filtroPeriodo, setFiltroPeriodo] = useState<"TODOS" | "ESTE_MES" | "MES_PASSADO">("TODOS");
   const [kpis, setKpis] = useState([
     { label: "Saldo Atual", value: "R$ 0,00", color: "text-green-600" },
     { label: "Entradas Previstas", value: "R$ 0,00", color: "text-blue-600" },
     { label: "Saídas Pendentes", value: "R$ 0,00", color: "text-red-600" },
   ]);
+
+  const lancamentosFiltrados = lancamentos.filter((item) => {
+    if (filtroTipo !== "TODOS" && item.tipo !== filtroTipo) return false;
+    if (filtroPeriodo !== "TODOS") {
+      const am = anoMesDe(item.dataISO);
+      if (!am) return false;
+      const hoje = new Date();
+      const refMes = filtroPeriodo === "ESTE_MES" ? hoje.getMonth() + 1 : hoje.getMonth() === 0 ? 12 : hoje.getMonth();
+      const refAno = filtroPeriodo === "ESTE_MES" ? hoje.getFullYear() : hoje.getMonth() === 0 ? hoje.getFullYear() - 1 : hoje.getFullYear();
+      if (am.ano !== refAno || am.mes !== refMes) return false;
+    }
+    return true;
+  });
 
   function carregar() {
     Promise.all([
@@ -33,6 +55,7 @@ export default function DentistaFinanceiro() {
         setLancamentos(
           dados.map((b, i) => ({
             id: b.id?.id ?? i + 1,
+            dataISO: b.data ?? "",
             data: dataBR(b.data),
             descricao: b.descricao ?? "—",
             categoria: b.categoria ?? "—",
@@ -79,14 +102,23 @@ export default function DentistaFinanceiro() {
         <div className="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
           <h2 className="text-lg font-bold text-gray-700">Lançamentos</h2>
           <div className="flex gap-4">
-            <select className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white">
-              <option>Todos os tipos</option>
-              <option>Entradas</option>
-              <option>Saídas</option>
+            <select
+              value={filtroTipo}
+              onChange={(e) => setFiltroTipo(e.target.value as typeof filtroTipo)}
+              className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
+            >
+              <option value="TODOS">Todos os tipos</option>
+              <option value="Entrada">Entradas</option>
+              <option value="Saída">Saídas</option>
             </select>
-            <select className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white">
-              <option>Este Mês</option>
-              <option>Mês Passado</option>
+            <select
+              value={filtroPeriodo}
+              onChange={(e) => setFiltroPeriodo(e.target.value as typeof filtroPeriodo)}
+              className="border border-gray-300 rounded px-3 py-1.5 text-sm bg-white"
+            >
+              <option value="TODOS">Todo o período</option>
+              <option value="ESTE_MES">Este Mês</option>
+              <option value="MES_PASSADO">Mês Passado</option>
             </select>
           </div>
         </div>
@@ -104,7 +136,14 @@ export default function DentistaFinanceiro() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {lancamentos.map((item) => (
+              {lancamentosFiltrados.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-8 text-center text-sm text-gray-400">
+                    Nenhum lançamento encontrado com os filtros aplicados.
+                  </td>
+                </tr>
+              )}
+              {lancamentosFiltrados.map((item) => (
                 <tr key={item.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 text-sm text-gray-700">{item.data}</td>
                   <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.descricao}</td>

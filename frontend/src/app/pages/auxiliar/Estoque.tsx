@@ -34,6 +34,7 @@ export default function AuxiliarEstoque() {
   const [materiais, setMateriais] = useState<MaterialUI[]>([]);
   const [erro, setErro] = useState<string | null>(null);
   const [modalAberto, setModalAberto] = useState(false);
+  const [modalNovoAberto, setModalNovoAberto] = useState(false);
 
   function carregar() {
     api
@@ -51,12 +52,20 @@ export default function AuxiliarEstoque() {
     <div className="p-6">
       <div className="mb-6 flex justify-between items-center">
         <h1 className="text-xl font-bold text-gray-700">Controle de Estoque</h1>
-        <button
-          onClick={() => setModalAberto(true)}
-          className="px-4 py-2 border-2 border-blue-500 bg-blue-500 text-white font-bold"
-        >
-          + Registrar Reposição
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setModalNovoAberto(true)}
+            className="px-4 py-2 border-2 border-gray-400 bg-white text-gray-700 font-bold hover:bg-gray-50"
+          >
+            + Novo Material
+          </button>
+          <button
+            onClick={() => setModalAberto(true)}
+            className="px-4 py-2 border-2 border-blue-500 bg-blue-500 text-white font-bold"
+          >
+            + Registrar Reposição
+          </button>
+        </div>
       </div>
 
       {erro && (
@@ -111,6 +120,117 @@ export default function AuxiliarEstoque() {
           }}
         />
       )}
+
+      {modalNovoAberto && (
+        <ModalNovoMaterial
+          onFechar={() => setModalNovoAberto(false)}
+          onSalvo={() => {
+            setModalNovoAberto(false);
+            carregar();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+/** Cadastro de material novo (F05) — único jeito de um material aparecer na Reposição. */
+function ModalNovoMaterial(props: { onFechar: () => void; onSalvo: () => void }) {
+  const [nome, setNome] = useState("");
+  const [unidadeMedida, setUnidadeMedida] = useState("");
+  const [saldoInicial, setSaldoInicial] = useState("");
+  const [pontoMinimo, setPontoMinimo] = useState("");
+  const [erro, setErro] = useState<string | null>(null);
+  const [salvando, setSalvando] = useState(false);
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault();
+    setErro(null);
+    if (!nome.trim() || !unidadeMedida.trim()) {
+      setErro("Informe nome e unidade de medida.");
+      return;
+    }
+    const saldo = Number(saldoInicial);
+    const minimo = Number(pontoMinimo);
+    if (saldo < 0 || minimo < 0) {
+      setErro("Saldo inicial e ponto mínimo não podem ser negativos.");
+      return;
+    }
+    setSalvando(true);
+    try {
+      // POST real: /api/materiais (MaterialRequest).
+      await api.post("/materiais", {
+        nome: nome.trim(), unidadeMedida: unidadeMedida.trim(),
+        saldoInicial: saldo || 0, pontoMinimo: minimo || 0,
+      });
+      props.onSalvo();
+    } catch (err) {
+      setErro(err instanceof Error ? err.message : "Falha ao cadastrar material.");
+      setSalvando(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+      <div className="bg-white border-4 border-gray-400 w-full max-w-md">
+        <div className="px-6 py-4 border-b-2 border-gray-400 flex justify-between items-center bg-gray-100">
+          <h2 className="font-bold text-gray-700">Novo Material</h2>
+          <button onClick={props.onFechar} className="text-gray-500 hover:text-gray-700 font-bold">✕</button>
+        </div>
+        <form onSubmit={salvar} className="p-6 space-y-4">
+          {erro && (
+            <div className="border-2 border-red-400 bg-red-50 text-red-700 text-sm p-3">{erro}</div>
+          )}
+          <label className="block">
+            <span className="block text-sm font-bold text-gray-700 mb-1">Nome *</span>
+            <input
+              value={nome}
+              onChange={(e) => setNome(e.target.value)}
+              placeholder="ex.: Luva cirúrgica"
+              className="w-full border-2 border-gray-300 px-3 py-2 focus:border-blue-500 outline-none"
+            />
+          </label>
+          <label className="block">
+            <span className="block text-sm font-bold text-gray-700 mb-1">Unidade de medida *</span>
+            <input
+              value={unidadeMedida}
+              onChange={(e) => setUnidadeMedida(e.target.value)}
+              placeholder="ex.: caixa, unidade, pacote"
+              className="w-full border-2 border-gray-300 px-3 py-2 focus:border-blue-500 outline-none"
+            />
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <label className="block">
+              <span className="block text-sm font-bold text-gray-700 mb-1">Saldo inicial</span>
+              <input
+                type="number" min="0" value={saldoInicial}
+                onChange={(e) => setSaldoInicial(e.target.value)}
+                className="w-full border-2 border-gray-300 px-3 py-2 focus:border-blue-500 outline-none"
+              />
+            </label>
+            <label className="block">
+              <span className="block text-sm font-bold text-gray-700 mb-1">Estoque mínimo</span>
+              <input
+                type="number" min="0" value={pontoMinimo}
+                onChange={(e) => setPontoMinimo(e.target.value)}
+                className="w-full border-2 border-gray-300 px-3 py-2 focus:border-blue-500 outline-none"
+              />
+            </label>
+          </div>
+          <p className="text-xs text-gray-400">
+            O status (OK / Estoque Baixo) é calculado automaticamente comparando o
+            saldo com o estoque mínimo — não é um campo separado.
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <button type="button" onClick={props.onFechar} className="px-4 py-2 border-2 border-gray-300 font-bold text-gray-600">
+              Cancelar
+            </button>
+            <button type="submit" disabled={salvando} className="px-4 py-2 bg-blue-500 text-white font-bold disabled:opacity-50">
+              {salvando ? "Salvando..." : "Cadastrar"}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }

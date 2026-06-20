@@ -9,7 +9,7 @@ import {
 // ─── Tipos ────────────────────────────────────────────────────────────────────
 
 type StatusColaborador = "Ativo" | "Inativo" | "Suspenso" | "Férias" | "Afastado";
-type FuncaoColaborador = "Recepcionista" | "Auxiliar" | "Especialista" | "Administrador";
+type FuncaoColaborador = "Recepcionista" | "Auxiliar" | "Cirurgião Dentista" | "Administrador";
 
 interface LogAuditoria {
   id: number;
@@ -81,7 +81,7 @@ const PERMISSOES_POR_FUNCAO: Record<FuncaoColaborador, { modulo: string; permiti
     { modulo: "Financeiro Completo", permitido: false },
     { modulo: "Gestão de Equipe", permitido: false },
   ],
-  Especialista: [
+  "Cirurgião Dentista": [
     { modulo: "Agenda", permitido: true },
     { modulo: "Prontuários Clínicos", permitido: true },
     { modulo: "Plano de Tratamento", permitido: true },
@@ -182,8 +182,8 @@ const COLABORADORES_INICIAIS: Colaborador[] = [
     cpf: "456.789.012-34",
     telefone: "(11) 97777-8888",
     email: "roberto.alves@odontohub.com",
-    funcao: "Especialista",
-    nivelAcesso: "Especialista",
+    funcao: "Cirurgião Dentista",
+    nivelAcesso: "Cirurgião Dentista",
     status: "Ativo",
     login: "dr.roberto",
     tentativasLogin: 0,
@@ -265,11 +265,11 @@ const FORM_VAZIO = {
 
 const FUNCAO_BACKEND: Record<string, FuncaoColaborador> = {
   AUXILIAR: "Auxiliar", RECEPCIONISTA: "Recepcionista",
-  ESPECIALISTA: "Especialista", ADMINISTRADOR: "Administrador",
+  ESPECIALISTA: "Cirurgião Dentista", ADMINISTRADOR: "Administrador",
 };
 const FUNCAO_PARA_BACKEND: Record<FuncaoColaborador, string> = {
   Auxiliar: "AUXILIAR", Recepcionista: "RECEPCIONISTA",
-  Especialista: "ESPECIALISTA", Administrador: "ADMINISTRADOR",
+  "Cirurgião Dentista": "ESPECIALISTA", Administrador: "ADMINISTRADOR",
 };
 const STATUS_BACKEND: Record<string, StatusColaborador> = {
   ATIVO: "Ativo", INATIVO: "Inativo", SUSPENSO: "Suspenso", FERIAS: "Férias", AFASTADO: "Afastado",
@@ -598,7 +598,7 @@ export default function DentistaEquipe() {
             <option value="">Todas as funções</option>
             <option>Recepcionista</option>
             <option>Auxiliar</option>
-            <option>Especialista</option>
+            <option>Cirurgião Dentista</option>
             <option>Administrador</option>
           </select>
           <select
@@ -839,7 +839,7 @@ export default function DentistaEquipe() {
                       >
                         <option value="Recepcionista">Recepcionista</option>
                         <option value="Auxiliar">Auxiliar</option>
-                        <option value="Especialista">Especialista</option>
+                        <option value="Cirurgião Dentista">Cirurgião Dentista</option>
                         <option value="Administrador">Administrador</option>
                       </select>
                       <p className="text-xs text-gray-400 mt-1">As permissões são definidas automaticamente pela função.</p>

@@ -12,6 +12,7 @@ import AuxiliarEstoque from "./pages/auxiliar/Estoque";
 import AuxiliarEsterilizacao from "./pages/auxiliar/Esterilizacao";
 import AuxiliarInstrumentos from "./pages/auxiliar/Instrumentos";
 import DentistaLayout from "./pages/dentista/DentistaLayout";
+import DentistaAgenda from "./pages/dentista/Agenda";
 import DentistaProntuarios from "./pages/dentista/Prontuarios";
 import DentistaFinanceiro from "./pages/dentista/Financeiro";
 import DentistaDashboard from "./pages/dentista/Dashboard";
@@ -62,12 +63,11 @@ export const router = createBrowserRouter([
     Component: DentistaLayout,
     ErrorBoundary: ErrorBoundary,
     children: [
-      { index: true, Component: RecepcionistaAgenda },
+      { index: true, Component: DentistaAgenda },
       { path: "pacientes", Component: DentistaProntuarios },
       { path: "financeiro", Component: DentistaFinanceiro },
       { path: "dashboards", Component: DentistaDashboard },
       { path: "equipe", Component: DentistaEquipe },
-      { path: "estoque", Component: AuxiliarEstoque },
       { path: "medicamentos", Component: DentistaMedicamentos },
     ],
   },

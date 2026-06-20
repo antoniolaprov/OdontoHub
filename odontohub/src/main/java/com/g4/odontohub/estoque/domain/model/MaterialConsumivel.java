@@ -39,6 +39,12 @@ public class MaterialConsumivel {
     }
 
     public List<Object> registrarConsumo(int quantidade, Long procedimentoId) {
+        if (quantidade <= 0) {
+            throw new IllegalArgumentException("Quantidade consumida deve ser um valor positivo.");
+        }
+        if (quantidade > quantidadeEmEstoque) {
+            throw new IllegalArgumentException("Estoque insuficiente para consumo.");
+        }
         this.quantidadeEmEstoque -= quantidade;
         this.ultimaAtualizacao = LocalDate.now();
         List<Object> eventos = new ArrayList<>();

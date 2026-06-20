@@ -75,6 +75,13 @@ public class InstrumentoService {
         DomainEventPublisher.publish(new InstrumentoDesativado(instrumento.getId()));
     }
 
+    /** Único jeito de tirar um instrumento de Inativo — sem isso, desativar() é uma via de mão única. */
+    public void reativarInstrumento(Long instrumentoId) {
+        Instrumento instrumento = buscarPorId(instrumentoId);
+        instrumento.reativar();
+        repositorio.salvar(instrumento);
+    }
+
     public boolean existeCodigoIdentificador(String codigoIdentificador) {
         return repositorio.todos().stream()
                 .anyMatch(i -> i.getCodigoIdentificador().equals(codigoIdentificador));

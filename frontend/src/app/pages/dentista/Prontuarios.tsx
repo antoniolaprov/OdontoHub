@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import {
   FileText, Lock, ShieldAlert, FileClock, Pill, AlertTriangle, RotateCcw, Search, X,
-  Plus, Loader2, UserPlus, Trash2, XCircle, ChevronDown, ChevronUp,
+  Plus, Loader2, Trash2, XCircle, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { api } from "../../api/client";
 
@@ -199,30 +199,46 @@ const STATUS_PLANO_LABEL: Record<StatusPlanoUI, string> = {
 // F18) — usamos um id fixo só para armazenar junto do agregado, sem regra de negócio
 // dependendo dele.
 const DENTISTA_ID_DEMO = 1;
-const RESPONSAVEL_PADRAO = "Dr. Felipe";
+
+interface ColaboradorResumo { nome: string; funcao: string; }
+interface AgendamentoResumo { id: number; label: string; }
+interface MaterialResumo { nome: string; unidadeMedida: string; quantidadeEmEstoque: number; }
+interface MaterialUsado { material: string; quantidade: string; }
 
 export default function DentistaProntuarios() {
   const [abaAtiva, setAbaAtiva] = useState("anamnese");
   const [alertaAberto, setAlertaAberto] = useState(true);
 
   // ── Pacientes ────────────────────────────────────────────────────────────
+  // Cadastro de paciente é função da Recepcionista (tela própria) — o dentista só
+  // seleciona, dentre os já cadastrados, o prontuário que vai atender.
   const [pacientes, setPacientes] = useState<PacienteResumo[]>([]);
   const [pacienteSelecionadoId, setPacienteSelecionadoId] = useState<number | null>(null);
   const [carregandoPacientes, setCarregandoPacientes] = useState(true);
   const [erroPacientes, setErroPacientes] = useState<string | null>(null);
-  const [formNovoPacienteAberto, setFormNovoPacienteAberto] = useState(false);
-  const [novoPacienteNome, setNovoPacienteNome] = useState("");
-  const [novoPacienteTelefone, setNovoPacienteTelefone] = useState("");
-  const [salvandoPaciente, setSalvandoPaciente] = useState(false);
 
   const pacienteSelecionado = pacientes.find((p) => p.id === pacienteSelecionadoId) ?? null;
+
+  // ── Colaboradores (F12) — usado nos selects de "responsável"/"executor" ─
+  const [colaboradores, setColaboradores] = useState<ColaboradorResumo[]>([]);
+  const cirurgioesDentistas = useMemo(
+    () => colaboradores.filter((c) => c.funcao === "ESPECIALISTA"),
+    [colaboradores],
+  );
+  const [responsavelSelecionado, setResponsavelSelecionado] = useState("");
+
+  // ── Agendamentos (F01) — usado pra vincular a evolução clínica a uma consulta real ─
+  const [agendamentosPaciente, setAgendamentosPaciente] = useState<AgendamentoResumo[]>([]);
+
+  // ── Materiais (F05) — consumo real de estoque ao realizar um procedimento ─
+  const [materiaisDisponiveis, setMateriaisDisponiveis] = useState<MaterialResumo[]>([]);
 
   // ── Anamnese (F02) ───────────────────────────────────────────────────────
   const [anamnese, setAnamnese] = useState<AnamneseUI | null>(null);
   const [carregandoAnamnese, setCarregandoAnamnese] = useState(false);
   const [mostrarHistorico, setMostrarHistorico] = useState(false);
   const [formRegistro, setFormRegistro] = useState({
-    alergias: "", contraindicacoes: "", condicoesSistemicas: "", responsavel: RESPONSAVEL_PADRAO,
+    alergias: "", contraindicacoes: "", condicoesSistemicas: "",
   });
   const [salvandoAnamnese, setSalvandoAnamnese] = useState(false);
   const [novaAlergiaInput, setNovaAlergiaInput] = useState("");
@@ -242,7 +258,9 @@ export default function DentistaProntuarios() {
   const [modalRealizar, setModalRealizar] = useState<{ aberto: boolean; procedimento?: ProcedimentoUI }>({ aberto: false });
   const [realizarDescricao, setRealizarDescricao] = useState("");
   const [realizarAgendamentoId, setRealizarAgendamentoId] = useState("");
-  const [realizarExecutor, setRealizarExecutor] = useState(RESPONSAVEL_PADRAO);
+  const [realizarExecutor, setRealizarExecutor] = useState("");
+  const [materiaisUsados, setMateriaisUsados] = useState<MaterialUsado[]>([]);
+  const [erroMateriais, setErroMateriais] = useState<string | null>(null);
 
   const [modalJustificativa, setModalJustificativa] = useState<{
     aberto: boolean;
@@ -250,7 +268,7 @@ export default function DentistaProntuarios() {
     procedimentoId?: number;
   }>({ aberto: false });
   const [justificativaInput, setJustificativaInput] = useState("");
-  const [responsavelAcaoInput, setResponsavelAcaoInput] = useState(RESPONSAVEL_PADRAO);
+  const [responsavelAcaoInput, setResponsavelAcaoInput] = useState("");
 
   const [erroAcao, setErroAcao] = useState<string | null>(null);
   const [salvandoAcao, setSalvandoAcao] = useState(false);
@@ -446,6 +464,48 @@ export default function DentistaProntuarios() {
     return () => { ativo = false; };
   }, []);
 
+  // ── Carregamento: colaboradores (selects de responsável/executor) ───────
+  useEffect(() => {
+    api.get<any[]>("/colaboradores")
+      .then((lista) => {
+        const adaptados = (lista ?? []).map((c: any) => ({ nome: c.nomeCompleto ?? "—", funcao: c.funcao ?? "" }));
+        setColaboradores(adaptados);
+        const primeiro = adaptados.find((c) => c.funcao === "ESPECIALISTA");
+        if (primeiro) {
+          setResponsavelSelecionado((atual) => atual || primeiro.nome);
+          setRealizarExecutor((atual) => atual || primeiro.nome);
+          setResponsavelAcaoInput((atual) => atual || primeiro.nome);
+        }
+      })
+      .catch((e) => console.warn("Falha ao carregar colaboradores:", e));
+  }, []);
+
+  // ── Carregamento: materiais disponíveis (consumo de estoque ao realizar) ─
+  const carregarMateriais = useCallback(() => {
+    return api.get<any[]>("/materiais")
+      .then((lista) => setMateriaisDisponiveis((lista ?? []).map((m: any) => ({
+        nome: m.nome ?? "—", unidadeMedida: m.unidadeMedida ?? "", quantidadeEmEstoque: m.quantidadeEmEstoque ?? 0,
+      }))))
+      .catch((e) => console.warn("Falha ao carregar materiais:", e));
+  }, []);
+  useEffect(() => { carregarMateriais(); }, [carregarMateriais]);
+
+  // ── Carregamento: agendamentos do paciente selecionado (vínculo da evolução) ─
+  useEffect(() => {
+    if (!pacienteSelecionado) { setAgendamentosPaciente([]); return; }
+    api.get<any[]>("/agendamentos")
+      .then((lista) => {
+        const doPaciente = (lista ?? [])
+          .filter((a: any) => a.paciente === pacienteSelecionado.nome)
+          .map((a: any) => {
+            const dataHora = a.dataHora ? new Date(a.dataHora).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" }) : "—";
+            return { id: a.id, label: `${dataHora} — ${a.dentista ?? "—"} (${a.status ?? "—"})` };
+          });
+        setAgendamentosPaciente(doPaciente);
+      })
+      .catch((e) => console.warn("Falha ao carregar agendamentos do paciente:", e));
+  }, [pacienteSelecionado]);
+
   // ── Carregamento: anamnese + plano do paciente selecionado ──────────────
   const recarregarProntuario = useCallback(async (pacienteId: number) => {
     setCarregandoAnamnese(true);
@@ -480,34 +540,10 @@ export default function DentistaProntuarios() {
     recarregarProntuario(pacienteSelecionadoId);
   }, [pacienteSelecionadoId, recarregarProntuario]);
 
-  // ── Ações: pacientes ─────────────────────────────────────────────────────
-  async function handleCadastrarPaciente(e: React.FormEvent) {
-    e.preventDefault();
-    if (!novoPacienteNome.trim() || !novoPacienteTelefone.trim()) return;
-    setSalvandoPaciente(true);
-    setErroPacientes(null);
-    try {
-      const criado = await api.post<any>("/pacientes/rapido", {
-        nomeCompleto: novoPacienteNome.trim(),
-        telefone: novoPacienteTelefone.trim(),
-      });
-      const novo = adaptarPaciente(criado);
-      setPacientes((atual) => [novo, ...atual]);
-      setPacienteSelecionadoId(novo.id);
-      setNovoPacienteNome("");
-      setNovoPacienteTelefone("");
-      setFormNovoPacienteAberto(false);
-    } catch (err: any) {
-      setErroPacientes(err.message ?? "Falha ao cadastrar paciente.");
-    } finally {
-      setSalvandoPaciente(false);
-    }
-  }
-
   // ── Ações: anamnese ──────────────────────────────────────────────────────
   async function handleRegistrarAnamnese(e: React.FormEvent) {
     e.preventDefault();
-    if (pacienteSelecionadoId == null) return;
+    if (pacienteSelecionadoId == null || !responsavelSelecionado) return;
     setSalvandoAnamnese(true);
     setErroAcao(null);
     try {
@@ -516,9 +552,9 @@ export default function DentistaProntuarios() {
         alergias: formRegistro.alergias,
         contraindicacoes: formRegistro.contraindicacoes,
         condicoesSistemicas: formRegistro.condicoesSistemicas,
-        responsavel: formRegistro.responsavel || RESPONSAVEL_PADRAO,
+        responsavel: responsavelSelecionado,
       });
-      setFormRegistro({ alergias: "", contraindicacoes: "", condicoesSistemicas: "", responsavel: RESPONSAVEL_PADRAO });
+      setFormRegistro({ alergias: "", contraindicacoes: "", condicoesSistemicas: "" });
       await recarregarProntuario(pacienteSelecionadoId);
     } catch (err: any) {
       setErroAcao(err.message ?? "Falha ao registrar anamnese.");
@@ -528,11 +564,11 @@ export default function DentistaProntuarios() {
   }
 
   async function handleAdicionarAlergia() {
-    if (pacienteSelecionadoId == null || !novaAlergiaInput.trim()) return;
+    if (pacienteSelecionadoId == null || !novaAlergiaInput.trim() || !responsavelSelecionado) return;
     setErroAcao(null);
     try {
       await api.post(`/prontuarios/anamnese/${pacienteSelecionadoId}/alergias`, {
-        alergia: novaAlergiaInput.trim(), responsavel: RESPONSAVEL_PADRAO,
+        alergia: novaAlergiaInput.trim(), responsavel: responsavelSelecionado,
       });
       setNovaAlergiaInput("");
       await recarregarProntuario(pacienteSelecionadoId);
@@ -542,11 +578,11 @@ export default function DentistaProntuarios() {
   }
 
   async function handleSalvarCondicoes() {
-    if (pacienteSelecionadoId == null) return;
+    if (pacienteSelecionadoId == null || !responsavelSelecionado) return;
     setErroAcao(null);
     try {
       await api.put(`/prontuarios/anamnese/${pacienteSelecionadoId}/condicoes-sistemicas`, {
-        condicoes: condicoesEditando, responsavel: RESPONSAVEL_PADRAO,
+        condicoes: condicoesEditando, responsavel: responsavelSelecionado,
       });
       await recarregarProntuario(pacienteSelecionadoId);
     } catch (err: any) {
@@ -586,18 +622,39 @@ export default function DentistaProntuarios() {
 
   async function handleRealizarProcedimento(e: React.FormEvent) {
     e.preventDefault();
-    if (!plano || !modalRealizar.procedimento || pacienteSelecionadoId == null) return;
+    if (!plano || !modalRealizar.procedimento || pacienteSelecionadoId == null || !realizarExecutor) return;
+    const itensValidos = materiaisUsados.filter((m) => m.material && Number(m.quantidade) > 0);
     setErroAcao(null);
+    setErroMateriais(null);
     try {
-      await api.put(`/prontuarios/planos/${plano.id}/procedimentos/${modalRealizar.procedimento.id}/realizar`, {
+      const procedimentoId = modalRealizar.procedimento.id;
+      await api.put(`/prontuarios/planos/${plano.id}/procedimentos/${procedimentoId}/realizar`, {
         descricaoEvolucao: realizarDescricao,
         agendamentoId: realizarAgendamentoId ? Number(realizarAgendamentoId) : null,
-        executor: realizarExecutor || RESPONSAVEL_PADRAO,
+        executor: realizarExecutor,
       });
+
+      // Consome o estoque dos materiais usados — falha aqui não desfaz o procedimento
+      // (já realizado), só é reportada pra o dentista ajustar o estoque manualmente.
+      const falhasConsumo: string[] = [];
+      for (const item of itensValidos) {
+        try {
+          await api.post(`/materiais/${encodeURIComponent(item.material)}/consumo`, {
+            quantidade: Number(item.quantidade), procedimentoId,
+          });
+        } catch (err: any) {
+          falhasConsumo.push(`${item.material}: ${err.message ?? "falha desconhecida"}`);
+        }
+      }
+      if (falhasConsumo.length > 0) {
+        setErroMateriais(`Procedimento realizado, mas houve falha ao baixar estoque: ${falhasConsumo.join("; ")}`);
+      }
+      await carregarMateriais();
+
       setModalRealizar({ aberto: false });
       setRealizarDescricao("");
       setRealizarAgendamentoId("");
-      setRealizarExecutor(RESPONSAVEL_PADRAO);
+      setMateriaisUsados([]);
       await recarregarProntuario(pacienteSelecionadoId);
     } catch (err: any) {
       setErroAcao(err.message ?? "Falha ao realizar procedimento.");
@@ -620,7 +677,7 @@ export default function DentistaProntuarios() {
           justificativa: justificativaInput,
         });
       } else if (acao === "excluir-procedimento" && modalJustificativa.procedimentoId) {
-        const qs = `justificativa=${encodeURIComponent(justificativaInput)}&responsavel=${encodeURIComponent(responsavelAcaoInput || RESPONSAVEL_PADRAO)}`;
+        const qs = `justificativa=${encodeURIComponent(justificativaInput)}&responsavel=${encodeURIComponent(responsavelAcaoInput)}`;
         await api.del(`/prontuarios/planos/${plano.id}/procedimentos/${modalJustificativa.procedimentoId}?${qs}`);
       }
       setModalJustificativa({ aberto: false });
@@ -696,44 +753,6 @@ export default function DentistaProntuarios() {
             </div>
           </div>
         )}
-
-        <div className="mt-3 border-t border-gray-300 pt-3">
-          {formNovoPacienteAberto ? (
-            <form onSubmit={handleCadastrarPaciente} className="flex flex-wrap items-end gap-2">
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Nome completo</label>
-                <input
-                  className="border-2 border-gray-300 p-1.5 rounded text-sm"
-                  value={novoPacienteNome}
-                  onChange={(e) => setNovoPacienteNome(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-gray-600 mb-1">Telefone</label>
-                <input
-                  className="border-2 border-gray-300 p-1.5 rounded text-sm"
-                  value={novoPacienteTelefone}
-                  onChange={(e) => setNovoPacienteTelefone(e.target.value)}
-                  required
-                />
-              </div>
-              <button type="submit" disabled={salvandoPaciente} className="px-3 py-1.5 bg-blue-600 text-white text-sm font-bold rounded hover:bg-blue-700 disabled:opacity-50">
-                {salvandoPaciente ? "Salvando..." : "Cadastrar"}
-              </button>
-              <button type="button" onClick={() => setFormNovoPacienteAberto(false)} className="px-3 py-1.5 border-2 border-gray-300 text-sm rounded">
-                Cancelar
-              </button>
-            </form>
-          ) : (
-            <button
-              onClick={() => setFormNovoPacienteAberto(true)}
-              className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 font-bold"
-            >
-              <UserPlus className="w-4 h-4" /> Novo Paciente
-            </button>
-          )}
-        </div>
       </div>
 
       <div className="border-2 border-gray-400 mb-4">
@@ -818,12 +837,23 @@ export default function DentistaProntuarios() {
                         />
                       </div>
                       <div>
-                        <label className="text-sm font-bold mb-1 block">Responsável</label>
-                        <input
-                          className="w-full border-2 border-gray-300 p-2 rounded"
-                          value={formRegistro.responsavel}
-                          onChange={(e) => setFormRegistro({ ...formRegistro, responsavel: e.target.value })}
-                        />
+                        <label className="text-sm font-bold mb-1 block">Responsável <span className="text-red-500">*</span></label>
+                        <select
+                          className="w-full border-2 border-gray-300 p-2 rounded bg-white"
+                          value={responsavelSelecionado}
+                          onChange={(e) => setResponsavelSelecionado(e.target.value)}
+                          required
+                        >
+                          <option value="">Selecione o cirurgião-dentista</option>
+                          {cirurgioesDentistas.map((c) => (
+                            <option key={c.nome} value={c.nome}>{c.nome}</option>
+                          ))}
+                        </select>
+                        {cirurgioesDentistas.length === 0 && (
+                          <p className="text-xs text-red-500 mt-1">
+                            Nenhum cirurgião-dentista cadastrado na Equipe ainda.
+                          </p>
+                        )}
                       </div>
                       <button
                         type="submit"
@@ -1018,7 +1048,12 @@ export default function DentistaProntuarios() {
                                   {proc.status === "PENDENTE" && (
                                     <>
                                       <button
-                                        onClick={() => setModalRealizar({aberto: true, procedimento: proc})}
+                                        onClick={() => {
+                                          setMateriaisUsados([]);
+                                          setErroMateriais(null);
+                                          setRealizarAgendamentoId("");
+                                          setModalRealizar({aberto: true, procedimento: proc});
+                                        }}
                                         className="px-2 py-1 border-2 border-green-500 text-green-700 bg-white text-xs font-bold rounded hover:bg-green-50"
                                       >
                                         Realizar
@@ -1260,24 +1295,97 @@ export default function DentistaProntuarios() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Agendamento vinculado (id)</label>
-                  <input
-                    type="number"
-                    className="w-full border-2 border-gray-300 p-2 rounded"
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Agendamento vinculado</label>
+                  <select
+                    className="w-full border-2 border-gray-300 p-2 rounded bg-white"
                     value={realizarAgendamentoId}
                     onChange={(e) => setRealizarAgendamentoId(e.target.value)}
-                  />
+                  >
+                    <option value="">Nenhum (sem vínculo)</option>
+                    {agendamentosPaciente.map((a) => (
+                      <option key={a.id} value={a.id}>{a.label}</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Vincula a evolução ao agendamento real em que o procedimento ocorreu
+                    (rastreio do prontuário). Opcional, mas recomendado.
+                  </p>
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">Executor</label>
-                  <input
-                    className="w-full border-2 border-gray-300 p-2 rounded"
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Executor <span className="text-red-500">*</span></label>
+                  <select
+                    className="w-full border-2 border-gray-300 p-2 rounded bg-white"
                     value={realizarExecutor}
                     onChange={(e) => setRealizarExecutor(e.target.value)}
                     required
-                  />
+                  >
+                    <option value="">Selecione o cirurgião-dentista</option>
+                    {cirurgioesDentistas.map((c) => (
+                      <option key={c.nome} value={c.nome}>{c.nome}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
+
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-bold text-gray-700">Materiais usados</label>
+                  <button
+                    type="button"
+                    onClick={() => setMateriaisUsados((atual) => [...atual, { material: "", quantidade: "1" }])}
+                    className="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1"
+                  >
+                    <Plus className="w-3 h-3" /> Adicionar material
+                  </button>
+                </div>
+                {materiaisUsados.length === 0 ? (
+                  <p className="text-xs text-gray-400">Nenhum material informado.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {materiaisUsados.map((item, i) => {
+                      const materialInfo = materiaisDisponiveis.find((m) => m.nome === item.material);
+                      return (
+                        <div key={i} className="flex gap-2 items-start">
+                          <select
+                            className="flex-1 border-2 border-gray-300 p-1.5 rounded bg-white text-sm"
+                            value={item.material}
+                            onChange={(e) => setMateriaisUsados((atual) =>
+                              atual.map((m, j) => (j === i ? { ...m, material: e.target.value } : m)))}
+                          >
+                            <option value="">Selecione o material</option>
+                            {materiaisDisponiveis.map((m) => (
+                              <option key={m.nome} value={m.nome}>
+                                {m.nome} ({m.quantidadeEmEstoque} {m.unidadeMedida} em estoque)
+                              </option>
+                            ))}
+                          </select>
+                          <input
+                            type="number"
+                            min={1}
+                            max={materialInfo?.quantidadeEmEstoque ?? undefined}
+                            className="w-24 border-2 border-gray-300 p-1.5 rounded text-sm"
+                            placeholder="Qtd."
+                            value={item.quantidade}
+                            onChange={(e) => setMateriaisUsados((atual) =>
+                              atual.map((m, j) => (j === i ? { ...m, quantidade: e.target.value } : m)))}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setMateriaisUsados((atual) => atual.filter((_, j) => j !== i))}
+                            className="text-gray-400 hover:text-red-500 p-1.5"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                {erroMateriais && (
+                  <div className="mt-2 text-xs text-red-600 border border-red-300 bg-red-50 p-2 rounded">{erroMateriais}</div>
+                )}
+              </div>
+
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
@@ -1323,11 +1431,16 @@ export default function DentistaProntuarios() {
               {modalJustificativa.acao === 'excluir-procedimento' && (
                 <div className="mb-4">
                   <label className="text-sm font-bold mb-1 block">Responsável</label>
-                  <input
-                    className="w-full border-2 border-gray-300 p-2 rounded"
+                  <select
+                    className="w-full border-2 border-gray-300 p-2 rounded bg-white"
                     value={responsavelAcaoInput}
                     onChange={(e) => setResponsavelAcaoInput(e.target.value)}
-                  />
+                  >
+                    <option value="">Selecione o cirurgião-dentista</option>
+                    {cirurgioesDentistas.map((c) => (
+                      <option key={c.nome} value={c.nome}>{c.nome}</option>
+                    ))}
+                  </select>
                 </div>
               )}
               <div className="flex gap-3">

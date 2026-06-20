@@ -301,33 +301,28 @@ export default function AuxiliarInstrumentos() {
       : null;
 
     if (modalForm.instrumento) {
-      // O backend não suporta editar nome/categoria/código/tipo de um instrumento já
-      // cadastrado (só esterilizar/contaminar/desativar e configurar prazo) —
-      // mantido como atualização local, igual ao padrão de campos sem endpoint no Recall.
-      setInstrumentos((prev) =>
-        prev.map((i) =>
-          i.id === modalForm.instrumento!.id
-            ? {
-                ...i,
-                nome: form.nome.trim(),
-                categoria: form.categoria,
-                codigo: form.codigo.trim().toUpperCase(),
-                tipo: form.tipo,
-                status: form.status,
-                prazoValidadeDias: prazo,
-                componentesIds:
-                  form.tipo === "KIT"
-                    ? form.componentesIds
-                    : [],
-              }
-            : i,
-        ),
-      );
-      showToast(
-        "Instrumento atualizado com sucesso.",
-        "sucesso",
-      );
-      setModalForm({ aberto: false });
+      // O backend não suporta editar nome/categoria/código/tipo/prazo de um
+      // instrumento já cadastrado (só esterilizar/contaminar/desativar/reativar e
+      // configurar prazo globalmente) — esses campos ficam somente leitura na
+      // edição (ver `disabled` nos inputs abaixo). Só o status Ativo/Inativo é
+      // real aqui, via os endpoints de desativar/reativar.
+      const original = modalForm.instrumento;
+      if (form.status === original.status) {
+        setModalForm({ aberto: false });
+        return;
+      }
+      setSalvandoInstrumento(true);
+      try {
+        const acao = form.status === "INATIVO" ? "desativar" : "reativar";
+        await api.post(`/instrumentos/${encodeURIComponent(original.nome)}/${acao}`);
+        await carregarInstrumentos();
+        showToast("Status do instrumento atualizado.", "sucesso");
+        setModalForm({ aberto: false });
+      } catch (e: any) {
+        setErroCodigo(e.message ?? "Falha ao atualizar status do instrumento.");
+      } finally {
+        setSalvandoInstrumento(false);
+      }
       return;
     }
 
@@ -807,12 +802,19 @@ export default function AuxiliarInstrumentos() {
               </button>
             </div>
             <div className="p-6 space-y-4">
+              {modalForm.instrumento && (
+                <div className="border-2 border-blue-300 bg-blue-50 p-3 text-xs text-blue-800">
+                  Nome, categoria, código, tipo e prazo não podem ser alterados
+                  depois do cadastro — só o status (Ativo/Inativo) é editável aqui.
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-bold mb-1">
                   Nome *
                 </label>
                 <input
-                  className="w-full border-2 border-gray-400 p-2 outline-none"
+                  disabled={!!modalForm.instrumento}
+                  className="w-full border-2 border-gray-400 p-2 outline-none disabled:bg-gray-100 disabled:text-gray-500"
                   placeholder="Ex: Kit Exame Padrão"
                   value={form.nome}
                   onChange={(e) => {
@@ -830,7 +832,8 @@ export default function AuxiliarInstrumentos() {
                   Categoria *
                 </label>
                 <select
-                  className="w-full border-2 border-gray-400 p-2 bg-white outline-none"
+                  disabled={!!modalForm.instrumento}
+                  className="w-full border-2 border-gray-400 p-2 bg-white outline-none disabled:bg-gray-100 disabled:text-gray-500"
                   value={form.categoria}
                   onChange={(e) => {
                     setForm((f) => ({
@@ -856,7 +859,8 @@ export default function AuxiliarInstrumentos() {
                   Código Identificador *
                 </label>
                 <input
-                  className="w-full border-2 border-gray-400 p-2 outline-none font-mono"
+                  disabled={!!modalForm.instrumento}
+                  className="w-full border-2 border-gray-400 p-2 outline-none font-mono disabled:bg-gray-100 disabled:text-gray-500"
                   placeholder="Ex: KE-A03"
                   value={form.codigo}
                   onChange={(e) => {
@@ -880,6 +884,7 @@ export default function AuxiliarInstrumentos() {
                     <button
                       key={t}
                       type="button"
+                      disabled={!!modalForm.instrumento}
                       onClick={() =>
                         setForm((f) => ({
                           ...f,
@@ -887,7 +892,7 @@ export default function AuxiliarInstrumentos() {
                           componentesIds: [],
                         }))
                       }
-                      className={`px-3 py-2 border-2 font-bold text-sm ${
+                      className={`px-3 py-2 border-2 font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed ${
                         form.tipo === t
                           ? "border-blue-500 bg-blue-500 text-white"
                           : "border-gray-400 bg-white hover:bg-gray-100"
@@ -906,7 +911,8 @@ export default function AuxiliarInstrumentos() {
                 <input
                   type="number"
                   min="1"
-                  className="w-full border-2 border-gray-400 p-2 outline-none"
+                  disabled={!!modalForm.instrumento}
+                  className="w-full border-2 border-gray-400 p-2 outline-none disabled:bg-gray-100 disabled:text-gray-500"
                   placeholder="Ex: 30"
                   value={form.prazoValidadeDias}
                   onChange={(e) =>
@@ -928,7 +934,7 @@ export default function AuxiliarInstrumentos() {
 
               <div>
                 <label className="block text-sm font-bold mb-1">
-                  Status inicial
+                  {modalForm.instrumento ? "Status" : "Status inicial"}
                 </label>
                 <select
                   className="w-full border-2 border-gray-400 p-2 bg-white outline-none"
@@ -969,6 +975,7 @@ export default function AuxiliarInstrumentos() {
                         >
                           <input
                             type="checkbox"
+                            disabled={!!modalForm.instrumento}
                             checked={form.componentesIds.includes(
                               ind.id,
                             )}

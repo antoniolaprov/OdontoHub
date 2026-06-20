@@ -55,6 +55,10 @@ public class Instrumento {
         this.statusInstrumento = StatusInstrumento.INATIVO;
     }
 
+    public void reativar() {
+        this.statusInstrumento = StatusInstrumento.ATIVO;
+    }
+
     public void marcarComoEsteril(LocalDate dataEsterilizacao, String responsavel) {
         validarAtivo();
         this.status = StatusEsterilizacao.ESTERIL;
