@@ -26,6 +26,13 @@ public class LancamentoFinanceiroJpaEntity {
     private String categoria;
     private String descricao;
     private boolean geradoAutomaticamente;
+    /**
+     * Coluna herdada de uma versão anterior do schema (H2 durável, NOT NULL).
+     * O domínio distingue previsto/confirmado pela própria data (data &gt; hoje),
+     * não por este campo — mas a coluna precisa ser preenchida para o INSERT não
+     * violar o NOT NULL. Derivamos o valor da data, mantendo-o coerente.
+     */
+    private boolean previsto;
 
     protected LancamentoFinanceiroJpaEntity() {
     }
@@ -39,6 +46,7 @@ public class LancamentoFinanceiroJpaEntity {
         e.categoria = l.getCategoria();
         e.descricao = l.getDescricao();
         e.geradoAutomaticamente = l.isGeradoAutomaticamente();
+        e.previsto = l.getData() != null && l.getData().isAfter(LocalDate.now());
         return e;
     }
 
