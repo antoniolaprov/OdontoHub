@@ -1,6 +1,6 @@
 # 🗺️ Mapa de Histórias de Usuário — OdontoHub
 
-Story map (estilo Jeff Patton) das 18 funcionalidades (F1–F18), organizado pelas
+Story map das 18 funcionalidades (F1–F18), organizado pelas
 **jornadas de usuário** (personas) do sistema.
 
 
