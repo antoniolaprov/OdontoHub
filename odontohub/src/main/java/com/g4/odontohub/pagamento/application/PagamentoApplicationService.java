@@ -86,4 +86,8 @@ public class PagamentoApplicationService {
     public java.util.List<Pagamento> pagamentos() {
         return service.pagamentos();
     }
+
+    public java.util.List<ParcelaPagavel> parcelas() {
+        return service.parcelas();
+    }
 }

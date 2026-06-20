@@ -127,6 +127,10 @@ public class PagamentoService {
         return repositorio.todosPagamentos();
     }
 
+    public List<ParcelaPagavel> parcelas() {
+        return new ArrayList<>(repositorio.todasParcelas());
+    }
+
     private boolean existeAguardando(String referencia) {
         return aguardandoDe(referencia).isPresent();
     }
