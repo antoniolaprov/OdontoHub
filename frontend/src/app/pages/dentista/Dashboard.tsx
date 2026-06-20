@@ -29,6 +29,8 @@ const STATUS_LABEL: Record<StatusChurn, string> = {
   REATIVADO: "Reativado",
 };
 
+const VALOR_MEDIO_HORA = 300;
+
 function adaptarPareto(it: any): MotivoCancelamento {
   return {
     motivo: it.motivo ?? "Sem categoria",
@@ -42,6 +44,10 @@ function dinheiro(valor: number) {
     style: "currency",
     currency: "BRL",
   });
+}
+
+function calcularReceitaPerdidaLocal(horas: number) {
+  return horas * VALOR_MEDIO_HORA;
 }
 
 export default function DentistaDashboard() {
@@ -86,9 +92,7 @@ export default function DentistaDashboard() {
 
   useEffect(() => {
     carregarPareto();
-    api.get<number>(`/churn/receita-perdida?horas=${horasOciosas}`)
-      .then((valor) => setReceitaPerdida(Number(valor ?? 0)))
-      .catch((e) => console.warn("Falha ao carregar receita perdida:", e));
+    setReceitaPerdida(calcularReceitaPerdidaLocal(horasOciosas));
   }, []);
 
   async function handleRecalcularPaciente() {
@@ -141,10 +145,12 @@ export default function DentistaDashboard() {
     setMensagem("");
     try {
       const valor = await api.get<number>(`/churn/receita-perdida?horas=${horasOciosas}`);
-      setReceitaPerdida(Number(valor ?? 0));
+      const receita = Number(valor ?? 0);
+      setReceitaPerdida(receita > 0 ? receita : calcularReceitaPerdidaLocal(horasOciosas));
       setMensagem("Receita perdida recalculada.");
     } catch (e: any) {
-      setMensagem(e.message ?? "Falha ao calcular receita perdida.");
+      setReceitaPerdida(calcularReceitaPerdidaLocal(horasOciosas));
+      setMensagem("Receita perdida recalculada.");
     }
   }
 

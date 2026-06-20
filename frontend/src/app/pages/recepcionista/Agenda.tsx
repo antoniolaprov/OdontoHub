@@ -421,6 +421,11 @@ export default function RecepcionistaAgenda() {
     [followups],
   );
 
+  const followupsConcluidos = useMemo(
+    () => followups.filter((f) => f.concluida),
+    [followups],
+  );
+
   // Returns filtered items for a specific calendar cell
   function getCelula(dia: Date, hora: string): Agendamento[] {
     const str = dateToBR(dia);
@@ -481,6 +486,18 @@ export default function RecepcionistaAgenda() {
 
   function chaveFollowup(tarefa: FollowupTarefa) {
     return `${tarefa.paciente}-${tarefa.tipoLigacao}-${tarefa.id}`;
+  }
+
+  function resumoChecklist(tarefa: FollowupTarefa): string {
+    if (!tarefa.checklist) {
+      return "Checklist salvo sem detalhes adicionais.";
+    }
+    const itens = [
+      `Dor ${tarefa.checklist.nivelDor}`,
+      tarefa.checklist.sangramentoAtivo ? "Sangramento: sim" : "Sangramento: nao",
+      tarefa.checklist.observacoes ? `Obs: ${tarefa.checklist.observacoes}` : null,
+    ].filter(Boolean);
+    return itens.join(" | ");
   }
 
   const [salvandoCriar, setSalvandoCriar] = useState(false);
@@ -1331,6 +1348,41 @@ export default function RecepcionistaAgenda() {
                 );
               })
             )}
+          </div>
+
+          <div className="mt-4">
+            <h4 className="text-xs font-bold uppercase tracking-wide text-gray-500 mb-2">
+              Concluídos
+            </h4>
+            <div className="space-y-2">
+              {followupsConcluidos.length === 0 ? (
+                <div className="text-xs text-gray-400 border-2 border-gray-200 p-3 bg-white">
+                  Nenhum checklist concluído ainda.
+                </div>
+              ) : (
+                followupsConcluidos.map((tarefa) => (
+                  <div
+                    key={chaveFollowup(tarefa)}
+                    className="border-2 border-green-300 bg-green-50 p-3"
+                  >
+                    <div className="flex justify-between gap-2">
+                      <div className="font-bold text-sm">
+                        {tarefa.paciente}
+                      </div>
+                      <span className="text-[10px] font-bold border-2 border-green-400 bg-white text-green-700 px-1">
+                        Concluído
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-gray-600 mt-1">
+                      {tarefa.tipoLigacao}
+                    </div>
+                    <div className="text-xs text-gray-700 mt-2">
+                      {resumoChecklist(tarefa)}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>
