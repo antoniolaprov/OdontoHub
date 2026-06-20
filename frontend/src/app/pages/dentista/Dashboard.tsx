@@ -22,14 +22,19 @@ interface MotivoCancelamento {
   cumulativo: number;
 }
 
+const MOTIVOS_PADRAO: MotivoCancelamento[] = [
+  { motivo: "Preco", qtd: 15, cumulativo: 37 },
+  { motivo: "Mudanca", qtd: 12, cumulativo: 67 },
+  { motivo: "Insatisfacao", qtd: 8, cumulativo: 87 },
+  { motivo: "Agenda", qtd: 5, cumulativo: 100 },
+];
+
 const STATUS_LABEL: Record<StatusChurn, string> = {
   ATIVO: "Ativo",
   ZONA_DE_RISCO: "Zona de Risco",
   EVADIDO: "Evadido",
   REATIVADO: "Reativado",
 };
-
-const VALOR_MEDIO_HORA = 300;
 
 function adaptarPareto(it: any): MotivoCancelamento {
   return {
@@ -46,10 +51,6 @@ function dinheiro(valor: number) {
   });
 }
 
-function calcularReceitaPerdidaLocal(horas: number) {
-  return horas * VALOR_MEDIO_HORA;
-}
-
 export default function DentistaDashboard() {
   // Serie mensal de churn: sem endpoint de serie temporal no backend, mantida como mock.
   const churnData = [
@@ -61,12 +62,7 @@ export default function DentistaDashboard() {
     { mes: "Jun", taxa: 3.8 },
   ];
 
-  const [motivosData, setMotivosData] = useState<MotivoCancelamento[]>([
-    { motivo: "Preco", qtd: 15, cumulativo: 37 },
-    { motivo: "Mudanca", qtd: 12, cumulativo: 67 },
-    { motivo: "Insatisfacao", qtd: 8, cumulativo: 87 },
-    { motivo: "Agenda", qtd: 5, cumulativo: 100 },
-  ]);
+  const [motivosData, setMotivosData] = useState<MotivoCancelamento[]>(MOTIVOS_PADRAO);
   const [paciente, setPaciente] = useState("Marcos Vieira");
   const [mesesSemRetorno, setMesesSemRetorno] = useState(13);
   const [possuiPlanoAtivo, setPossuiPlanoAtivo] = useState(true);
@@ -78,22 +74,28 @@ export default function DentistaDashboard() {
   const [tipoProcedimento, setTipoProcedimento] = useState("Ortodontia");
   const [qtdProcedimento, setQtdProcedimento] = useState<number | null>(null);
   const [mensagem, setMensagem] = useState("");
-  const [categoriasOcultas, setCategoriasOcultas] = useState<string[]>([]);
+  const [valorMedioHora, setValorMedioHora] = useState(300);
 
   function carregarPareto() {
     return api.get<any[]>("/churn/pareto-cancelamentos")
       .then((pareto) => {
-        if (Array.isArray(pareto) && pareto.length > 0) {
-          setMotivosData(pareto.map(adaptarPareto));
-        }
+        if (!Array.isArray(pareto) || pareto.length === 0) return;
+        const reais = pareto.map(adaptarPareto);
+        const porMotivo = new Map<string, MotivoCancelamento>();
+        for (const item of MOTIVOS_PADRAO) porMotivo.set(item.motivo, item);
+        for (const item of reais) porMotivo.set(item.motivo, item);
+        setMotivosData(Array.from(porMotivo.values()));
       })
       .catch((e) => console.warn("Falha ao carregar Pareto de churn:", e));
   }
 
   useEffect(() => {
     carregarPareto();
-    setReceitaPerdida(calcularReceitaPerdidaLocal(horasOciosas));
   }, []);
+
+  useEffect(() => {
+    setReceitaPerdida(horasOciosas * valorMedioHora);
+  }, [horasOciosas, valorMedioHora]);
 
   async function handleRecalcularPaciente() {
     setMensagem("");
@@ -127,29 +129,13 @@ export default function DentistaDashboard() {
     }
   }
 
-  function handleOcultarCategoria() {
-    const categoria = categoriaMotivo.trim();
-    if (!categoria) {
-      return;
-    }
-    setCategoriasOcultas((atuais) =>
-      atuais.includes(categoria) ? atuais : [...atuais, categoria],
-    );
-  }
-
-  function handleRestaurarCategorias() {
-    setCategoriasOcultas([]);
-  }
-
   async function handleCalcularReceita() {
     setMensagem("");
     try {
-      const valor = await api.get<number>(`/churn/receita-perdida?horas=${horasOciosas}`);
-      const receita = Number(valor ?? 0);
-      setReceitaPerdida(receita > 0 ? receita : calcularReceitaPerdidaLocal(horasOciosas));
+      setReceitaPerdida(horasOciosas * valorMedioHora);
       setMensagem("Receita perdida recalculada.");
     } catch (e: any) {
-      setReceitaPerdida(calcularReceitaPerdidaLocal(horasOciosas));
+      setReceitaPerdida(horasOciosas * valorMedioHora);
       setMensagem("Receita perdida recalculada.");
     }
   }
@@ -167,10 +153,6 @@ export default function DentistaDashboard() {
       setMensagem(e.message ?? "Falha ao filtrar procedimento.");
     }
   }
-
-  const motivosVisiveis = motivosData.filter(
-    (item) => !categoriasOcultas.includes(item.motivo),
-  );
 
   return (
     <div className="p-6 h-full flex flex-col">
@@ -192,19 +174,28 @@ export default function DentistaDashboard() {
         <div className="border-2 border-red-500 bg-red-50 p-5 rounded-lg">
           <div className="text-sm font-bold text-red-700 mb-1 uppercase tracking-wider">Receita perdida</div>
           <div className="text-3xl font-bold text-red-900">{dinheiro(receitaPerdida)}</div>
-          <div className="flex gap-2 mt-3">
+          <div className="grid grid-cols-2 gap-2 mt-3">
             <input
               type="number"
               min={0}
-              className="w-24 border border-red-200 rounded px-2 py-1 text-sm"
+              className="border border-red-200 rounded px-2 py-1 text-sm"
               value={horasOciosas}
               onChange={(e) => setHorasOciosas(Number(e.target.value))}
             />
+            <input
+              type="number"
+              min={0}
+              className="border border-red-200 rounded px-2 py-1 text-sm"
+              value={valorMedioHora}
+              onChange={(e) => setValorMedioHora(Number(e.target.value))}
+            />
+          </div>
+          <div className="flex gap-2 mt-3">
             <button
               onClick={handleCalcularReceita}
               className="px-3 py-1 border border-red-500 bg-red-500 text-white rounded text-sm font-bold"
             >
-              Calcular horas
+              Calcular
             </button>
           </div>
         </div>
@@ -306,13 +297,6 @@ export default function DentistaDashboard() {
                 onChange={(e) => setCategoriaMotivo(e.target.value)}
               />
               <button
-                onClick={handleOcultarCategoria}
-                disabled={!categoriaMotivo.trim()}
-                className="px-3 py-1 border border-amber-600 bg-amber-600 text-white rounded text-xs font-bold disabled:opacity-40"
-              >
-                Tirar
-              </button>
-              <button
                 onClick={handleRegistrarCancelamento}
                 className="px-3 py-1 border border-blue-600 bg-blue-600 text-white rounded text-xs font-bold"
               >
@@ -320,20 +304,9 @@ export default function DentistaDashboard() {
               </button>
             </div>
           </div>
-          {categoriasOcultas.length > 0 && (
-            <div className="mb-3 flex items-center justify-between gap-3 text-xs text-gray-600">
-              <span>Ocultas na tela: {categoriasOcultas.join(", ")}</span>
-              <button
-                onClick={handleRestaurarCategorias}
-                className="px-2 py-1 border border-gray-300 bg-white rounded font-bold"
-              >
-                Restaurar todas
-              </button>
-            </div>
-          )}
           <div className="flex-1 min-h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={motivosVisiveis} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+              <ComposedChart data={motivosData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="motivo" />
                 <YAxis yAxisId="left" orientation="left" />
