@@ -72,6 +72,7 @@ export default function DentistaDashboard() {
   const [tipoProcedimento, setTipoProcedimento] = useState("Ortodontia");
   const [qtdProcedimento, setQtdProcedimento] = useState<number | null>(null);
   const [mensagem, setMensagem] = useState("");
+  const [categoriasOcultas, setCategoriasOcultas] = useState<string[]>([]);
 
   function carregarPareto() {
     return api.get<any[]>("/churn/pareto-cancelamentos")
@@ -122,6 +123,20 @@ export default function DentistaDashboard() {
     }
   }
 
+  function handleOcultarCategoria() {
+    const categoria = categoriaMotivo.trim();
+    if (!categoria) {
+      return;
+    }
+    setCategoriasOcultas((atuais) =>
+      atuais.includes(categoria) ? atuais : [...atuais, categoria],
+    );
+  }
+
+  function handleRestaurarCategorias() {
+    setCategoriasOcultas([]);
+  }
+
   async function handleCalcularReceita() {
     setMensagem("");
     try {
@@ -146,6 +161,10 @@ export default function DentistaDashboard() {
       setMensagem(e.message ?? "Falha ao filtrar procedimento.");
     }
   }
+
+  const motivosVisiveis = motivosData.filter(
+    (item) => !categoriasOcultas.includes(item.motivo),
+  );
 
   return (
     <div className="p-6 h-full flex flex-col">
@@ -281,6 +300,13 @@ export default function DentistaDashboard() {
                 onChange={(e) => setCategoriaMotivo(e.target.value)}
               />
               <button
+                onClick={handleOcultarCategoria}
+                disabled={!categoriaMotivo.trim()}
+                className="px-3 py-1 border border-amber-600 bg-amber-600 text-white rounded text-xs font-bold disabled:opacity-40"
+              >
+                Tirar
+              </button>
+              <button
                 onClick={handleRegistrarCancelamento}
                 className="px-3 py-1 border border-blue-600 bg-blue-600 text-white rounded text-xs font-bold"
               >
@@ -288,9 +314,20 @@ export default function DentistaDashboard() {
               </button>
             </div>
           </div>
+          {categoriasOcultas.length > 0 && (
+            <div className="mb-3 flex items-center justify-between gap-3 text-xs text-gray-600">
+              <span>Ocultas na tela: {categoriasOcultas.join(", ")}</span>
+              <button
+                onClick={handleRestaurarCategorias}
+                className="px-2 py-1 border border-gray-300 bg-white rounded font-bold"
+              >
+                Restaurar todas
+              </button>
+            </div>
+          )}
           <div className="flex-1 min-h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={motivosData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
+              <ComposedChart data={motivosVisiveis} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="motivo" />
                 <YAxis yAxisId="left" orientation="left" />
