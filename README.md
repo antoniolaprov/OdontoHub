@@ -1,11 +1,11 @@
-# 🦷 OdontoHub — Entregáveis
+# OdontoHub — Entregáveis
 
 Projeto acadêmico de **DDD + Arquitetura Limpa** para gestão de clínicas
 odontológicas. Este README reúne **apenas os entregáveis** avaliados.
 
 ---
 
-## 🌍 Descrição do Domínio (Linguagem Onipresente)
+## Descrição do Domínio (Linguagem Onipresente)
 
 O domínio do sistema está relacionado à **gestão de clínicas odontológicas**.
 
@@ -20,31 +20,30 @@ O domínio do sistema está relacionado à **gestão de clínicas odontológicas
 * **Pagamento**: registro financeiro referente aos atendimentos.
 * **Agenda**: calendário de horários disponíveis e ocupados.
 
-🔗 Documento completo da descrição do domínio:
+Documento completo da descrição do domínio:
 https://docs.google.com/document/d/1in_TcAc0lF9e5tBAOWedj4N48vXn65GTV9aAGn454JA/edit?usp=sharing
 
 ---
 
-## 🗺️ Mapa de Histórias do Usuário
+## Mapa de Histórias do Usuário
 
 O projeto foi estruturado utilizando **User Story Mapping**, organizando
 funcionalidades por jornadas e prioridades.
 
-🔗 Acesse o mapa completo:
-https://miro.com/app/board/uXjVGhatDtU=/?share_link_id=290223200342
+Acesse o mapa completo: <a href="docs/MAPA_HISTORIAS_USUARIO.md" target="_blank" rel="noopener noreferrer">MAPA_HISTORIAS_USUARIO.md</a>
 
 ---
 
-## 🎨 Protótipos
+## Protótipos
 
 Protótipos de baixa fidelidade desenvolvidos para validar fluxos e interfaces.
 
-🔗 Figma:
+Figma:
 https://www.figma.com/make/qvOk0BQkaCuL9nJy93onZA/Low-Fidelity-Wireframes-for-OdontoCare?t=5TOoNjostOZmjDQl-1&preview-route=%2Fagendamento
 
 ---
 
-## 🧩 Modelagem de Domínio (Context Mapper)
+## Modelagem de Domínio (Context Mapper)
 
 O sistema é modelado com **Domain-Driven Design (DDD)**.
 
@@ -67,7 +66,7 @@ O sistema é modelado com **Domain-Driven Design (DDD)**.
 * **PagamentoContext** — Pagamentos e Quitação de Débitos (F15)
 * **ConfirmacaoContext** — Lembretes e Confirmação (F16), Não Comparecimento (F17)
 
-📄 O arquivo **CML** encontra-se na raiz do repositório:
+O arquivo **CML** encontra-se na raiz do repositório:
 
 ```text
 OdontoHub.cml
@@ -75,7 +74,7 @@ OdontoHub.cml
 
 ---
 
-## 🧱 Padrões de Projeto Implementados
+## Padrões de Projeto Implementados
 
 > A coluna **"Dono"** segue o **dono da funcionalidade** (bounded context) onde o
 > arquivo de cada padrão vive — independentemente de quem fez o commit no Git.
@@ -148,7 +147,7 @@ Os serviços de aplicação oferecem uma **fachada** simples sobre os serviços 
 
 ---
 
-## 🧪 Cenários de Teste BDD
+## Cenários de Teste BDD
 
 Os cenários BDD foram escritos em **Gherkin** (um arquivo `.feature` por
 funcionalidade) e estão disponíveis em:
@@ -159,7 +158,7 @@ odontohub/src/test/resources/features
 
 ---
 
-## 🤖 Automação com Cucumber
+## Automação com Cucumber
 
 Os cenários BDD foram automatizados utilizando:
 
@@ -172,7 +171,7 @@ Executados via Maven Wrapper.
 
 ---
 
-## 👥 Equipe e Autoria das Funcionalidades
+## Equipe e Autoria das Funcionalidades
 
 | Membro | Funcionalidades |
 |---|---|
