@@ -38,6 +38,26 @@ interface Paciente {
   restrito: boolean;
 }
 
+interface FollowupTarefa {
+  id: number;
+  paciente: string;
+  tipoLigacao: string;
+  concluida: boolean;
+  checklist?: {
+    sangramentoAtivo: boolean;
+    nivelDor: number;
+    observacoes?: string;
+    dataLigacao?: string;
+    responsavel?: string;
+  } | null;
+}
+
+interface FollowupChecklistForm {
+  sangramento: boolean;
+  nivelDor: number;
+  observacoes: string;
+}
+
 const DENTISTAS = [
   "Dra. Sofia Martins",
   "Dr. Ricardo Alves",
@@ -175,6 +195,16 @@ function adaptarPacienteParaAgenda(b: any): Paciente {
   };
 }
 
+function adaptarFollowup(b: any, indice: number): FollowupTarefa {
+  return {
+    id: b.id?.id ?? b.id ?? indice + 1,
+    paciente: b.paciente ?? "—",
+    tipoLigacao: b.tipoLigacao ?? "—",
+    concluida: Boolean(b.concluida),
+    checklist: b.checklist ?? null,
+  };
+}
+
 // Mesma regra do backend (Agendamento.validarHorarioComercial): seg-sex, 08:00-17:00.
 function foraDoHorarioComercial(data: Date, hora: string): string | null {
   const dia = data.getDay();
@@ -193,7 +223,9 @@ function foraDoHorarioComercial(data: Date, hora: string): string | null {
 export default function RecepcionistaAgenda() {
   const [agendamentos, setAgendamentos] = useState<Agendamento[]>([]);
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [followups, setFollowups] = useState<FollowupTarefa[]>([]);
   const [carregandoAgendamentos, setCarregandoAgendamentos] = useState(true);
+  const [carregandoFollowups, setCarregandoFollowups] = useState(false);
 
   // Carrega os agendamentos reais do backend — sem fallback: vazio/erro mostra a tela vazia.
   const carregarAgendamentos = useCallback(() => {
@@ -208,14 +240,47 @@ export default function RecepcionistaAgenda() {
 
   useEffect(() => { carregarAgendamentos(); }, [carregarAgendamentos]);
 
+  const carregarFollowups = useCallback(async (nomesPacientes: string[]) => {
+    const nomesValidos = nomesPacientes.filter((nome) => nome && nome !== "—");
+    if (nomesValidos.length === 0) {
+      setFollowups([]);
+      return;
+    }
+
+    setCarregandoFollowups(true);
+    try {
+      const listas = await Promise.all(
+        nomesValidos.map((nome) =>
+          api.get<any[]>(`/followups/paciente/${encodeURIComponent(nome)}`)
+            .catch((e) => {
+              console.warn(`Falha ao carregar follow-ups de ${nome}:`, e);
+              return [];
+            }),
+        ),
+      );
+      setFollowups(
+        listas.flatMap((lista) =>
+          Array.isArray(lista) ? lista.map(adaptarFollowup) : [],
+        ),
+      );
+    } finally {
+      setCarregandoFollowups(false);
+    }
+  }, []);
+
   useEffect(() => {
     api.get<any[]>("/pacientes")
-      .then((lista) => setPacientes(Array.isArray(lista) ? lista.map(adaptarPacienteParaAgenda) : []))
+      .then((lista) => {
+        const pacientesAdaptados = Array.isArray(lista) ? lista.map(adaptarPacienteParaAgenda) : [];
+        setPacientes(pacientesAdaptados);
+        carregarFollowups(pacientesAdaptados.map((p) => p.nome));
+      })
       .catch((e) => {
         console.warn("Falha ao carregar pacientes do backend:", e);
         setPacientes([]);
+        setFollowups([]);
       });
-  }, []);
+  }, [carregarFollowups]);
 
   const [semanaBase, setSemanaBase] = useState<Date>(() =>
     getMondayOf(new Date(2026, 5, 3)),
@@ -277,6 +342,12 @@ export default function RecepcionistaAgenda() {
     hora: "",
   });
   const [erroRemarcar, setErroRemarcar] = useState("");
+
+  // Form: follow-up pos-cirurgico
+  const [pacienteFollowup, setPacienteFollowup] = useState("");
+  const [dentistaFollowup, setDentistaFollowup] = useState("");
+  const [erroFollowup, setErroFollowup] = useState("");
+  const [followupForms, setFollowupForms] = useState<Record<string, FollowupChecklistForm>>({});
 
   // ─ Derived ────────────────────────────────────────────────────────────────
 
@@ -345,6 +416,11 @@ export default function RecepcionistaAgenda() {
     [agendamentos],
   );
 
+  const followupsPendentes = useMemo(
+    () => followups.filter((f) => !f.concluida),
+    [followups],
+  );
+
   // Returns filtered items for a specific calendar cell
   function getCelula(dia: Date, hora: string): Agendamento[] {
     const str = dateToBR(dia);
@@ -403,10 +479,71 @@ export default function RecepcionistaAgenda() {
 
   // ─ Action handlers ────────────────────────────────────────────────────────
 
+  function chaveFollowup(tarefa: FollowupTarefa) {
+    return `${tarefa.paciente}-${tarefa.tipoLigacao}-${tarefa.id}`;
+  }
+
   const [salvandoCriar, setSalvandoCriar] = useState(false);
   const [salvandoConfirmar, setSalvandoConfirmar] = useState(false);
   const [salvandoCancelar, setSalvandoCancelar] = useState(false);
   const [salvandoRemarcar, setSalvandoRemarcar] = useState(false);
+  const [gerandoFollowup, setGerandoFollowup] = useState(false);
+  const [salvandoFollowup, setSalvandoFollowup] = useState("");
+
+  async function handleGerarFollowup() {
+    if (!pacienteFollowup) {
+      setErroFollowup("Selecione um paciente cadastrado.");
+      return;
+    }
+
+    setGerandoFollowup(true);
+    setErroFollowup("");
+    try {
+      await api.post("/followups/gatilho", {
+        paciente: pacienteFollowup,
+        tipoProcedimento: "Cirurgia",
+      });
+      await carregarFollowups(pacientes.map((p) => p.nome));
+      showToast("Tarefas de follow-up criadas.", "sucesso");
+    } catch (e: any) {
+      setErroFollowup(e.message ?? "Falha ao criar tarefas de follow-up.");
+    } finally {
+      setGerandoFollowup(false);
+    }
+  }
+
+  async function handleRegistrarFollowup(tarefa: FollowupTarefa) {
+    const chave = chaveFollowup(tarefa);
+    const form = followupForms[chave] ?? {
+      sangramento: false,
+      nivelDor: 0,
+      observacoes: "",
+    };
+
+    setSalvandoFollowup(chave);
+    setErroFollowup("");
+    try {
+      await api.post("/followups/checklist", {
+        paciente: tarefa.paciente,
+        sangramento: form.sangramento,
+        nivelDor: Number(form.nivelDor),
+        observacoes: form.observacoes,
+        responsavel: "Recepcionista",
+        dentistaResponsavel: dentistaFollowup || "Dentista responsavel",
+      });
+      await carregarFollowups(pacientes.map((p) => p.nome));
+      showToast(
+        form.sangramento || Number(form.nivelDor) > 7
+          ? "Checklist salvo e emergencia registrada."
+          : "Checklist de follow-up salvo.",
+        "sucesso",
+      );
+    } catch (e: any) {
+      setErroFollowup(e.message ?? "Falha ao salvar checklist de follow-up.");
+    } finally {
+      setSalvandoFollowup("");
+    }
+  }
 
   async function handleCriar() {
     if (!formCriar.paciente) {
@@ -1050,52 +1187,150 @@ export default function RecepcionistaAgenda() {
           <h3 className="text-sm font-bold text-gray-600 mb-3 flex items-center gap-2">
             <span>🏥</span> Follow-up Pós-Cirúrgico
           </h3>
+          <div className="border-2 border-gray-300 bg-white p-3 mb-3 space-y-2">
+            <select
+              className="w-full border-2 border-gray-300 p-1.5 text-xs bg-white outline-none"
+              value={pacienteFollowup}
+              onChange={(e) => {
+                setPacienteFollowup(e.target.value);
+                setErroFollowup("");
+              }}
+            >
+              <option value="">Paciente</option>
+              {pacientes.map((p) => (
+                <option key={p.nome} value={p.nome}>
+                  {p.nome}
+                </option>
+              ))}
+            </select>
+            <select
+              className="w-full border-2 border-gray-300 p-1.5 text-xs bg-white outline-none"
+              value={dentistaFollowup}
+              onChange={(e) => setDentistaFollowup(e.target.value)}
+            >
+              <option value="">Dentista responsável</option>
+              {DENTISTAS.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={handleGerarFollowup}
+              disabled={gerandoFollowup || !pacienteFollowup}
+              className="w-full px-3 py-1 border-2 border-blue-500 bg-blue-500 text-white text-xs font-bold hover:bg-blue-600 disabled:opacity-50"
+            >
+              {gerandoFollowup ? "Gerando..." : "Gerar 24h e 72h"}
+            </button>
+          </div>
+          {erroFollowup && (
+            <div className="text-xs text-red-600 border-2 border-red-200 bg-red-50 p-2 mb-2">
+              {erroFollowup}
+            </div>
+          )}
           <div className="space-y-2">
-            {[
-              {
-                nome: "Marcos Pereira",
-                cirurgia: "Extração",
-                data: "26/04/2026",
-              },
-              {
-                nome: "Paula Mendes",
-                cirurgia: "Implante",
-                data: "27/04/2026",
-              },
-            ].map((pac, i) => (
-              <div
-                key={i}
-                className="border-2 border-gray-300 bg-white p-3"
-              >
-                <div className="font-bold text-sm">
-                  {pac.nome}
-                </div>
-                <div className="text-xs text-gray-500 mb-2">
-                  {pac.cirurgia} — {pac.data}
-                </div>
-                <div className="space-y-1 mb-2">
-                  {[
-                    "Dor intensa?",
-                    "Sangramento excessivo?",
-                    "Febre?",
-                  ].map((q) => (
-                    <label
-                      key={q}
-                      className="flex items-center gap-2 text-xs"
-                    >
-                      <input
-                        type="checkbox"
-                        className="border-2 border-gray-400"
-                      />
-                      {q}
-                    </label>
-                  ))}
-                </div>
-                <button className="w-full px-3 py-1 border-2 border-red-500 bg-red-500 text-white text-xs font-bold">
-                  🚨 Acionar Emergência
-                </button>
+            {carregandoFollowups ? (
+              <div className="text-xs text-gray-400 border-2 border-gray-200 p-3 bg-white">
+                Carregando follow-ups...
               </div>
-            ))}
+            ) : followupsPendentes.length === 0 ? (
+              <div className="text-xs text-gray-400 border-2 border-gray-200 p-3 bg-white">
+                Nenhuma tarefa pendente.
+              </div>
+            ) : (
+              followupsPendentes.map((tarefa) => {
+                const chave = chaveFollowup(tarefa);
+                const form = followupForms[chave] ?? {
+                  sangramento: false,
+                  nivelDor: 0,
+                  observacoes: "",
+                };
+                const emergencia = form.sangramento || Number(form.nivelDor) > 7;
+
+                return (
+                  <div
+                    key={chave}
+                    className={`border-2 bg-white p-3 ${emergencia ? "border-red-400" : "border-gray-300"}`}
+                  >
+                    <div className="flex justify-between gap-2">
+                      <div className="font-bold text-sm">
+                        {tarefa.paciente}
+                      </div>
+                      <span className="text-[10px] font-bold border-2 border-purple-300 bg-purple-50 text-purple-700 px-1">
+                        {tarefa.tipoLigacao}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 my-2">
+                      <label className="text-xs">
+                        Dor
+                        <input
+                          type="number"
+                          min={0}
+                          max={10}
+                          className="w-full border-2 border-gray-300 p-1 mt-1 outline-none"
+                          value={form.nivelDor}
+                          onChange={(e) =>
+                            setFollowupForms((atual) => ({
+                              ...atual,
+                              [chave]: {
+                                ...form,
+                                nivelDor: Number(e.target.value),
+                              },
+                            }))
+                          }
+                        />
+                      </label>
+                      <label className="flex items-end gap-2 text-xs pb-1">
+                        <input
+                          type="checkbox"
+                          checked={form.sangramento}
+                          onChange={(e) =>
+                            setFollowupForms((atual) => ({
+                              ...atual,
+                              [chave]: {
+                                ...form,
+                                sangramento: e.target.checked,
+                              },
+                            }))
+                          }
+                        />
+                        Sangramento
+                      </label>
+                    </div>
+                    <textarea
+                      rows={2}
+                      className="w-full border-2 border-gray-300 p-1 text-xs resize-none outline-none mb-2"
+                      placeholder="Observações do contato"
+                      value={form.observacoes}
+                      onChange={(e) =>
+                        setFollowupForms((atual) => ({
+                          ...atual,
+                          [chave]: {
+                            ...form,
+                            observacoes: e.target.value,
+                          },
+                        }))
+                      }
+                    />
+                    <button
+                      onClick={() => handleRegistrarFollowup(tarefa)}
+                      disabled={salvandoFollowup === chave}
+                      className={`w-full px-3 py-1 border-2 text-white text-xs font-bold disabled:opacity-50 ${
+                        emergencia
+                          ? "border-red-500 bg-red-500 hover:bg-red-600"
+                          : "border-green-600 bg-green-600 hover:bg-green-700"
+                      }`}
+                    >
+                      {salvandoFollowup === chave
+                        ? "Salvando..."
+                        : emergencia
+                          ? "Salvar e acionar emergência"
+                          : "Concluir checklist"}
+                    </button>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>
