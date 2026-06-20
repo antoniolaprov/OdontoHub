@@ -18,6 +18,16 @@ function salvarSessao(clinica: ClinicaResponse) {
   localStorage.setItem("odontohub.clinica", JSON.stringify(clinica));
 }
 
+/** Formata o CNPJ enquanto o usuário digita: 00.000.000/0000-00 (apenas dígitos). */
+function mascaraCnpj(valor: string): string {
+  const d = valor.replace(/\D/g, "").slice(0, 14);
+  return d
+    .replace(/^(\d{2})(\d)/, "$1.$2")
+    .replace(/^(\d{2})\.(\d{3})(\d)/, "$1.$2.$3")
+    .replace(/^(\d{2})\.(\d{3})\.(\d{3})(\d)/, "$1.$2.$3/$4")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
+}
+
 export default function Login() {
   const navigate = useNavigate();
   const [aba, setAba] = useState<Aba>("entrar");
@@ -117,7 +127,7 @@ export default function Login() {
               <form onSubmit={cadastrar} className="space-y-4">
                 <Campo label="Nome da clínica" value={nome} onChange={setNome}
                   placeholder="Clínica Sorriso Feliz" />
-                <Campo label="CNPJ" value={cnpj} onChange={setCnpj}
+                <Campo label="CNPJ" value={cnpj} onChange={(v) => setCnpj(mascaraCnpj(v))}
                   placeholder="00.000.000/0001-00" />
                 <Campo label="E-mail" type="email" value={email} onChange={setEmail}
                   placeholder="contato@clinica.com" />
