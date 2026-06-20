@@ -1,111 +1,7 @@
-# 🦷 OdontoHub
+# 🦷 OdontoHub — Entregáveis
 
-Sistema de gestão para clínicas odontológicas focado em **organização de prontuários**, **agendamentos**, **controle administrativo** e **eficiência no atendimento ao paciente**.
-
-> 📚 Projeto acadêmico desenvolvido para a disciplina de **Requisitos, Projeto de Software e Validação** – Cesar School.
-
----
-
-## 🚀 Como Executar os Testes (Importante para Avaliação)
-
-Para validar o projeto, o avaliador deverá seguir os passos abaixo:
-
-### ✅ Pré-requisitos
-
-* **Java 21+** instalado
-* Git instalado (opcional para clonagem)
-
-### ✅ Passo 1: Clonar o repositório
-
-```bash id="r1q0hf"
-git clone <URL_DO_REPOSITORIO>
-```
-
-### ✅ Passo 2: Acessar a pasta do projeto
-
-```bash id="q4n6lp"
-cd odontohub
-```
-
-### ✅ Passo 3: Executar os testes automatizados
-
-### Windows
-
-```bash id="e5f2ud"
-.\mvnw.cmd test --no-transfer-progress
-```
-
-### Linux / Mac
-
-```bash id="a2w8kc"
-./mvnw test --no-transfer-progress
-```
-
-> Todos os testes unitários e cenários BDD automatizados serão executados automaticamente.
-
----
-
-## 🐳 Executar com Docker
-
-Tudo roda localmente em containers, sem instalar Java, Maven ou Node na máquina
-(apenas o Docker é necessário).
-
-### Opção A — Tudo junto: backend + frontend (recomendado)
-
-Na **raiz do repositório**:
-
-```bash
-docker compose up --build
-```
-
-Sobe os dois serviços de uma vez:
-
-| Serviço | Acesso |
-|---|---|
-| **Frontend (app web)** | **http://localhost:8090** |
-| API (REST, acesso direto) | http://localhost:8080/api/... |
-
-O frontend (Nginx) encaminha internamente as chamadas `/api` para o backend, então
-basta abrir **http://localhost:8090**. Para parar: `docker compose down`
-(use `docker compose down -v` para apagar também o banco).
-
-### Opção B — Apenas o backend
-
-```bash
-cd odontohub
-docker compose up --build      # API em http://localhost:8080
-```
-
-> Builds multi-stage: o backend (Maven + JDK 21 → JRE 21) empacota o JAR; o frontend
-> (Node 22 → Nginx) compila a SPA React/Vite e a serve como estático. O banco H2 fica
-> no volume `odontohub-data`, persistindo entre reinícios. Ao subir pela primeira vez
-> o banco está vazio — as telas usam dados de exemplo (mock) como fallback até que
-> registros reais sejam criados via API.
-
-### Endpoints de exemplo (REST)
-
-```bash
-# Fluxo de caixa
-curl http://localhost:8080/api/fluxo-caixa/lancamentos
-# Fila priorizada de recall (F07)
-curl http://localhost:8080/api/recalls/fila-priorizada
-# Console do banco H2 (navegador): http://localhost:8080/h2-console
-```
-
----
-
-## 📌 Status do Projeto
-
-✅ Backend completo — 17 funcionalidades (F1–F17) com domínio, infraestrutura (JPA),
-aplicação e apresentação (REST), automatizadas por **140 cenários BDD** (todos verdes).
-
----
-
-## 💡 Sobre o Projeto
-
-O **OdontoHub** surgiu da necessidade de modernizar a administração de clínicas odontológicas, reduzindo processos manuais e melhorando a experiência de dentistas, secretários e pacientes.
-
-A plataforma centraliza informações clínicas e administrativas em um único ambiente digital, permitindo maior organização, rastreabilidade e produtividade.
+Projeto acadêmico de **DDD + Arquitetura Limpa** para gestão de clínicas
+odontológicas. Este README reúne **apenas os entregáveis** avaliados.
 
 ---
 
@@ -124,17 +20,6 @@ O domínio do sistema está relacionado à **gestão de clínicas odontológicas
 * **Pagamento**: registro financeiro referente aos atendimentos.
 * **Agenda**: calendário de horários disponíveis e ocupados.
 
-### Problemas identificados:
-
-* Agendamentos desorganizados
-* Dificuldade em localizar históricos clínicos
-* Controle financeiro manual
-* Falta de integração entre setores da clínica
-
-### Solução proposta:
-
-Criar uma plataforma web que permita gerenciar todos esses processos de forma simples, segura e eficiente.
-
 🔗 Documento completo da descrição do domínio:
 https://docs.google.com/document/d/1in_TcAc0lF9e5tBAOWedj4N48vXn65GTV9aAGn454JA/edit?usp=sharing
 
@@ -142,23 +27,17 @@ https://docs.google.com/document/d/1in_TcAc0lF9e5tBAOWedj4N48vXn65GTV9aAGn454JA/
 
 ## 🗺️ Mapa de Histórias do Usuário
 
-O projeto foi estruturado utilizando **User Story Mapping**, organizando funcionalidades por jornadas e prioridades.
+O projeto foi estruturado utilizando **User Story Mapping**, organizando
+funcionalidades por jornadas e prioridades.
 
 🔗 Acesse o mapa completo:
 https://miro.com/app/board/uXjVGhatDtU=/?share_link_id=290223200342
-
-### Exemplos de histórias:
-
-* Como secretário, quero agendar consultas para organizar a agenda da clínica.
-* Como dentista, quero acessar o prontuário do paciente para consultar histórico clínico.
-* Como administrador, quero visualizar pagamentos para controlar o financeiro.
-* Como paciente, quero receber confirmação de consulta para evitar esquecimentos.
 
 ---
 
 ## 🎨 Protótipos
 
-Protótipos de baixa fidelidade foram desenvolvidos para validar fluxos e interfaces.
+Protótipos de baixa fidelidade desenvolvidos para validar fluxos e interfaces.
 
 🔗 Figma:
 https://www.figma.com/make/qvOk0BQkaCuL9nJy93onZA/Low-Fidelity-Wireframes-for-OdontoCare?t=5TOoNjostOZmjDQl-1&preview-route=%2Fagendamento
@@ -190,7 +69,7 @@ O sistema é modelado com **Domain-Driven Design (DDD)**.
 
 📄 O arquivo **CML** encontra-se na raiz do repositório:
 
-```text id="w6f4yx"
+```text
 OdontoHub.cml
 ```
 
@@ -198,8 +77,8 @@ OdontoHub.cml
 
 ## 🧱 Padrões de Projeto Implementados
 
-> A coluna **"Implementado por"** segue o **dono da funcionalidade** (bounded context)
-> onde o arquivo de cada padrão vive — independentemente de quem fez o commit no Git.
+> A coluna **"Dono"** segue o **dono da funcionalidade** (bounded context) onde o
+> arquivo de cada padrão vive — independentemente de quem fez o commit no Git.
 > Como os padrões são transversais, vários membros os aplicam, cada um no seu contexto.
 
 **Mapa de autoria por bounded context (pacote):**
@@ -271,9 +150,10 @@ Os serviços de aplicação oferecem uma **fachada** simples sobre os serviços 
 
 ## 🧪 Cenários de Teste BDD
 
-Os cenários BDD foram escritos em **Gherkin** (um arquivo `.feature` por funcionalidade) e estão disponíveis em:
+Os cenários BDD foram escritos em **Gherkin** (um arquivo `.feature` por
+funcionalidade) e estão disponíveis em:
 
-```text id="g7j2da"
+```text
 odontohub/src/test/resources/features
 ```
 
@@ -292,33 +172,6 @@ Executados via Maven Wrapper.
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
-
-### Backend
-
-* Spring Boot (Spring Web, Spring Data JPA)
-* Java 21+
-
-### Persistência
-
-* JPA / Hibernate
-* H2 (banco em arquivo, durável)
-
-### Testes
-
-* JUnit (Platform Suite)
-* Cucumber (BDD em Gherkin, `# language: pt`)
-
-### Protótipos
-
-* Figma
-
-### Planejamento
-
-* Miro
-
----
-
 ## 👥 Equipe e Autoria das Funcionalidades
 
 | Membro | Funcionalidades |
@@ -330,15 +183,3 @@ Executados via Maven Wrapper.
 | **Felipe Andrade** | F2 – Registro de Anamnese · F3 – Gestão e Execução do Plano de Tratamento |
 | **Antônio Augusto** | F4 – Fluxo de Caixa do Consultório · F5 – Controle de Estoque de Materiais Consumíveis |
 | **Gabriel Belo** | F16 – Confirmação e Lembretes de Consulta · F17 – Registro de Não Comparecimento |
-
-> **Nota:** as funcionalidades **F1–F15** correspondem ao documento de descrição do
-> domínio (numeração contínua). **F16 (Lembretes/Confirmação)** e **F17 (Não
-> Comparecimento)** são extensões da equipe, fora do documento, e vivem no bounded
-> context `ConfirmacaoContext` (`com.g4.odontohub.confirmacao`). Todas as 17
-> funcionalidades estão implementadas com BDD automatizado, persistência JPA e API REST.
-
----
-
-## 📌 Instituição
-
-Projeto desenvolvido na **Cesar School**.
